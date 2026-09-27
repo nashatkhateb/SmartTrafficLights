@@ -338,6 +338,89 @@ the model's own check at the crossing). Nothing else in the vehicle model change
 crosses at the boundary is still in YELLOW and clears the box before its own all-red ends, so
 signal safety is unaffected.
 
+## Smart controller (Stage 11, approved design 2026-09-27)
+
+`controller_smart.SmartController(sensors, params)` is the study §7 movement-based, fully
+actuated controller, implemented as written (no tuning). It reads only `SensorBank`
+(`has_call`, `call_since_ms`, `qhat`, `gap_out`, `extended_initial_required`,
+`faulted_detectors`, `now_ms`) and `SignalBank` (`state`, `since`, `can_start_green`,
+`start_green`, `end_green`). It imports only `conflicts` and `signals`, and never learns
+whether a detector is real or virtual. `SmartParams` holds the study values and the three §9
+ablation switches (max green, aging, W_MAX); rest-in-red is not implemented.
+
+**Shared step order (approved; also for the Stage 14 runner and both controllers):**
+vehicles → sensors → `SignalBank.advance` → controller `update(bank)` → mirror. The Smart
+Controller checks that sensors and signals are at the same instant. This supersedes the
+Stage 10 note ("before `bank.advance`"); the fixed controller's command times are the same
+either way, and `FixedTimeController` is unchanged. Decisions happen at step boundaries; the
+official step is 100 ms. Decision logs are deterministic for identical step sequences.
+
+**Values** (study §6, §14): minimum green 7 s straight / 5 s left, 12 s when LEVEL_2 is latched
+at the actual GREEN onset (`extended_initial_required`); maximum green 45 s / 30 s, timer
+started at the first update (while GREEN) at which a conflicting movement has a call; passage
+time 2.5 s (SensorBank's gap-out, not re-timed); τ = 10 s; Q̂ = 2 / 6; W_MAX = 90 000 ms.
+Green time G = GREEN + FLASHING_GREEN: `end_green` for a minimum green MIN is allowed from
+onset + MIN − 3 s, a max-out issues it at max start + MAX − 3 s, a gap-out issues it at once.
+
+**Algorithm per update** (study pseudocode):
+1. Track each movement's GREEN onset, chosen minimum green and max-green start. These survive
+   partial transitions (a movement that stays GREEN keeps them).
+2. If a transition is committed, only start its target movements as soon as SignalBank allows;
+   release the commitment when all of them are GREEN.
+3. Waiting = RED with a call. No waiting calls → rest in the current greens (even gapped out).
+4. Hold: the waiting call with the longest wait ≥ 90 000 ms (ties: MOVES order).
+5. Target: score every compatible group (fixed `GROUPS` order, members in MOVES order):
+   S(G) = Σ P over waiting members + 2 per member serving (RED_YELLOW or GREEN) and not gapped
+   out; P = Q̂ + wait/τ, compared exactly as Q̂·10 000 + wait_ms. With a hold, only groups
+   containing it. Exact ties: more serving members, then the longest single wait, then
+   GROUPS order.
+6. Add compatible demand: start a waiting movement if SignalBank allows it and it is compatible
+   with BOTH target members (target protection, literal study rule). Nothing is stopped.
+7. Switch: end only the GREEN movements that conflict with the target's waiting members, and
+   only when ALL of them are releasable at once (minimum green met and gap-out, max-out, or
+   conflict with the hold), then commit.
+
+**Fail-safe recall for faulted detectors (approved).** While any detector of a movement is
+faulted (`SensorBank.faulted_detectors()`, however the fault arises), the movement has demand
+with Q̂ = max(its real Q̂, 2), its call time is the later of the fault onset and its last
+service end, and its gap-out is ignored (it ends by max-out or a hold). Consequence: a
+movement with a disconnected real detector is served every time it can be, for up to its
+maximum green while conflicting calls exist, whether or not traffic is present — the
+efficiency of that movement falls to roughly fixed-time level, but it can never disappear or
+lock up. A real detector that has not reported since HELLO (startup) is also on recall.
+
+**Starvation bound.** The hold threshold is exactly 90 s. ≈ 120 s is the theoretical
+single-hold time until GREEN under Signals V2 (≈ 10.5 s of a transition already committed,
+≈ 18 s of the new greens' minimum green and clearance, 1 s red+yellow). It is not a guarantee:
+the study algorithm does not bound the wait when several holds arise together (they are served
+one after another) or when the hold's best group needs a green that is compatible with the
+hold but conflicts with its partner (step 7 needs all blockers releasable at once; that green
+must gap out or max out). Measured maximum waits at RED (study policy, FT-A comparison below,
+seeds 1–3): S1 133–149 s, S3 122–138 s, S7a 139–149 s, S10 149–158 s. Every wait above 120 s
+in those runs was classified: committed transition in progress, partner interaction, or
+another hold first — none unexplained.
+
+**Known limitation (study §15).** Q̂ saturates at 6: once both are LEVEL_2, a moderately and a
+very heavily queued movement look the same. Combined with the unbounded waiting-time term,
+split compatible groups such as NS+NL / SS+SL can outrank NS+SS, which serves only one straight
+at a time and reduces straight capacity under balanced or heavy demand. This is reported, not
+optimised around. Any later tuning follows the study: tune only on S1 with seeds 101–105, then
+lock the parameters before evaluating the other scenarios.
+
+**Exploratory validation (NOT the Stage 14 results).** Mean control delay (s) of arrivals in
+[0, 3600) s, straight / left, seeds 1–3, dt = 0.1 s, same arrivals for both controllers;
+last column: longest wait of a call at RED.
+
+| Scenario | FT-A | Smart (study policy) | Smart longest RED wait |
+|---|---|---|---|
+| S1 balanced | 35.2 / 68.3 | 55.8 / 58.6 | 148.9 s |
+| S3 one approach nearly empty | 34.7 / 68.1 | 37.0 / 47.3 | 137.5 s |
+| S4 very low | 26.7 / 41.4 | 14.6 / 18.0 | 77.8 s |
+| S7a heavy | 215.3 / 247.1 | 173.2 / 179.9 | 148.7 s |
+| S10 long wait | 215.3 / 245.2 | 238.2 / 117.9 | 158.2 s |
+
+FT-A is the single S1 design plan (so it is oversaturated in S7a/S10); FT-B was not run here.
+
 ## Module status
 
 | Module | Status |
@@ -348,5 +431,6 @@ signal safety is unaffected.
 | `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8; yellow window end made inclusive in the Stage 10 review |
 | `sensors.py` | Stage 8: virtual detectors + demand logic; Stage 9 added `detector_fault()` / `faulted_detectors()` |
 | `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68) |
-| `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented and tested; awaiting review |
+| `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented, tested, verified (commit 7e4ae52) |
+| `controller_smart.py` | Stage 11: study §7 policy implemented and tested; awaiting review |
 | everything else | Placeholder |

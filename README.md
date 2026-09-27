@@ -15,9 +15,11 @@ All parameters, algorithms and scenarios come from that document; do not change 
 - Stage 9 (physically verified): ESP32 hardware — real IR detector(s) and physical
   signal head(s) via `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`,
   `config/hardware.json`, firmware in `hardware/`. See `hardware/README.md`.
-- Stage 10 (awaiting review): `controller_fixed.py` + `config/fixed_plans.json` — fixed-time
+- Stage 10 (verified): `controller_fixed.py` + `config/fixed_plans.json` — fixed-time
   baselines FT-A, FT-B (per scenario) and S6 time-of-day. See "Fixed-time controller" below.
-- Not yet implemented: smart controller, statistics, visualization, experiments.
+- Stage 11 (awaiting review): `controller_smart.py` — the study §7 actuated controller.
+  See "Smart controller" below.
+- Not yet implemented: statistics, visualization, experiments.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -59,7 +61,7 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
   `HybridDetectorSource`. Currently NS:D1 is real and the other 15 are virtual; this is set in
   `config/hardware.json`. A physical NeoPixel head mirrors NS.
   `SensorBank.detector_fault()` reports hardware faults.
-- Step order: `vehicles.advance` → `sensors.advance` → `signals.advance`.
+- Step order: `vehicles.advance` → `sensors.advance` → `signals.advance` → controller `update(bank)`.
 
 ## Fixed-time controller (Stage 10)
 
@@ -77,6 +79,19 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 - Use: `load_fixed_plans().controller("FT-B", "S7a", start_time=-300)`, then `update(bank)`
   every step before `bank.advance`; never step past `next_command_ms()`.
 
+## Smart controller (Stage 11)
+
+- Study §7, as written: it scores every compatible group by P = Q̂ + wait/10 (plus 2 per
+  movement already serving and not gapped out), adds compatible demand without stopping
+  anything, and stops only the conflicting greens, once all of them are releasable (minimum
+  green 7 / 5 s, or 12 s after LEVEL_2; then gap-out, max-out 45 / 30 s from a conflicting
+  call, or a starvation hold after 90 s). It rests in green when nothing conflicting waits.
+- It reads only `SensorBank` and never knows whether a detector is real or virtual. A
+  faulted detector puts its movement on recall (fail-safe).
+- `SmartController(sensor_bank)`; call `update(bank)` each step after the SignalBank advanced.
+- Measured behaviour, limitations (Q̂ saturates at 6; waits can exceed the ~120 s single-hold
+  bound) and an exploratory FT-A comparison are in `docs/ARCHITECTURE.md`.
+
 ## Setup (Windows)
 
 1. Python 3.10–3.13 must be installed (3.14 is not yet supported by pygame).
@@ -93,7 +108,7 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 | `smarttraffic/sensors.py` | 16 point detectors, `DetectorSource` interface, `VirtualDetectors`, `SensorBank` demand logic | §4, §6 |
 | `smarttraffic/conflicts.py` | Conflict matrix, 8 groups, `compatible()`, safety invariant | §3 |
 | `smarttraffic/signals.py` | Per-head R→RY→G→FG→Y→AR→R state machine, lamp outputs | §6–§7 |
-| `smarttraffic/controller_smart.py` | Actuated controller with partial transitions | §7, §9 |
+| `smarttraffic/controller_smart.py` | Actuated controller: group priority, partial transitions, W_MAX hold, fault recall | §6, §7, §9 |
 | `smarttraffic/controller_fixed.py` | FT-A / FT-B / time-of-day fixed-time controller | §8 |
 | `smarttraffic/stats.py` | Per-vehicle records, 1 s samples, summaries | §11 |
 | `smarttraffic/viz.py` | Pygame view, frame capture | §13 |
