@@ -17,9 +17,11 @@ All parameters, algorithms and scenarios come from that document; do not change 
   `config/hardware.json`, firmware in `hardware/`. See `hardware/README.md`.
 - Stage 10 (verified): `controller_fixed.py` + `config/fixed_plans.json` — fixed-time
   baselines FT-A, FT-B (per scenario) and S6 time-of-day. See "Fixed-time controller" below.
-- Stage 11 (awaiting review): `controller_smart.py` — the study §7 actuated controller.
+- Stage 11 (verified): `controller_smart.py` — the study §7 actuated controller.
   See "Smart controller" below.
-- Not yet implemented: statistics, visualization, experiments.
+- Stage 12 (awaiting review): `stats.py` + `runner.py` — study §11 metrics and the shared
+  run used by every controller. See "Statistics" below.
+- Not yet implemented: visualization, experiment campaign, graphs.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -92,6 +94,18 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 - Measured behaviour, limitations (Q̂ saturates at 6; waits can exceed the ~120 s single-hold
   bound) and an exploratory FT-A comparison are in `docs/ARCHITECTURE.md`.
 
+## Statistics (Stage 12)
+
+- `run(RunConfig("S1", 1, "Smart"))` runs one scenario/seed/controller (warm-up 300 s,
+  measurement 3600 s, flush ≤ 900 s, dt 0.1 s) and returns a `RunResult`;
+  `run_pair(config, ("FT-A", "Smart"))` runs controllers on identical arrivals.
+- Metrics follow study §11: control delay (mean, P95, max), waiting time, queue (1 s samples,
+  including cars held outside the road entry), throughput in the measurement hour, % served,
+  green utilization, signal changes, delays over 90 s, Jain's index, safety violations.
+  Definitions and diagnostics: `docs/ARCHITECTURE.md`.
+- `RunResult.to_json()`, `summary_row()`, `movement_rows()`, `vehicle_rows()`, `queue_rows()`
+  for later experiments and graphs; `mean_ci95` / `paired_comparison` across seeds.
+
 ## Setup (Windows)
 
 1. Python 3.10–3.13 must be installed (3.14 is not yet supported by pygame).
@@ -110,7 +124,8 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 | `smarttraffic/signals.py` | Per-head R→RY→G→FG→Y→AR→R state machine, lamp outputs | §6–§7 |
 | `smarttraffic/controller_smart.py` | Actuated controller: group priority, partial transitions, W_MAX hold, fault recall | §6, §7, §9 |
 | `smarttraffic/controller_fixed.py` | FT-A / FT-B / time-of-day fixed-time controller | §8 |
-| `smarttraffic/stats.py` | Per-vehicle records, 1 s samples, summaries | §11 |
+| `smarttraffic/stats.py` | Per-vehicle records, 1 s queue samples, §11 metrics, run results, 95% CIs | §10–11 |
+| `smarttraffic/runner.py` | One run, identical for every controller; paired runs | §10, §13 |
 | `smarttraffic/viz.py` | Pygame view, frame capture | §13 |
 | `smarttraffic/run_experiments.py` | Headless scenarios × controllers × seeds | §10 |
 | `smarttraffic/make_graphs.py` | Graphs G1–G12 | §12 |

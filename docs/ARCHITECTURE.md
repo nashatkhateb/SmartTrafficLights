@@ -421,6 +421,57 @@ last column: longest wait of a call at RED.
 
 FT-A is the single S1 design plan (so it is oversaturated in S7a/S10); FT-B was not run here.
 
+## Statistics and shared runner (Stage 12, approved design 2026-09-27)
+
+`runner.py` runs one simulation from a `RunConfig` (scenario, seed, controller FT-A / FT-B /
+FT-TOD / Smart, `SmartParams`, dt = 100 ms, warm-up 300 s, measurement 3600 s, flush ≤ 900 s).
+Everything except the controller is built identically: arrivals from
+`get_or_create_arrivals` (one file per scenario and seed, R2) or an explicit schedule,
+`VehicleModel` and `SignalBank` starting at −300 s, `VirtualDetectors` (or a source factory,
+e.g. hybrid), `SensorBank`. Fixed controllers start their first cycle at −300 s.
+`run_pair()` runs several controllers on the same arrivals and checks the checksum.
+
+Step order (shared by both controllers): vehicles → sensors → `SignalBank.advance` →
+`controller.update` → statistics → read-only observers (`StepView`, for Stage 13). Steps are
+dt long, shortened only so that every 1 s sample instant, the measurement end and the fixed
+controller's next command are step boundaries (never at dt = 100 ms). The run ends at the
+first step ≥ 3600 s at which every measured vehicle has crossed, at 4500 s at the latest.
+
+`stats.py` only observes (it calls no state-changing method; tests check this and compare
+runs with and without statistics). Official metrics (study §11), per movement and
+intersection-wide; V = vehicles scheduled in [0, 3600 s), C = those that crossed:
+
+| Metric | Definition |
+|---|---|
+| Control delay | d = cross − (scheduled + 10.8 s) over C: mean, P95 (numpy linear), max, total veh·h |
+| Unfinished | V not crossed at the run end (4500 s): excluded from the delay statistics, always counted; `delay_mean_lower_bound_s` includes them at d = end − free-flow crossing time |
+| Vehicle waiting time | stopped time on the road + time held outside the 150 m entry, over C (not the detector-call wait) |
+| `vehicles_control_delay_over_90s` | vehicles of C with d > 90 000 ms (study "waiting > 90 s", G7; not stopped time, not W_MAX) |
+| Queue | stopped on the road + held outside the entry (both parts also stored), sampled exactly at t = 0, 1, …, 3599 s; per movement mean and max, headline = mean of the 8 movement means (G3), intersection-total mean and max; raw samples kept |
+| Throughput | crossings of any vehicle (warm-up arrivals included) with cross in [0, 3600 s), veh/h; a measured vehicle crossing in the flush adds delay but no throughput |
+| Served / % served | vehicles of V crossing before 3600 s |
+| Green utilization | n × h / G: n = crossings in the hour (crossings in the first 2 s of YELLOW included), h = 1.9 / 2.0 s, G = displayed GREEN + FLASHING_GREEN seconds inside the hour |
+| Signal changes | GREEN onsets of the 8 signals in the hour, per hour |
+| Jain's index | over movements with ≥ 1 crossed measured vehicle; 1.0 if all their means are 0; None for an empty run |
+| Safety violations | steps with conflicting active movements (must be 0) |
+
+Diagnostics (separate, may be None, never part of the official metrics): detector-call wait
+maximum and calls over 120 s, time with both vs one opposing straight in service (split
+groups), LEVEL_2 latched while the true queue exceeds 6 (Q̂ saturation), Smart terminations
+(gap / max / hold) and hold decisions, faulted seconds and green while faulted.
+
+Results: `RunResult` (metadata with scenario, seed, controller and parameters, arrival
+checksum, dt, windows, step order; `IntersectionStats`; 8 `MovementStats`; diagnostics; 1 s
+queue samples; signal log; `VehicleRecord`s) with deterministic `to_dict` / `to_json` and
+`summary_row`, `movement_rows`, `vehicle_rows`, `queue_rows`. Across seeds: `mean_ci95`
+(t interval; n = 1 → no interval; zero variance → width 0) and `paired_comparison` (paired
+differences, 95 % CI, paired t-test only when n ≥ 2 and the differences vary).
+
+Known properties: in this vehicle model (stop or free speed, no acceleration) a vehicle's
+waiting time equals its control delay exactly; the metric is kept as the study defines it.
+Queue averages come from 1 s samples as the study specifies (not a time integral). Stops
+and travel time are not study metrics and are not computed (raw times are kept per vehicle).
+
 ## Module status
 
 | Module | Status |
@@ -432,5 +483,6 @@ FT-A is the single S1 design plan (so it is oversaturated in S7a/S10); FT-B was 
 | `sensors.py` | Stage 8: virtual detectors + demand logic; Stage 9 added `detector_fault()` / `faulted_detectors()` |
 | `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68) |
 | `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented, tested, verified (commit 7e4ae52) |
-| `controller_smart.py` | Stage 11: study §7 policy implemented and tested; awaiting review |
+| `controller_smart.py` | Stage 11: study §7 policy implemented, tested, verified (commit d98c4dd) |
+| `stats.py`, `runner.py` | Stage 12: implemented and tested; awaiting review |
 | everything else | Placeholder |
