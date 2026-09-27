@@ -19,9 +19,11 @@ All parameters, algorithms and scenarios come from that document; do not change 
   baselines FT-A, FT-B (per scenario) and S6 time-of-day. See "Fixed-time controller" below.
 - Stage 11 (verified): `controller_smart.py` — the study §7 actuated controller.
   See "Smart controller" below.
-- Stage 12 (awaiting review): `stats.py` + `runner.py` — study §11 metrics and the shared
+- Stage 12 (verified): `stats.py` + `runner.py` — study §11 metrics and the shared
   run used by every controller. See "Statistics" below.
-- Not yet implemented: visualization, experiment campaign, graphs.
+- Stage 13 (awaiting review): `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` — real-time
+  visualization. See "Visualization" below.
+- Not yet implemented: experiment campaign, graphs.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -106,6 +108,35 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 - `RunResult.to_json()`, `summary_row()`, `movement_rows()`, `vehicle_rows()`, `queue_rows()`
   for later experiments and graphs; `mean_ci95` / `paired_comparison` across seeds.
 
+## Visualization (Stage 13)
+
+```
+python -m smarttraffic.viz                                  # S1, seed 1, Smart; press Space to run
+python -m smarttraffic.viz --controller FT-A --scenario S5 --speed 5
+python -m smarttraffic.viz --hardware --port COM5            # real IR detector + mirrored head
+python -m smarttraffic.viz --screenshot shot.png --at 120    # still frame, no window
+```
+
+- The intersection as modelled: 4 approaches, each with a STRAIGHT lane and a LEFT lane and
+  its own signal head (8 heads with arrow lenses on one pole per approach, no right-turn head),
+  right-hand traffic, 3.6 m lanes, painted median, cycle lanes, stop lines, zebra crossings,
+  lane-use arrows, a coloured strip per lane showing its signal, and the active paths through
+  the junction in the signal colour. Cars have varied paint; stopped cars show brake lights,
+  left-turning cars blink their indicator.
+- Every lamp is SignalBank state (FLASHING_GREEN blinks with `lamps_for`); vehicles are the
+  VehicleModel's (positions interpolated between steps for smooth motion, display only);
+  the 16 detector loops show clear / occupied / call / LEVEL_2; the real detector
+  (config/hardware.json, NS:D1) is drawn in its own slot as "IR", never as a 17th.
+- Side panel: run controls (Run/Pause, Reset, speed 0.5–10× and Max, controller FT-A / FT-B /
+  Smart and FT-TOD for S6, scenario, seed, hardware on/off); live metrics; Smart: target,
+  starvation hold and a plain-language reason (minimum green, gap-out, max-out), per-movement
+  calls, Q̂, wait and priority P, recent decisions; Fixed: phase ring, current phase and time left.
+- Keys: Space run/pause · R reset · 1–6 speed · C controller · ←/→ scenario · ↑/↓ seed ·
+  H hardware · F11 full screen · Esc quit.
+- The visualization is an observer of the Stage 12 runner: a run shown on screen gives the
+  same `RunResult` as the same run without it (tested, also with pauses and speed changes).
+  With hardware on, the speed is fixed at 1× (the ESP32 link follows the wall clock).
+
 ## Setup (Windows)
 
 1. Python 3.10–3.13 must be installed (3.14 is not yet supported by pygame).
@@ -126,7 +157,10 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 | `smarttraffic/controller_fixed.py` | FT-A / FT-B / time-of-day fixed-time controller | §8 |
 | `smarttraffic/stats.py` | Per-vehicle records, 1 s queue samples, §11 metrics, run results, 95% CIs | §10–11 |
 | `smarttraffic/runner.py` | One run, identical for every controller; paired runs | §10, §13 |
-| `smarttraffic/viz.py` | Pygame view, frame capture | §13 |
+| `smarttraffic/viz.py` | Pygame application: window, controls, keyboard, still frames | §13 |
+| `smarttraffic/viz_render.py` | Drawing: urban intersection scene (asphalt, paint, kerbs, blocks, signal poles, cars) and the UI panels | §13 |
+| `smarttraffic/viz_session.py` | Runs the shared runner on a thread with a read-only observer: snapshots, pacing, pause, reset | §13 |
+| `smarttraffic/viz_geometry.py` | Pure drawing geometry: lanes, paths, 8 heads, 16 detector positions | §13 |
 | `smarttraffic/run_experiments.py` | Headless scenarios × controllers × seeds | §10 |
 | `smarttraffic/make_graphs.py` | Graphs G1–G12 | §12 |
 | `config/scenarios.json` | Scenario definitions S1–S10 | §10 |

@@ -472,6 +472,49 @@ waiting time equals its control delay exactly; the metric is kept as the study d
 Queue averages come from 1 s samples as the study specifies (not a time integral). Stops
 and travel time are not study metrics and are not computed (raw times are kept per vehicle).
 
+## Visualization (Stage 13)
+
+Presentation layer only; no core module was changed.
+
+* **Modules.** `viz_geometry.py` (pure geometry, no pygame), `viz_session.py` (simulation
+  thread, snapshots, pacing; no pygame), `viz_render.py` (pygame drawing of the scene and the
+  panels), `viz.py` (application: window, events, controls, CLI, still frames).
+* **Simulation.** `viz_session.VizSession` calls the Stage 12 `runner.run(config,
+  observers=[...])` (and `source_factory=` with `hardware.build_hardware` in hardware mode)
+  on a background thread. The observer is the last action of every step (after statistics):
+  it updates the Stage 9 `SignalMirror` (hardware mode only; read-only on SignalBank), builds
+  an immutable `Snapshot`, then sleeps to pace the run or blocks while paused. Sleeping or
+  blocking between complete steps cannot change a step, so results are identical with and
+  without the visualization, at any speed and with any pauses (tests compare `RunResult`
+  JSON). Reset aborts the run from inside the observer and starts a new session.
+* **Time.** Simulation time stays the runner's integer-ms steps (dt 100 ms). The display time
+  follows the wall clock × speed; the simulation computes one step ahead so frames can
+  interpolate vehicle positions between two snapshots (visual only). Paused: display time
+  and simulation are frozen; on resume the display continues from the frozen time. At "Max"
+  the run is unpaced and snapshots are taken at most every 30 ms of wall time. Hardware mode
+  is locked to 1× because the ESP32 link maps device time to simulation time.
+* **Signals.** Snapshot records each head's `SignalState` and state-entry time; lamps are
+  `signals.lamps_for(state, t - since)` at the display time (so FLASHING_GREEN blinks exactly
+  as SignalBank/firmware do). There is no signal logic in the visualization.
+* **Geometry.** Right-hand traffic; per approach an inner LEFT lane (centre 2.4 m from the
+  axis) and an outer STRAIGHT lane (6.0 m): 3.6 m lanes, a 1.2 m painted median, a 2.2 m
+  cycle lane to the kerb; arms and box 20 m kerb to kerb (box = the straight BOX_LENGTH). Straight paths cross the box;
+  left turns follow a smooth curve into the inner outbound lane of the arm on the left (the
+  model's 25 m left box length is mapped onto the curve); compatible movements' paths stay
+  ≥ 3.6 m apart (lane pitch); opposing left turns ≈ 6 m. Vehicle drawing position = the model's front-bumper position along that path.
+  Exited vehicles are drawn for 6 s on the exit arm (visual only).
+* **Detectors.** The 16 logical positions (D1 2 m, D2 32 m). The configured real detector's
+  position is drawn with the "IR" style in place of the virtual one (hardware off: dimmed, it
+  is simulated). Fault = red (Stage 9 `faulted_detectors`).
+* **Smart panel.** Target group, starvation hold, and a reason derived from public controller
+  and sensor state (`last_target`, `last_hold`, `committed()`, `decision_log`,
+  `green_onset_ms`, `min_green_of`, `max_start_ms`, sensor gap timer). P shown = Q̂ + wait/τ
+  recomputed from public SensorBank data (fault recall movements marked "R").
+* **Live metrics.** Vehicles in system (road + box + held outside), queue (Stage 12
+  definition), crossings since t = 0, flow over the last 5 min, mean control delay of measured
+  vehicles that have crossed so far (equals the final `delay_mean_s` at the end of the run),
+  longest current call. Final Stage 12 statistics are shown when the run completes.
+
 ## Module status
 
 | Module | Status |
@@ -484,5 +527,6 @@ and travel time are not study metrics and are not computed (raw times are kept p
 | `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68) |
 | `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented, tested, verified (commit 7e4ae52) |
 | `controller_smart.py` | Stage 11: study §7 policy implemented, tested, verified (commit d98c4dd) |
-| `stats.py`, `runner.py` | Stage 12: implemented and tested; awaiting review |
+| `stats.py`, `runner.py` | Stage 12: implemented, tested, verified (commit fde1505) |
+| `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` | Stage 13: implemented and tested; awaiting review |
 | everything else | Placeholder |
