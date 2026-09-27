@@ -1,0 +1,111 @@
+{
+  "_about": "Study §10 scenarios S1-S10. Volumes are veh/h per movement (one lane each). Time t = 0 is the start of measurement; warm-up is t < 0. Each rate segment applies on [from, until); null means unbounded. Events are deterministic extra arrivals: count cars, the first at exactly 'start', then every 'interval' s.",
+  "scenarios": {
+    "S1": {
+      "description": "Balanced moderate traffic",
+      "study": "400 each | 120 each | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 400, "SS": 400, "ES": 400, "WS": 400, "NL": 120, "SL": 120, "EL": 120, "WL": 120}}
+      ],
+      "events": []
+    },
+    "S2": {
+      "description": "One heavy approach",
+      "study": "NS 700, others 400 | NL 200, others 120 | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 700, "SS": 400, "ES": 400, "WS": 400, "NL": 200, "SL": 120, "EL": 120, "WL": 120}}
+      ],
+      "events": []
+    },
+    "S3": {
+      "description": "One nearly empty approach",
+      "study": "WS 30, others 400 | WL 10, others 120 | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 400, "SS": 400, "ES": 400, "WS": 30, "NL": 120, "SL": 120, "EL": 120, "WL": 10}}
+      ],
+      "events": []
+    },
+    "S4": {
+      "description": "Very low traffic",
+      "study": "60 each | 20 each | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 60, "SS": 60, "ES": 60, "WS": 60, "NL": 20, "SL": 20, "EL": 20, "WL": 20}}
+      ],
+      "events": []
+    },
+    "S5": {
+      "description": "Sudden burst",
+      "study": "400 each | 120 each | +20 cars on ES, one every 2.0 s from t = 1200 s. +12 cars on NL, one every 2.5 s from t = 2400 s.",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 400, "SS": 400, "ES": 400, "WS": 400, "NL": 120, "SL": 120, "EL": 120, "WL": 120}}
+      ],
+      "events": [
+        {"movement": "ES", "count": 20, "start": 1200.0, "interval": 2.0},
+        {"movement": "NL", "count": 12, "start": 2400.0, "interval": 2.5}
+      ]
+    },
+    "S6": {
+      "description": "Demand shifts sides (step change at t = 1800 s)",
+      "study": "t < 1800: N/S 600, E/W 150; t >= 1800: N/S 150, E/W 600 | t < 1800: N/S 150, E/W 40; t >= 1800: N/S 40, E/W 150 | Step change at t = 1800 s",
+      "segments": [
+        {"from": null, "until": 1800.0,
+         "rates": {"NS": 600, "SS": 600, "ES": 150, "WS": 150, "NL": 150, "SL": 150, "EL": 40, "WL": 40}},
+        {"from": 1800.0, "until": null,
+         "rates": {"NS": 150, "SS": 150, "ES": 600, "WS": 600, "NL": 40, "SL": 40, "EL": 150, "WL": 150}}
+      ],
+      "events": []
+    },
+    "S7a": {
+      "description": "Heavy everywhere (near capacity)",
+      "study": "550 each | 160 each | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 550, "SS": 550, "ES": 550, "WS": 550, "NL": 160, "SL": 160, "EL": 160, "WL": 160}}
+      ],
+      "events": []
+    },
+    "S7b": {
+      "description": "Oversaturated (limitation test)",
+      "study": "700 each | 220 each | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 700, "SS": 700, "ES": 700, "WS": 700, "NL": 220, "SL": 220, "EL": 220, "WL": 220}}
+      ],
+      "events": []
+    },
+    "S8": {
+      "description": "Strong left-turn demand",
+      "study": "250 each | 330 each | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 250, "SS": 250, "ES": 250, "WS": 250, "NL": 330, "SL": 330, "EL": 330, "WL": 330}}
+      ],
+      "events": []
+    },
+    "S9": {
+      "description": "Unequal straight vs left",
+      "study": "NS 450, SS 120, ES 420, WS 100 | NL 60, SL 250, EL 50, WL 230 | -",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 450, "SS": 120, "ES": 420, "WS": 100, "NL": 60, "SL": 250, "EL": 50, "WL": 230}}
+      ],
+      "events": []
+    },
+    "S10": {
+      "description": "Long wait on a low-demand movement",
+      "study": "550 each | NL/SL/EL 160; WL deterministic | WL gets one car at t = 60, 240, 420, ... (every 180 s, 20 cars)",
+      "segments": [
+        {"from": null, "until": null,
+         "rates": {"NS": 550, "SS": 550, "ES": 550, "WS": 550, "NL": 160, "SL": 160, "EL": 160, "WL": 0}}
+      ],
+      "events": [
+        {"movement": "WL", "count": 20, "start": 60.0, "interval": 180.0}
+      ]
+    }
+  }
+}

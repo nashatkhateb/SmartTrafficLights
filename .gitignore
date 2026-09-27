@@ -1,0 +1,62 @@
+# ---------------------------------------------------------------- Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# ---------------------------------------------------- virtual environments
+.venv/
+venv/
+env/
+
+# ------------------------------------------------ test / tool caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ------------------------------------------------------- IDEs / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --------------------------------------------- OS / machine-specific files
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+
+# ------------------------------------------------------------ temp files
+*.tmp
+*.temp
+*.bak
+*.log
+~$*
+
+# -------------------------------------------- secrets / tokens / credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials*.json
+token*.json
+*.token
+
+# ------------- generated outputs (reproducible from code + seeds; kept since Stage 1)
+data/arrivals/*.csv
+results/runs/*
+!results/runs/.gitkeep
+media/frames/*
+!media/frames/.gitkeep
+
+# -------------------------------------- local one-off helper (GitHub setup)
+_git_setup/

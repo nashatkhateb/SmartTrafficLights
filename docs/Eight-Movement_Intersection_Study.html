@@ -1,0 +1,860 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Eight-Movement Intersection Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#f5f6f3; --panel:#ffffff; --ink:#18212b; --ink-2:#4a5664; --rule:#d9ddd6;
+  --accent:#a8660f; --accent-soft:#f6ead6;
+  --go:#23845a; --go-soft:#dff1e7; --stop:#bf3a2e; --stop-soft:#f8e1de; --amb:#c98a12;
+  --src:#1f5f8b; --src-soft:#e1edf5; --asm:#7a4e9c; --asm-soft:#eee5f5;
+  --road:#3a434d; --lane:#e9e4d4; --code:#eef0ec;
+  --display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#12171d; --panel:#1a2129; --ink:#e6e9e4; --ink-2:#a3adb8; --rule:#2e3842;
+    --accent:#e2a44a; --accent-soft:#3a2c17;
+    --go:#4cc28a; --go-soft:#173428; --stop:#ec6a5c; --stop-soft:#3d1f1c; --amb:#e8b040;
+    --src:#6fb2e0; --src-soft:#16293a; --asm:#b894d6; --asm-soft:#2a2135;
+    --road:#2a323b; --lane:#6b6a60; --code:#1f272f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#12171d; --panel:#1a2129; --ink:#e6e9e4; --ink-2:#a3adb8; --rule:#2e3842;
+  --accent:#e2a44a; --accent-soft:#3a2c17;
+  --go:#4cc28a; --go-soft:#173428; --stop:#ec6a5c; --stop-soft:#3d1f1c; --amb:#e8b040;
+  --src:#6fb2e0; --src-soft:#16293a; --asm:#b894d6; --asm-soft:#2a2135;
+  --road:#2a323b; --lane:#6b6a60; --code:#1f272f;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.62;padding-inline:20px;padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px}
+@media (min-width:1040px){.wrap{grid-template-columns:230px minmax(0,1fr)}}
+nav.toc{display:none}
+@media (min-width:1040px){nav.toc{display:block;position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;max-height:calc(100vh - 48px);overflow:auto;padding-top:28px;font-size:13px}}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:t}
+nav.toc a{color:var(--ink-2);text-decoration:none;display:block;padding:3px 8px;border-radius:4px}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--accent-soft);color:var(--ink);outline:none}
+nav.toc .n{font-family:var(--mono);font-size:11px;color:var(--accent);display:inline-block;width:22px}
+main{max-width:800px;min-width:0}
+header.top{padding-block:40px 18px;border-bottom:2px solid var(--ink);margin-bottom:8px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:clamp(34px,5vw,50px);font-weight:700;letter-spacing:-.01em;margin-top:6px}
+.lede{font-size:17px;color:var(--ink-2);max-width:66ch;margin:14px 0 0}
+section{padding-top:44px}
+h2{font-size:30px;font-weight:700;display:flex;gap:12px;align-items:baseline;padding-bottom:8px;border-bottom:1px solid var(--rule);margin-bottom:16px}
+h2 .n{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--accent);min-width:28px}
+h3{font-size:20px;font-weight:600;margin:26px 0 8px}
+p,ul,ol{max-width:68ch;margin:0 0 12px}
+li{margin-bottom:5px}
+a{color:var(--src)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--code);padding:1px 5px;border-radius:3px}
+pre{background:var(--code);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;margin:0 0 16px}
+pre.mermaid{background:var(--panel)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:3px;vertical-align:1px;white-space:nowrap}
+.tag.s{background:var(--src-soft);color:var(--src)}
+.tag.a{background:var(--asm-soft);color:var(--asm)}
+.tag.d{background:var(--accent-soft);color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:16px;font-size:13.5px;color:var(--ink-2)}
+.tw{overflow-x:auto;margin:0 0 18px;border:1px solid var(--rule);border-radius:6px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.02em;background:var(--code)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.matrix td,.matrix th{text-align:center;font-family:var(--mono);font-size:12.5px;padding:6px 4px;min-width:42px}
+.matrix th[scope=row]{text-align:left;padding-left:10px}
+.ok{background:var(--go-soft);color:var(--go);font-weight:500}
+.cx{background:var(--stop-soft);color:var(--stop)}
+.self{color:var(--ink-2)}
+.callout{border-left:3px solid var(--accent);background:var(--panel);padding:12px 16px;margin:0 0 16px;border-radius:0 6px 6px 0;max-width:68ch}
+.callout p:last-child{margin-bottom:0}
+figure{margin:0 0 20px}
+figure .fig{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:12px;overflow-x:auto}
+figcaption{font-size:13px;color:var(--ink-2);margin-top:8px;max-width:68ch}
+svg text{font-family:var(--mono)}
+.two{display:grid;grid-template-columns:1fr;gap:18px}
+@media (min-width:720px){.two{grid-template-columns:1fr 1fr}}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:14px}
+.kv dt{font-family:var(--mono);font-size:12.5px;color:var(--accent);padding-top:2px}
+.kv dd{margin:0}
+ol.steps{padding-left:22px}
+.src-list li{font-size:14px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+<ol>
+<li><a href="#s1"><span class="n">01</span>Intersection model</a></li>
+<li><a href="#s2"><span class="n">02</span>Assumptions</a></li>
+<li><a href="#s3"><span class="n">03</span>Conflict matrix</a></li>
+<li><a href="#s4"><span class="n">04</span>Sensor model</a></li>
+<li><a href="#s5"><span class="n">05</span>Vehicle model</a></li>
+<li><a href="#s6"><span class="n">06</span>Timing research</a></li>
+<li><a href="#s7"><span class="n">07</span>Smart algorithm</a></li>
+<li><a href="#s8"><span class="n">08</span>Fixed-time baseline</a></li>
+<li><a href="#s9"><span class="n">09</span>Fairness</a></li>
+<li><a href="#s10"><span class="n">10</span>Scenarios</a></li>
+<li><a href="#s11"><span class="n">11</span>Metrics</a></li>
+<li><a href="#s12"><span class="n">12</span>Graph plan</a></li>
+<li><a href="#s13"><span class="n">13</span>Architecture</a></li>
+<li><a href="#s14"><span class="n">14</span>Parameter table</a></li>
+<li><a href="#s15"><span class="n">15</span>Limitations</a></li>
+<li><a href="#s16"><span class="n">16</span>Implementation plan</a></li>
+<li><a href="#refs"><span class="n">··</span>Sources</a></li>
+</ol>
+</nav>
+
+<main>
+<header class="top">
+<div class="eyebrow">IoT project · research &amp; simulation design · before any code</div>
+<h1>Sensor-Actuated Control for an Eight-Movement Intersection</h1>
+<p class="lede">A design study for a four-leg intersection with separately signalled straight and left-turn movements, two presence sensors per movement, a demand-responsive controller that switches only the signals that must change, and a fair fixed-time baseline to compare it against.</p>
+<div class="legend">
+<span><span class="tag s">Source</span> value taken from a cited standard, manual or paper</span>
+<span><span class="tag d">Derived</span> computed by us from sourced formulas</span>
+<span><span class="tag a">Assumption</span> our own engineering choice, with reasoning</span>
+</div>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+<h2><span class="n">01</span>Intersection model</h2>
+<p>The site is an isolated four-leg “+” intersection with right-hand traffic. Each approach has two lanes entering the junction: an inner <b>left-turn lane</b> and an outer <b>straight lane</b>. Each lane has its own signal head and two virtual point sensors, D1 near the stop line and D2 upstream. Right turns are outside the system, so they are neither simulated nor signalled.</p>
+<p>Movement names follow the approach the vehicle <em>comes from</em>. <b>NS</b> is a vehicle entering from the North leg and driving straight through to the South exit. <b>NL</b> enters from the North and turns left, which for a southbound driver means leaving by the East exit.</p>
+
+<figure>
+<div class="fig">
+<svg viewBox="0 0 400 400" width="100%" style="max-width:520px;display:block;margin:auto" role="img" aria-label="Plan view of the intersection with lanes, stop lines, sensors and the eight movement paths">
+<style>
+.rd{fill:var(--road)} .ln{stroke:var(--lane);stroke-width:1;stroke-dasharray:6 6;fill:none}
+.cl{stroke:var(--amb);stroke-width:1.6;fill:none} .sl{stroke:#fff;stroke-width:2.5}
+.p1{fill:none;stroke-width:2.2;stroke-linecap:round}
+.th{stroke:#5bb8f0} .lt{stroke:#f0a64a}
+.d1{fill:#7fe0a8;stroke:#0e3a24;stroke-width:1} .d2{fill:#ffffff;stroke:#0e3a24;stroke-width:1.2}
+.lbl{font-size:10px;fill:var(--ink)} .lbw{font-size:9px;fill:#f4f4f4}
+</style>
+<defs>
+<marker id="ah" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#f4f4f4"/></marker>
+</defs>
+<rect class="rd" x="160" y="0" width="80" height="400"/>
+<rect class="rd" x="0" y="160" width="400" height="80"/>
+<!-- centre lines -->
+<line class="cl" x1="200" y1="0" x2="200" y2="160"/><line class="cl" x1="200" y1="240" x2="200" y2="400"/>
+<line class="cl" x1="0" y1="200" x2="160" y2="200"/><line class="cl" x1="240" y1="200" x2="400" y2="200"/>
+<!-- lane dividers -->
+<line class="ln" x1="180" y1="0" x2="180" y2="160"/><line class="ln" x1="220" y1="0" x2="220" y2="160"/>
+<line class="ln" x1="180" y1="240" x2="180" y2="400"/><line class="ln" x1="220" y1="240" x2="220" y2="400"/>
+<line class="ln" x1="0" y1="180" x2="160" y2="180"/><line class="ln" x1="0" y1="220" x2="160" y2="220"/>
+<line class="ln" x1="240" y1="180" x2="400" y2="180"/><line class="ln" x1="240" y1="220" x2="400" y2="220"/>
+<!-- stop lines -->
+<line class="sl" x1="160" y1="160" x2="200" y2="160"/><line class="sl" x1="200" y1="240" x2="240" y2="240"/>
+<line class="sl" x1="240" y1="160" x2="240" y2="200"/><line class="sl" x1="160" y1="200" x2="160" y2="240"/>
+<!-- paths -->
+<path class="p1 th" d="M170,160 L170,262" marker-end="url(#ah)"/>
+<path class="p1 lt" d="M190,160 Q190,210 262,210" marker-end="url(#ah)"/>
+<path class="p1 th" d="M230,240 L230,138" marker-end="url(#ah)"/>
+<path class="p1 lt" d="M210,240 Q210,190 138,190" marker-end="url(#ah)"/>
+<path class="p1 th" d="M240,170 L138,170" marker-end="url(#ah)"/>
+<path class="p1 lt" d="M240,190 Q190,190 190,262" marker-end="url(#ah)"/>
+<path class="p1 th" d="M160,230 L262,230" marker-end="url(#ah)"/>
+<path class="p1 lt" d="M160,210 Q210,210 210,138" marker-end="url(#ah)"/>
+<!-- sensors: D1 2 m, D2 32 m from stop line (3.2 px/m) -->
+<g>
+<circle class="d1" cx="170" cy="153" r="3.5"/><circle class="d1" cx="190" cy="153" r="3.5"/>
+<circle class="d2" cx="170" cy="58" r="3.5"/><circle class="d2" cx="190" cy="58" r="3.5"/>
+<circle class="d1" cx="230" cy="247" r="3.5"/><circle class="d1" cx="210" cy="247" r="3.5"/>
+<circle class="d2" cx="230" cy="342" r="3.5"/><circle class="d2" cx="210" cy="342" r="3.5"/>
+<circle class="d1" cx="247" cy="170" r="3.5"/><circle class="d1" cx="247" cy="190" r="3.5"/>
+<circle class="d2" cx="342" cy="170" r="3.5"/><circle class="d2" cx="342" cy="190" r="3.5"/>
+<circle class="d1" cx="153" cy="230" r="3.5"/><circle class="d1" cx="153" cy="210" r="3.5"/>
+<circle class="d2" cx="58" cy="230" r="3.5"/><circle class="d2" cx="58" cy="210" r="3.5"/>
+</g>
+<!-- lane labels -->
+<text class="lbw" x="170" y="30" text-anchor="middle">NS</text><text class="lbw" x="190" y="30" text-anchor="middle">NL</text>
+<text class="lbw" x="230" y="378" text-anchor="middle">SS</text><text class="lbw" x="210" y="378" text-anchor="middle">SL</text>
+<text class="lbw" x="378" y="173" text-anchor="middle">ES</text><text class="lbw" x="378" y="193" text-anchor="middle">EL</text>
+<text class="lbw" x="22" y="233" text-anchor="middle">WS</text><text class="lbw" x="22" y="213" text-anchor="middle">WL</text>
+<text class="lbl" x="100" y="80" text-anchor="middle">NORTH leg</text>
+<text class="lbl" x="300" y="330" text-anchor="middle">SOUTH leg</text>
+<text class="lbl" x="310" y="120" text-anchor="middle">EAST leg</text>
+<text class="lbl" x="90" y="290" text-anchor="middle">WEST leg</text>
+</svg>
+</div>
+<figcaption>Plan view (right-hand traffic). Blue paths are straight movements, orange paths are left turns. Filled green dots are D1 sensors 2&nbsp;m before each stop line; white dots are D2 sensors 32&nbsp;m upstream. Dashed amber lines separate the two travel directions.</figcaption>
+</figure>
+
+<h3>Lane geometry used everywhere in the study</h3>
+<div class="tw"><table>
+<tr><th>Item</th><th>Value</th><th>Status</th></tr>
+<tr><td>Lanes per approach (entering)</td><td>1 left-turn + 1 straight</td><td><span class="tag s">Given</span> by the project brief</td></tr>
+<tr><td>Receiving lanes per exit leg</td><td>2</td><td><span class="tag a">Assumption</span></td></tr>
+<tr><td>Lane width</td><td>3.5 m</td><td><span class="tag a">Assumption</span> typical urban lane</td></tr>
+<tr><td>Stop line to far edge of intersection, straight path (W)</td><td>20 m</td><td><span class="tag a">Assumption</span> 4 × 3.5 m lanes plus crosswalk/setback on both sides</td></tr>
+<tr><td>Left-turn path length inside the junction</td><td>≈ 25 m</td><td><span class="tag a">Assumption</span> quarter arc through the centre</td></tr>
+<tr><td>Approach length simulated per lane</td><td>150 m</td><td><span class="tag a">Assumption</span> long enough to hold ~20 queued vehicles, so queues do not spill off-screen in normal scenarios</td></tr>
+<tr><td>Left-turn lane storage</td><td>Full length (no spillback into the straight lane)</td><td><span class="tag a">Assumption</span> listed as a limitation in §15</td></tr>
+</table></div>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+<h2><span class="n">02</span>Assumptions</h2>
+<p>These choices define the scope. Everything else in the study follows from them, so they should be copied into the report's method chapter.</p>
+<ol>
+<li><b>Isolated intersection.</b> No neighbouring signals, so arrivals are random rather than in platoons and no coordination or offsets are needed. The FHWA Signal Timing Manual identifies fully actuated control as best suited to exactly this case.</li>
+<li><b>Passenger cars only.</b> This allows the HCM base saturation flow without heavy-vehicle adjustment.</li>
+<li><b>Protected left turns only.</b> Each left lane has its own signal, so a left turn moves only on its own green arrow and never filters through opposing traffic.</li>
+<li><b>Merging counts as a conflict.</b> Two movements that end in the same exit leg are never green together, even though the exit has two lanes. This is conservative and matches standard phasing practice.</li>
+<li><b>No pedestrians, bicycles, right turns or right-turn-on-red.</b> These are out of scope for the brief. Pedestrian timing would add minimum-green constraints (FHWA Eq. 5-1).</li>
+<li><b>All drivers comply</b> with signals and never block the box.</li>
+<li><b>The controller sees only sensors.</b> The smart controller may read only the 16 sensor states and its own timers. It must never read the simulator's true queue lengths, or the comparison is unfair to real hardware. This rule matters more than any single parameter.</li>
+<li><b>One lane per movement,</b> so lane choice and lane changing are not modelled. A vehicle's movement is fixed when it is generated.</li>
+</ol>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+<h2><span class="n">03</span>Conflict and compatibility model</h2>
+<p>We checked every pair of movement paths from Figure 1 for either a <b>crossing</b> (paths intersect inside the junction) or a <b>merge</b> (both paths end in the same exit leg). A pair with neither is compatible and may be green at the same time.</p>
+
+<div class="tw"><table class="matrix" aria-label="Compatibility matrix">
+<tr><th></th><th>NS</th><th>NL</th><th>SS</th><th>SL</th><th>ES</th><th>EL</th><th>WS</th><th>WL</th></tr>
+<tr><th scope="row">NS</th><td class="self">—</td><td class="ok">OK</td><td class="ok">OK</td><td class="cx">C</td><td class="cx">C</td><td class="cx">M</td><td class="cx">C</td><td class="cx">C</td></tr>
+<tr><th scope="row">NL</th><td class="ok">OK</td><td class="self">—</td><td class="cx">C</td><td class="ok">OK</td><td class="cx">C</td><td class="cx">C</td><td class="cx">M</td><td class="cx">C</td></tr>
+<tr><th scope="row">SS</th><td class="ok">OK</td><td class="cx">C</td><td class="self">—</td><td class="ok">OK</td><td class="cx">C</td><td class="cx">C</td><td class="cx">C</td><td class="cx">M</td></tr>
+<tr><th scope="row">SL</th><td class="cx">C</td><td class="ok">OK</td><td class="ok">OK</td><td class="self">—</td><td class="cx">M</td><td class="cx">C</td><td class="cx">C</td><td class="cx">C</td></tr>
+<tr><th scope="row">ES</th><td class="cx">C</td><td class="cx">C</td><td class="cx">C</td><td class="cx">M</td><td class="self">—</td><td class="ok">OK</td><td class="ok">OK</td><td class="cx">C</td></tr>
+<tr><th scope="row">EL</th><td class="cx">M</td><td class="cx">C</td><td class="cx">C</td><td class="cx">C</td><td class="ok">OK</td><td class="self">—</td><td class="cx">C</td><td class="ok">OK</td></tr>
+<tr><th scope="row">WS</th><td class="cx">C</td><td class="cx">M</td><td class="cx">C</td><td class="cx">C</td><td class="ok">OK</td><td class="cx">C</td><td class="self">—</td><td class="ok">OK</td></tr>
+<tr><th scope="row">WL</th><td class="cx">C</td><td class="cx">C</td><td class="cx">M</td><td class="cx">C</td><td class="cx">C</td><td class="ok">OK</td><td class="ok">OK</td><td class="self">—</td></tr>
+</table></div>
+<p style="font-size:13.5px;color:var(--ink-2)">OK = compatible · C = paths cross · M = paths merge into the same exit leg. The matrix is symmetric.</p>
+
+<h3>What the matrix tells us</h3>
+<ul>
+<li><b>Every North/South movement conflicts with every East/West movement.</b> Twelve of the sixteen cross-axis pairs cross; the other four merge (NS–EL, NL–WS, SS–WL, SL–ES).</li>
+<li><b>Within one axis there are exactly four compatible pairs.</b> For North/South these are the two opposing straights (NS+SS), the two opposing lefts (NL+SL, whose paths pass each other without crossing), and each approach's straight with its own left (NS+NL, SS+SL). The only within-axis conflicts are a straight against the <em>opposing</em> left: NS–SL and SS–NL.</li>
+<li><b>At most two signals can ever be green together.</b> The eight maximal compatible groups are all pairs:</li>
+</ul>
+<div class="tw"><table>
+<tr><th>Axis</th><th>Group</th><th>Common name</th></tr>
+<tr><td rowspan="4">North/South</td><td class="num">{NS, SS}</td><td>Opposing straights</td></tr>
+<tr><td class="num">{NL, SL}</td><td>Dual protected lefts</td></tr>
+<tr><td class="num">{NS, NL}</td><td>North split (lead/lag)</td></tr>
+<tr><td class="num">{SS, SL}</td><td>South split (lead/lag)</td></tr>
+<tr><td rowspan="4">East/West</td><td class="num">{ES, WS}</td><td>Opposing straights</td></tr>
+<tr><td class="num">{EL, WL}</td><td>Dual protected lefts</td></tr>
+<tr><td class="num">{ES, EL}</td><td>East split</td></tr>
+<tr><td class="num">{WS, WL}</td><td>West split</td></tr>
+</table></div>
+<p>This is the same structure as the standard NEMA dual-ring, eight-phase controller: one ring holds a left and the opposing straight in sequence, the barrier separates the two axes, and any phase from ring 1 may run with any phase from ring 2 on the same side of the barrier. Your example in the brief is consistent with it: SS+SL can become SS+NS, because NS is compatible with SS but conflicts with SL.</p>
+<p>A single movement on its own (for example NS alone) is always allowed. The controller only turns on members of a group that actually have demand.</p>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+<h2><span class="n">04</span>Sensor model</h2>
+<p>Your prototype uses IR break-beam or reflective sensors. These are <b>point</b> detectors: they report whether a vehicle body is in front of them at this instant. The model below is built from that property rather than from loop-detector conventions.</p>
+
+<h3>Placement</h3>
+<p>We place each sensor at the centre of a queue “slot”, so that a stopped vehicle, and not the gap between two stopped vehicles, sits in front of it. With a vehicle length of 4.5&nbsp;m and a standstill gap of 3.0&nbsp;m, the queue spacing is 7.5&nbsp;m. That is close to the 25&nbsp;ft (7.6&nbsp;m) average spacing the FHWA manual uses to convert detector distance into queued vehicles <span class="tag s">Source</span>.</p>
+<div class="tw"><table>
+<tr><th>Sensor</th><th class="num">Distance before stop line</th><th>Covered by</th><th>Purpose</th></tr>
+<tr><td><b>D1</b> stop-line sensor</td><td class="num">2.0 m</td><td>Queued vehicle #1 (occupies 0.5–5.0 m)</td><td>Detects a waiting vehicle; extends green while the queue discharges over it</td></tr>
+<tr><td><b>D2</b> queue / advance sensor</td><td class="num">32.0 m</td><td>Queued vehicle #5 (occupies 30.5–35.0 m)</td><td>Detects a queue of 5 or more; gives ~2.3 s early warning of an approaching car at 50 km/h</td></tr>
+</table></div>
+<p>For the physical prototype, scale the same idea: put D1 under the first model car and D2 under the fifth car of a standing queue.</p>
+
+<h3>Recommended interpretation</h3>
+<p>The brief suggests “no sensor = no demand, D1 = short queue, both = long queue”. That is roughly right, but a point sensor gives two false readings the naive rule does not handle. A car <em>driving past</em> D2 triggers it briefly even when there is no queue. A queue of three cars triggers D1 but not D2, which the naive rule reads correctly, yet a single car still approaching triggers D2 alone. We therefore interpret the sensors differently depending on the signal state.</p>
+
+<div class="tw"><table>
+<tr><th>Signal state</th><th>Sensor event</th><th>Controller meaning</th></tr>
+<tr><td rowspan="3">RED (movement waiting)</td><td>Any pulse on D1 or D2</td><td><b>Call</b> registered and latched until the movement is served (“locking memory”). Waiting timer <code>t_call</code> starts.</td></tr>
+<tr><td>D1 occupied, D2 not</td><td><b>Level 1</b>: 1–4 vehicles queued. Estimated queue Q̂ = 2.</td></tr>
+<tr><td>D2 occupied continuously ≥ 2.0 s</td><td><b>Level 2</b>: queue reaches the 5th slot, so ≥ 5 vehicles. Q̂ = 6. Latched until green. The 2.0 s filter rejects cars merely driving past, which cover a point sensor for about 0.3–0.6 s.</td></tr>
+<tr><td rowspan="2">GREEN (movement served)</td><td>Any occupancy on D1 or D2</td><td>Resets the <b>passage timer</b>. The green is extended while vehicles keep arriving.</td></tr>
+<tr><td>Neither sensor occupied for the passage time (2.5 s)</td><td><b>Gap-out</b>: the queue has cleared and arrivals are sparse, so the movement may be released.</td></tr>
+<tr><td>At the moment of green onset</td><td>Level 2 latched</td><td>Use the <b>extended initial</b> minimum green (12 s) so the known ≥ 5-vehicle queue is cleared (see §6).</td></tr>
+</table></div>
+
+<div class="callout"><p><b>Why this is defensible.</b> It is how actuated controllers already use detectors. A call is placed on red, the green is extended by actuations within a passage time, and the phase gaps out on a long enough headway (FHWA Signal Timing Manual §5.4.2). Using an upstream detector to size the initial green is the “variable initial” feature (§5.5.2). The only addition is the two-level queue estimate, which is our own <span class="tag a">Assumption</span> and is stated as such.</p></div>
+
+<h3>Optional sensor extensions (for robustness experiments)</h3>
+<ul>
+<li><b>Count-based estimate:</b> count D2 pulses in and D1 pulses out to estimate the queue. It is more precise, but a single missed pulse corrupts the count until reset. Treat it as an extension, not the default.</li>
+<li><b>Sensor faults:</b> a missed-detection probability (for example 5%), a stuck-on D1 and a stuck-off D2. A stuck-on detector should cause max-outs on that movement, never a lock-up. This is the standard fail-safe behaviour described in the FHWA manual.</li>
+</ul>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+<h2><span class="n">05</span>Vehicle movement model</h2>
+<p>We recommend a <b>queue-server model with spatial positions</b>. Stop-line departures follow the HCM saturation-headway model, which gives defensible capacity. Positions along the lane exist so that sensors can be evaluated and cars can be drawn.</p>
+
+<h3>Arrival</h3>
+<ul>
+<li>Each movement has its own arrival stream. Headways are <b>shifted exponential</b>: <code>h = 1.5 s + Exp(mean = 3600/q − 1.5)</code>, where q is in veh/h. This is Poisson-like random arrival, as expected at an isolated intersection, but no two cars in a lane arrive closer than 1.5 s <span class="tag a">Assumption</span>.</li>
+<li>Vehicles appear 150 m upstream at the free speed of 50 km/h (13.9 m/s) <span class="tag a">Assumption</span>.</li>
+<li>Arrival lists are generated <b>before</b> the run from a seed and saved to CSV. Both controllers read the same file, which is how “same vehicle arrivals” is guaranteed.</li>
+</ul>
+
+<h3>Approach and queueing</h3>
+<ul>
+<li>A car drives at free speed until it reaches the back of the queue, then stops in the next 7.5 m slot. Use a 3 m/s² deceleration if you want smooth animation. The statistics do not depend on it.</li>
+<li>If the signal is green and the car's lane is clear, it passes the stop line without stopping.</li>
+</ul>
+
+<h3>Discharge (the part that makes timing realistic)</h3>
+<p>For a queue waiting at the start of green at time <code>t_g</code>, the <i>n</i>-th vehicle crosses the stop line at:</p>
+<pre>t_n = t_g + l1 + n · h        l1 = 2.0 s start-up lost time,  h = 1.9 s (straight) / 2.0 s (left)</pre>
+<ul>
+<li>The first car crosses about 3.9 s after green, the 5th about 11.5 s after, and the 10th about 21 s after. A queue therefore needs real time to discharge, which is the behaviour you asked for.</li>
+<li>For any vehicle: <code>departure ≥ max(own arrival at stop line, previous departure + h, t_g + l1 + h)</code>. This handles cars that join a moving queue.</li>
+<li><b>Yellow:</b> a vehicle may still cross during the first 2.0 s of yellow, the HCM “extension of effective green” <span class="tag s">Source</span>. After that it stops.</li>
+<li>After crossing, the car follows its path through the box (straight: 20 m, left: ≈ 25 m arc) at about 8–10 m/s. This is visual only, and the all-red interval is sized for it.</li>
+</ul>
+<div class="callout"><p>Because <code>l1 = e = 2.0 s</code>, the effective green of every phase equals its displayed green. That keeps the report's capacity arithmetic simple: capacity = s × G / C.</p></div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+<h2><span class="n">06</span>Timing research</h2>
+<p>Each value below has a source, or is derived from a sourced formula with our geometry. The consolidated list is in §14.</p>
+
+<h3>Saturation flow and discharge headway</h3>
+<p>HCM base saturation flow is <b>1,900 pc/h/ln</b>, with a default start-up lost time of <b>2.0 s</b> and 2.0 s of yellow used by drivers <span class="tag s">Source</span> (HCM defaults, as documented by McTrans). 1,900 veh/h is a headway of 3600/1900 = <b>1.89 s</b>. For protected lefts we apply the HCM left-turn factor of about 0.95, giving ≈ 1,800 veh/h, or <b>2.0 s</b> <span class="tag d">Derived</span>. The HCM allows 1,750 pc/h/ln for areas under 250,000 people. That can be used as a sensitivity test.</p>
+
+<h3>Yellow change interval</h3>
+<p>The MUTCD requires a yellow after every green and advises roughly 3 to 6 s, with longer values on faster approaches <span class="tag s">Source</span>. The ITE kinematic formula (FHWA Eq. 5-2, first term) is <code>Y = t + v / (2a)</code> with <code>t = 1.0 s</code> and <code>a = 10 ft/s² (3.05 m/s²)</code> <span class="tag s">Source</span>.</p>
+<ul>
+<li>Straight, v = 50 km/h (13.9 m/s): Y = 1 + 13.9/6.1 = 3.28 s → <b>3.5 s</b> (rounded up; FHWA Table 5-7 gives 3.2 s at 30 mph and 3.6 s at 35 mph) <span class="tag d">Derived</span>.</li>
+<li>Left, turning speed 30 km/h (8.3 m/s): Y = 1 + 8.3/6.1 = 2.4 s → <b>3.0 s</b>, the MUTCD minimum <span class="tag d">Derived</span>.</li>
+</ul>
+
+<h3>Red clearance (all-red)</h3>
+<p>The second term of Eq. 5-2 is <code>R = (W + L) / v</code>, the time to clear the junction. FHWA cites a 20 ft (6 m) vehicle length, the MUTCD says red clearance should not exceed 6 s, and a practitioner survey reports common values of 0.5–2.0 s <span class="tag s">Source</span>.</p>
+<ul>
+<li>Straight: (20 + 6) / 13.9 = 1.9 s → <b>2.0 s</b> <span class="tag d">Derived</span>.</li>
+<li>Left: (25 + 6) / 8.3 = 3.7 s. Some agencies subtract 1.0 s for the reaction time of the next driver (FHWA §5.3.2), giving 2.7 s → <b>3.0 s</b> <span class="tag d">Derived</span>.</li>
+</ul>
+<p>Change periods are therefore <b>5.5 s</b> for straights and <b>6.0 s</b> for lefts. In a partial transition, only the <em>terminating</em> movement's yellow and all-red must finish before a conflicting movement starts. Movements that stay green are not interrupted.</p>
+
+<h3>Minimum green</h3>
+<p>FHWA Table 5-3 gives typical minimum greens for driver expectancy: through movements on a minor arterial 4–10 s, on a major arterial at ≤ 40 mph 7–15 s, and left turns 2–5 s <span class="tag s">Source</span>.</p>
+<ul>
+<li><b>Straight: 7 s.</b> This is within the range, and our discharge model clears about 3 vehicles (2 + 3 × 1.9 = 7.7 s) before extension takes over.</li>
+<li><b>Left: 5 s</b>, the top of the range, so at least 1–2 cars get through.</li>
+<li><b>Extended initial when D2 is latched: 12 s</b> for both. Five vehicles need 2 + 5 × 1.9 ≈ 11.5 s. The FHWA queue-clearance rule <code>Gq = 3 + 2n</code>, with n = 32 m / 7.6 m ≈ 4, gives 11 s, and Table 5-4 lists 11–13 s for detectors 76–125 ft upstream <span class="tag d">Derived</span>.</li>
+</ul>
+
+<h3>Passage time (gap time)</h3>
+<p>FHWA Eq. 5-5 for presence detection is <code>PT = MAH − (Lv + Ld) / v_a</code>. The recommended maximum allowable headway is <b>MAH = 3.0 s</b> without gap reduction, the average speed is <code>v_a = 0.88 × v85</code>, and the efficient range is about 1–4 s <span class="tag s">Source</span>.</p>
+<p>For an IR point sensor, <code>Ld ≈ 0</code>. With Lv = 6 m and v_a = 0.88 × 13.9 = 12.2 m/s, PT = 3.0 − 0.49 = <b>2.5 s</b> <span class="tag d">Derived</span>. FHWA Table 5-10 gives 2.3 s for a 6 ft zone at 30 mph, which agrees. During queue discharge, cars pass D1 at about 1.9 s headway with about 1 s gaps, so the green is held until the queue is gone.</p>
+
+<h3>Maximum green</h3>
+<p>FHWA Table 5-5 gives example maxima: through on a minor arterial 30–50 s, on a major arterial at ≤ 40 mph 40–60 s, and left turns 15–30 s. The max-green timer starts only when a <b>conflicting call</b> exists <span class="tag s">Source</span>.</p>
+<ul>
+<li><b>Straight: 45 s. Left: 30 s.</b> As a check, FHWA Table 5-6 (85th–95th percentile queue clearance) gives 43 s for 500 veh/h/ln at a 100 s cycle.</li>
+<li>These caps also bound starvation (§9). A sensitivity run at 60/40 s is recommended, because heavy scenarios may max out.</li>
+</ul>
+
+<h3>How long does a queue take to start and clear?</h3>
+<div class="tw"><table>
+<tr><th class="num">Queue (vehicles)</th><th class="num">Last car crosses stop line (straight)</th><th class="num">Last car crosses (left)</th></tr>
+<tr><td class="num">1</td><td class="num">3.9 s</td><td class="num">4.0 s</td></tr>
+<tr><td class="num">3</td><td class="num">7.7 s</td><td class="num">8.0 s</td></tr>
+<tr><td class="num">5</td><td class="num">11.5 s</td><td class="num">12.0 s</td></tr>
+<tr><td class="num">10</td><td class="num">21.0 s</td><td class="num">22.0 s</td></tr>
+<tr><td class="num">20</td><td class="num">40.0 s</td><td class="num">42.0 s</td></tr>
+</table></div>
+<p style="font-size:13.5px;color:var(--ink-2)">From <code>t_n = 2.0 + n·h</code>. A 20-car queue needs almost the full straight maximum green, which shows why max green cannot be much shorter.</p>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+<h2><span class="n">07</span>Smart control algorithm</h2>
+<p>The controller is a <b>movement-based, fully actuated controller with free phase selection and partial transitions</b>. It works like a standard actuated controller in that each movement has its own minimum green, passage timer, max-out, yellow and all-red. It differs from a fixed ring sequence in three ways:</p>
+<ol>
+<li>The next group is chosen by a <b>priority score</b> that combines estimated queue and waiting time, not a fixed order.</li>
+<li>Only the movements that conflict with the next target are stopped. <b>Compatible greens keep running.</b></li>
+<li>Only movements that <b>have a call</b> are turned green, so a single signal can be open alone.</li>
+</ol>
+
+<h3>Priority score</h3>
+<pre>P(m) = Q̂(m) + wait(m) / τ        Q̂ = 2 (level 1) or 6 (level 2);  wait = now − t_call(m);  τ = 10 s
+S(G) = Σ P(m) over members of group G that have a call
+     + Q̂_green = 2 for members of G that are green and not yet gapped out</pre>
+<p>τ = 10 s means every 10 s of waiting counts as one extra queued car. A lone car waiting 40 s (P = 2 + 4 = 6) ties with a fresh long queue, and after 60 s it wins. Both τ and the Q̂ levels are <span class="tag a">Assumptions</span>, and we recommend a sensitivity run on τ.</p>
+<p>The closest published idea is <b>max-pressure</b> control (Varaiya, 2013), which selects the phase with the largest weighted queue and has proven throughput-optimal properties. Our score is a simplified, sensor-limited version that adds waiting time for fairness. Cite max-pressure as related work, not as what we implement.</p>
+
+<h3>Rules that prevent rapid switching</h3>
+<ul>
+<li><b>No preemption of a working green.</b> A green movement can be released only when it is <em>releasable</em>: its minimum green has elapsed <b>and</b> it has gapped out, maxed out, or conflicts with a starvation hold.</li>
+<li><b>Gap-out uses the passage timer, not the instantaneous sensor state.</b> One empty sensor reading never ends a green.</li>
+<li><b>Commitment.</b> Once a yellow starts, the target is locked until its greens have started. The decision is not re-evaluated mid-transition.</li>
+<li><b>Target protection.</b> While a higher-priority target is waiting, the controller will not start a new green that conflicts with that target, even when the new green is compatible with what is running now. Otherwise a stream of compatible additions could delay the target forever.</li>
+<li><b>Timers survive partial transitions.</b> If SS stays green while SL→NS changes around it, SS keeps its original green-start time and max-green timer, so it cannot stay green forever by “riding” changes.</li>
+<li><b>Rest in green.</b> With no conflicting calls, the current greens stay on (standard NEMA behaviour). Rest-in-red is available as an ablation.</li>
+</ul>
+
+<h3>The brief's example, step by step</h3>
+<figure>
+<div class="fig">
+<svg viewBox="0 0 680 190" width="100%" style="min-width:560px" role="img" aria-label="Timeline: SS stays green; SL goes yellow and all-red; NS turns green after clearance">
+<style>
+.tg{fill:var(--go)} .ty{fill:var(--amb)} .tr{fill:var(--stop)} .tar{fill:var(--stop);opacity:.55}
+.ax{stroke:var(--ink-2);stroke-width:1} .tk{font-size:10px;fill:var(--ink-2)} .rl{font-size:12px;fill:var(--ink);font-weight:500}
+.ev{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:3 3} .evt{font-size:10px;fill:var(--ink)}
+</style>
+<!-- scale: x = 60 + t*20, t in 0..30 -->
+<text class="rl" x="10" y="44">SS</text><text class="rl" x="10" y="84">SL</text><text class="rl" x="10" y="124">NS</text>
+<rect class="tg" x="60" y="30" width="600" height="20"/>
+<rect class="tg" x="60" y="70" width="220" height="20"/><rect class="ty" x="280" y="70" width="60" height="20"/><rect class="tar" x="340" y="70" width="60" height="20"/><rect class="tr" x="400" y="70" width="260" height="20"/>
+<rect class="tr" x="60" y="110" width="340" height="20"/><rect class="tg" x="400" y="110" width="260" height="20"/>
+<line class="ax" x1="60" y1="150" x2="660" y2="150"/>
+<g class="tk">
+<text x="60" y="165" text-anchor="middle">0</text><text x="160" y="165" text-anchor="middle">5</text><text x="260" y="165" text-anchor="middle">10</text><text x="360" y="165" text-anchor="middle">15</text><text x="460" y="165" text-anchor="middle">20</text><text x="560" y="165" text-anchor="middle">25</text><text x="660" y="165" text-anchor="middle">30 s</text>
+</g>
+<line class="ev" x1="140" y1="20" x2="140" y2="140"/><text class="evt" x="144" y="18">NS call (t=4)</text>
+<line class="ev" x1="160" y1="60" x2="160" y2="96"/><text class="evt" x="164" y="104">SL min green done (5 s)</text>
+<text class="evt" x="252" y="64">SL gaps out → Y</text>
+<text class="evt" x="330" y="184">all-red 3 s</text>
+<text class="evt" x="404" y="104">NS green at t=17</text>
+</svg>
+</div>
+<figcaption>SS and SL are green. A car arrives on NS at t = 4 s. SL has passed its 5 s minimum green but is still serving cars, so it keeps its green until it gaps out at t = 11 s. SL then shows 3 s yellow and 3 s red clearance, and NS turns green at t = 17 s. SS is never interrupted.</figcaption>
+</figure>
+
+<h3>Pseudocode</h3>
+<pre>
+# ---------- static model ----------
+MOVES   = [NS, NL, SS, SL, ES, EL, WS, WL]
+GROUPS  = [{NS,SS},{NL,SL},{NS,NL},{SS,SL},{ES,WS},{EL,WL},{ES,EL},{WS,WL}]
+compatible(a,b) = (a == b) or any({a,b} &lt;= G for G in GROUPS)
+MIN_G = {straight: 7, left: 5};  MIN_G_EXT = 12;  MAX_G = {straight: 45, left: 30}
+PT = 2.5;  Y = {straight: 3.5, left: 3.0};  AR = {straight: 2.0, left: 3.0}
+TAU = 10;  W_MAX = 90;  D2_FILTER = 2.0;  QHAT = {1: 2, 2: 6}
+
+# ---------- per-movement state ----------
+sig[m] in {RED, GREEN, YELLOW, ALLRED};  t_state[m]
+call[m]=False; t_call[m]; level[m]=0; d2_on_since[m]
+t_green[m]; min_g[m]; passage[m]; max_start[m]=None; gapped[m]
+committed = None      # (stop_set, start_set) of a transition in progress
+
+every step (dt = 0.1 s):
+    read D1[m], D2[m] for all m
+    advance_intervals()                 # GREEN&gt;YELLOW&gt;ALLRED&gt;RED by fixed durations
+    update_calls(); update_green_timers()
+    if committed: finish_transition_if_clear(); return
+    decide()
+
+update_calls():
+    for m in MOVES:
+        if sig[m] != GREEN:
+            if (D1[m] or D2[m]) and not call[m]: call[m]=True; t_call[m]=now
+            if D2[m] held for &gt;= D2_FILTER s: level[m]=2          # latched
+            elif call[m] and level[m]==0:        level[m]=1
+
+update_green_timers():
+    for m with sig[m]==GREEN:
+        passage[m] = 0 if (D1[m] or D2[m]) else passage[m]+dt
+        gapped[m]  = passage[m] &gt;= PT
+        if max_start[m] is None and any(call[c] and not compatible(m,c) for c in MOVES):
+            max_start[m] = now                                     # FHWA: max timer on conflicting call
+
+releasable(m, hold):
+    if now - t_green[m] &lt; min_g[m]: return False
+    maxed = max_start[m] and now - max_start[m] &gt;= MAX_G[type(m)]
+    return gapped[m] or maxed or (hold and not compatible(m, hold))
+
+decide():
+    calls = [m for m in MOVES if call[m]]
+    if not calls: return                                         # rest in current greens
+    hold   = argmax(wait) over calls with wait(m) &gt;= W_MAX, else None
+    greens = {m | sig[m]==GREEN};  clearing = {m | sig[m] in (YELLOW, ALLRED)}
+    P      = {m: QHAT[level[m]] + (now - t_call[m]) / TAU for m in calls}
+    cands  = [G for G in GROUPS if hold is None or hold in G]
+    target = argmax over cands of score(G)                         # ties: keep greens, then fixed order
+
+    # (a) add compatible calls without stopping anything
+    for m in calls:
+        if all(compatible(m,x) for x in greens | clearing) and all(compatible(m,t) for t in target):
+            start_green(m)
+
+    # (b) switch toward target only when every conflicting green is releasable
+    to_stop  = {g for g in greens if g not in target}
+    to_start = {m for m in target if call[m] and sig[m]==RED}
+    if to_start and all(releasable(g, hold) for g in to_stop):
+        for g in to_stop: set_yellow(g)                        # only the conflicting ones
+        committed = (to_stop, to_start)
+
+finish_transition_if_clear():
+    stop, start = committed
+    for m in start:
+        if all(sig[c]==RED or compatible(m,c) for c in MOVES): start_green(m)
+    if all(sig[m]==GREEN for m in start): committed = None
+
+start_green(m):
+    sig[m]=GREEN; t_green[m]=now; passage[m]=0; gapped[m]=False; max_start[m]=None
+    min_g[m] = MIN_G_EXT if level[m]==2 else MIN_G[type(m)]
+    call[m]=False; level[m]=0
+    # after a max-out with cars still present, D1/D2 re-place a call on the next red
+</pre>
+<p>Invariant to assert in code every step: <b>no two non-RED movements (GREEN, YELLOW or ALLRED) may conflict.</b> Put this assertion in the simulator, not only in the controller. It is your safety proof in the report.</p>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+<h2><span class="n">08</span>Fixed-time baseline</h2>
+<p>The baseline is a conventional <b>four-phase, leading dual-left</b> plan, the most common textbook and field layout for protected lefts:</p>
+<pre>φA  NL + SL   →   φB  NS + SS   →   φC  EL + WL   →   φD  ES + WS   →  (repeat)</pre>
+<p>Each phase ends with its own yellow and all-red (5.5 s for straights, 6.0 s for lefts). The baseline uses the same vehicle model, arrival files and safety intervals as the smart controller. It never skips a phase and never reacts to sensors.</p>
+
+<h3>Green times from Webster's method</h3>
+<p>Webster's optimum cycle is <code>C₀ = (1.5 L + 5) / (1 − Y)</code>. L is the total lost time and Y is the sum of critical flow ratios <code>v/s</code> for each phase. Green is then split in proportion to each phase's critical ratio <span class="tag s">Source</span>. Here L = 2 × 5.5 + 2 × 6.0 = 23 s, with cycle bounds of 60–120 s and minimum greens of 7 s (straight) and 5 s (left) <span class="tag a">Assumption</span>.</p>
+
+<h3>Two baselines, for fairness</h3>
+<div class="tw"><table>
+<tr><th>Baseline</th><th>How it is timed</th><th>Why include it</th></tr>
+<tr><td><b>FT-A: design plan</b></td><td>One plan computed from the balanced design volumes of S1 and used unchanged in every scenario. <b>Cycle 89 s: φA 8 s, φB 25 s, φC 8 s, φD 25 s.</b> Capacity: 534 veh/h per straight lane, 162 veh/h per left lane.</td><td>A real fixed-time controller is timed once for typical traffic. This is the realistic comparison.</td></tr>
+<tr><td><b>FT-B: tuned plan</b></td><td>Webster recomputed for each scenario from that scenario's known average volumes (table below).</td><td>The strongest fixed-time controller possible. It knows the demand in advance, which no real controller does. If the smart controller beats FT-B, the result is robust. If it only beats FT-A, say so.</td></tr>
+</table></div>
+
+<div class="tw"><table>
+<tr><th>Scenario</th><th class="num">ΣY</th><th class="num">φA NL+SL</th><th class="num">φB NS+SS</th><th class="num">φC EL+WL</th><th class="num">φD ES+WS</th><th class="num">Cycle</th><th class="num">Critical X</th></tr>
+<tr><td>S1 balanced</td><td class="num">0.554</td><td class="num">8</td><td class="num">25</td><td class="num">8</td><td class="num">25</td><td class="num">89</td><td class="num">0.74–0.75</td></tr>
+<tr><td>S2 heavy North</td><td class="num">0.757</td><td class="num">14</td><td class="num">47</td><td class="num">9</td><td class="num">27</td><td class="num">120</td><td class="num">0.89–0.95</td></tr>
+<tr><td>S3 empty West</td><td class="num">0.554</td><td class="num">8</td><td class="num">25</td><td class="num">8</td><td class="num">25</td><td class="num">89</td><td class="num">0.74–0.75</td></tr>
+<tr><td>S4 very low</td><td class="num">0.085</td><td class="num">5</td><td class="num">14</td><td class="num">5</td><td class="num">14</td><td class="num">61</td><td class="num">0.14</td></tr>
+<tr><td>S5 burst (background)</td><td class="num">0.554</td><td class="num">8</td><td class="num">25</td><td class="num">8</td><td class="num">25</td><td class="num">89</td><td class="num">0.74–0.75</td></tr>
+<tr><td>S6 shift (hour average)</td><td class="num">0.500</td><td class="num">6</td><td class="num">22</td><td class="num">6</td><td class="num">22</td><td class="num">79</td><td class="num">—</td></tr>
+<tr><td>S6 time-of-day, first half / second half</td><td class="num">0.500</td><td class="num">9 / 5</td><td class="num">35 / 9</td><td class="num">5 / 9</td><td class="num">9 / 35</td><td class="num">81</td><td class="num">0.36–0.75</td></tr>
+<tr><td>S7a heavy</td><td class="num">0.757</td><td class="num">11</td><td class="num">37</td><td class="num">11</td><td class="num">37</td><td class="num">119</td><td class="num">0.93–0.96</td></tr>
+<tr><td>S7b oversaturated</td><td class="num">0.981</td><td class="num">12</td><td class="num">36</td><td class="num">12</td><td class="num">36</td><td class="num">119</td><td class="num">1.21–1.22</td></tr>
+<tr><td>S8 strong lefts</td><td class="num">0.630</td><td class="num">24</td><td class="num">17</td><td class="num">24</td><td class="num">17</td><td class="num">105</td><td class="num">0.80–0.81</td></tr>
+<tr><td>S9 unequal straight/left</td><td class="num">0.725</td><td class="num">19</td><td class="num">32</td><td class="num">17</td><td class="num">30</td><td class="num">121</td><td class="num">0.88–0.91</td></tr>
+<tr><td>S10 long wait (background S7a)</td><td class="num">0.757</td><td class="num">11</td><td class="num">37</td><td class="num">11</td><td class="num">37</td><td class="num">119</td><td class="num">0.93–0.96</td></tr>
+</table></div>
+<p style="font-size:13.5px;color:var(--ink-2)">Greens in seconds, computed with the script described in §16. X is the degree of saturation (v/c) of each phase's critical lane. In S6, the time-of-day row switches plan at t = 1800 s. It is a third, optional baseline.</p>
+
+<h3>Validating the simulator with the baseline</h3>
+<p>Before comparing controllers, run FT-A on S1 and check the simulated average delay against Webster's delay formula for random arrivals: about <b>35 s</b> per straight vehicle and <b>58 s</b> per left-turn vehicle <span class="tag d">Derived</span>. Agreement within roughly ±20% shows the arrival and discharge model is sound. Put this check in the report. Examiners value it.</p>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+<h2><span class="n">09</span>Fairness and starvation handling</h2>
+<p>Three mechanisms work together. Each can be switched off for an ablation study.</p>
+<ol>
+<li><b>Max green with a conflict-triggered timer</b> <span class="tag s">Source</span>: a green facing a conflicting call ends after at most 45 s (straight) or 30 s (left), even if cars keep coming. This alone stops one busy movement from holding the junction.</li>
+<li><b>Aging in the priority score</b> <span class="tag a">Assumption</span>: <code>wait/τ</code> grows without limit, so any waiting movement eventually outranks any fresh queue. This handles the “largest queue always wins” problem the brief warns about.</li>
+<li><b>Hard waiting limit W_MAX = 90 s</b> <span class="tag a">Assumption</span>: once any call has waited 90 s, it becomes a <em>hold</em>. The next target must contain it, no new green conflicting with it may start, and conflicting greens become releasable as soon as their minimum green is over.</li>
+</ol>
+<p><b>Why 90 s:</b> under the FT-A plan, a left-turn vehicle arriving just after its phase ends waits up to 89 − 8 = 81 s plus the start-up time. The 90 s limit therefore promises that the smart controller never makes anyone wait meaningfully longer than the worst case under fixed time.</p>
+<p><b>Resulting bound</b> <span class="tag d">Derived</span>: once a hold exists, it is served within the largest remaining minimum green (≤ 12 s) plus one change period (≤ 6 s). The worst case is about <code>W_MAX + 18 ≈ 108 s</code>. Report the measured maximum wait against this bound.</p>
+<p><b>Fairness measures</b> (see §11): maximum and 95th-percentile delay, the number of vehicles waiting over 90 s, and Jain's fairness index over the eight movements' mean delays, <code>J = (Σx)² / (n·Σx²)</code>. J = 1 means all movements are treated equally.</p>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+<h2><span class="n">10</span>Experimental scenarios</h2>
+<p>All volumes are veh/h <b>per movement</b>. Each movement is one lane. Unless stated otherwise, every run uses a 300 s warm-up, then a 3,600 s measurement period, then a flush of up to 900 s with no new arrivals so that every measured vehicle finishes. Each scenario runs with seeds 1–10. Time t = 0 is the start of measurement.</p>
+
+<div class="tw"><table>
+<tr><th>ID</th><th>Purpose</th><th>Straight volumes (NS/SS/ES/WS)</th><th>Left volumes (NL/SL/EL/WL)</th><th>Events</th></tr>
+<tr><td>S1</td><td>Balanced moderate traffic</td><td class="num">400 each</td><td class="num">120 each</td><td>—</td></tr>
+<tr><td>S2</td><td>One heavy approach</td><td class="num">NS 700, others 400</td><td class="num">NL 200, others 120</td><td>—</td></tr>
+<tr><td>S3</td><td>One nearly empty approach</td><td class="num">WS 30, others 400</td><td class="num">WL 10, others 120</td><td>—</td></tr>
+<tr><td>S4</td><td>Very low traffic</td><td class="num">60 each</td><td class="num">20 each</td><td>—</td></tr>
+<tr><td>S5</td><td>Sudden burst</td><td class="num">400 each</td><td class="num">120 each</td><td>+20 cars on ES, one every 2.0 s from t = 1200 s. +12 cars on NL, one every 2.5 s from t = 2400 s.</td></tr>
+<tr><td>S6</td><td>Demand shifts sides</td><td class="num">t &lt; 1800: N/S 600, E/W 150<br>t ≥ 1800: N/S 150, E/W 600</td><td class="num">t &lt; 1800: N/S 150, E/W 40<br>t ≥ 1800: N/S 40, E/W 150</td><td>Step change at t = 1800 s</td></tr>
+<tr><td>S7a</td><td>Heavy everywhere (near capacity)</td><td class="num">550 each</td><td class="num">160 each</td><td>—</td></tr>
+<tr><td>S7b</td><td>Oversaturated (limitation test)</td><td class="num">700 each</td><td class="num">220 each</td><td>—</td></tr>
+<tr><td>S8</td><td>Strong left-turn demand</td><td class="num">250 each</td><td class="num">330 each</td><td>—</td></tr>
+<tr><td>S9</td><td>Unequal straight vs left</td><td class="num">NS 450, SS 120, ES 420, WS 100</td><td class="num">NL 60, SL 250, EL 50, WL 230</td><td>—</td></tr>
+<tr><td>S10</td><td>Long wait on a low-demand movement</td><td class="num">550 each</td><td class="num">NL/SL/EL 160; WL deterministic</td><td>WL gets one car at t = 60, 240, 420, … (every 180 s, 20 cars)</td></tr>
+</table></div>
+
+<h3>Why this set is fair</h3>
+<ul>
+<li><b>S1 and S7a are the “fixed time's home ground”:</b> steady, symmetric traffic, where a tuned fixed plan is close to optimal. We expect small or no gains for the smart controller here, and the report should say so.</li>
+<li><b>S7b is included to expose a limitation.</b> When every movement is oversaturated, an actuated controller maxes out every phase and behaves almost like fixed time. Extra switching may even make it slightly worse.</li>
+<li><b>S3, S4, S5 and S6 are where sensors should help:</b> skipping empty phases, short cycles at night, reacting to bursts and shifts.</li>
+<li><b>S9</b> tests whether split groups ({NS,NL}, {SS,SL}) and partial transitions help when opposing demands are unequal.</li>
+<li><b>S10</b> directly tests the starvation guarantee.</li>
+</ul>
+<p><b>Optional robustness runs:</b> S1 with 5% missed detections, S1 with NS D1 stuck on, and a <b>demand sweep</b> scaling S1 volumes by 0.25, 0.5, 0.75, 1.0, 1.15 and 1.3.</p>
+
+<h3>Rules to keep the comparison honest</h3>
+<ul>
+<li><b>Freeze every smart-controller parameter before running experiments.</b> Tune only on S1 with seeds 101–105, then run all scenarios on seeds 1–10. Tuning on the test scenarios is the easiest way to accidentally bias the study.</li>
+<li>Use <b>paired comparisons</b>: the same seed and the same arrival file for every controller. Report the mean difference with a 95% confidence interval, or a paired t-test across the 10 seeds.</li>
+<li>Report every scenario, including the ones where the smart controller loses.</li>
+</ul>
+</section>
+
+<!-- 11 -->
+<section id="s11">
+<h2><span class="n">11</span>Metrics</h2>
+<div class="tw"><table>
+<tr><th>Metric</th><th>Definition used in code</th><th>Priority</th></tr>
+<tr><td><b>Average control delay</b> (s/veh)</td><td>Actual stop-line crossing time minus the time the car would have crossed at free speed with no signal. This is the HCM's main measure, and HCM level of service for signals is based on it.</td><td>Primary</td></tr>
+<tr><td>95th-percentile and maximum delay (s)</td><td>Over all measured vehicles</td><td>Primary (fairness)</td></tr>
+<tr><td>Average waiting (stopped) time</td><td>Time spent stationary in queue. This matches the brief's “waiting time”, but control delay is more complete.</td><td>Secondary</td></tr>
+<tr><td>Average / maximum queue length (veh)</td><td>Stopped vehicles per movement, sampled every 1 s. Report the per-movement average and the overall maximum.</td><td>Primary</td></tr>
+<tr><td>Throughput (veh/h)</td><td>Cars crossing the stop line during the measurement hour</td><td>Primary in S7a/S7b</td></tr>
+<tr><td>Vehicles served / % served</td><td>Arrivals in the hour that cross before the hour ends, divided by arrivals</td><td>Secondary</td></tr>
+<tr><td>Total accumulated delay (veh·h)</td><td>Sum of control delay over all vehicles</td><td>Secondary</td></tr>
+<tr><td>Green utilization</td><td><code>n_served × h / green seconds</code> per movement. Values near 1 mean saturated use; low values mean wasted green.</td><td>Secondary (explains <em>why</em>)</td></tr>
+<tr><td>Signal changes (per hour)</td><td>Number of green onsets across the 8 signals. This measures stability and oscillation.</td><td>Secondary</td></tr>
+<tr><td>Vehicles waiting &gt; 90 s</td><td>Count per run</td><td>Fairness</td></tr>
+<tr><td>Jain's fairness index</td><td>Over the 8 movement mean delays</td><td>Fairness</td></tr>
+<tr><td>Safety invariant violations</td><td>Must be 0 in every run</td><td>Mandatory check</td></tr>
+</table></div>
+<p><b>Most important for the report:</b> average control delay, 95th-percentile delay, average queue length, and throughput in the heavy scenarios. The rest explain the results. Report every number as the mean over 10 seeds ± a 95% confidence interval.</p>
+</section>
+
+<!-- 12 -->
+<section id="s12">
+<h2><span class="n">12</span>Graph plan</h2>
+<p>Eight core graphs, then optional ones. Use the same three colours throughout: FT-A, FT-B, Smart.</p>
+<div class="tw"><table>
+<tr><th>#</th><th>Graph</th><th>X-axis</th><th>Y-axis</th><th>Series</th><th>Question it answers</th></tr>
+<tr><td>G1</td><td>Grouped bars with error bars</td><td>Scenario S1–S10</td><td>Average control delay (s/veh)</td><td>FT-A, FT-B, Smart</td><td>Where does the smart controller help, and where not?</td></tr>
+<tr><td>G2</td><td>Grouped bars</td><td>Scenario</td><td>95th-percentile delay (s), with max as a dot</td><td>FT-A, FT-B, Smart</td><td>Does it help the worst-treated drivers, not just the average?</td></tr>
+<tr><td>G3</td><td>Grouped bars</td><td>Scenario</td><td>Average queue length (veh/movement), with max as a dot</td><td>FT-A, FT-B, Smart</td><td>Are queues shorter?</td></tr>
+<tr><td>G4</td><td>Grouped bars</td><td>Scenario</td><td>Throughput (veh/h) and % served</td><td>FT-A, FT-B, Smart</td><td>Does it serve more cars when demand is high?</td></tr>
+<tr><td>G5</td><td>Line chart</td><td>Simulation time (s)</td><td>Total queued vehicles (30 s moving average)</td><td>FT-A, Smart; vertical markers at burst/shift</td><td>How fast does each controller react and recover (S5, S6)?</td></tr>
+<tr><td>G6</td><td>Line chart</td><td>Demand multiplier × S1 (0.25–1.3)</td><td>Average control delay (s)</td><td>FT-A, FT-B, Smart</td><td>At what demand does the advantage disappear? Shows the crossover.</td></tr>
+<tr><td>G7</td><td>Scatter</td><td>WL arrival time (s)</td><td>Delay of that WL car (s)</td><td>FT-A, Smart, Smart without W_MAX; horizontal line at 90 s</td><td>Does starvation prevention work (S10)?</td></tr>
+<tr><td>G8</td><td>Signal-state timeline (Gantt)</td><td>Time, a 120 s window</td><td>8 rows, one per signal, coloured G/Y/R</td><td>Smart in S1 or S9</td><td>Shows partial transitions and single-signal greens. Good for the report and video.</td></tr>
+<tr><td>G9 opt.</td><td>CDF</td><td>Vehicle delay (s)</td><td>Cumulative fraction of vehicles</td><td>FT-A, FT-B, Smart</td><td>The full delay distribution (S1, S7a)</td></tr>
+<tr><td>G10 opt.</td><td>Grouped bars</td><td>Movement (NS…WL)</td><td>Mean delay (s)</td><td>FT-B, Smart</td><td>Who gains and who loses (S2, S9)?</td></tr>
+<tr><td>G11 opt.</td><td>Bars</td><td>Scenario</td><td>Signal changes per hour</td><td>FT-A, Smart</td><td>Is the smart controller stable?</td></tr>
+<tr><td>G12 opt.</td><td>Bars</td><td>Ablation variant</td><td>Average delay in S1, S6, S9</td><td>Full smart, no partial transitions, no aging, perfect-queue oracle</td><td>Which design feature causes the gain? How much does the two-sensor limit cost?</td></tr>
+</table></div>
+</section>
+
+<!-- 13 -->
+<section id="s13">
+<h2><span class="n">13</span>Simulation architecture</h2>
+<pre class="mermaid">
+flowchart LR
+  A[Traffic generator<br/>seeded arrival CSV] --&gt; B[Vehicle and queue model]
+  B --&gt; C[Sensor model<br/>16 point sensors]
+  C --&gt; D{Controller<br/>Smart or Fixed}
+  D --&gt; E[Signal state machine<br/>8 heads G/Y/AR/R]
+  E --&gt; F[Conflict model<br/>safety assertion]
+  F --&gt; B
+  B --&gt; G[Statistics collector]
+  E --&gt; G
+  G --&gt; H[Results CSV to graphs]
+  B --&gt; V[Visualization]
+  E --&gt; V
+  C --&gt; V
+</pre>
+<p>Each simulation step (dt = 0.1 s) runs in a fixed order: generate arrivals, move vehicles and discharge queues, evaluate sensors, controller decision, update signal intervals, check the safety invariant, record statistics, and draw if visual mode is on.</p>
+
+<h3>Modules</h3>
+<div class="tw"><table>
+<tr><th>Module</th><th>Responsibility</th><th>Must not</th></tr>
+<tr><td><code>traffic_gen.py</code></td><td>Create arrival lists per movement from scenario + seed; write CSV</td><td>Know anything about control</td></tr>
+<tr><td><code>vehicles.py</code></td><td>Positions, queue slots, discharge headways, yellow rule, free-flow crossing time for delay</td><td>Read controller internals</td></tr>
+<tr><td><code>sensors.py</code></td><td>Point-sensor occupancy from vehicle positions; optional faults</td><td>Expose true queue counts</td></tr>
+<tr><td><code>conflicts.py</code></td><td>Matrix, groups, <code>compatible()</code>, invariant check</td><td>—</td></tr>
+<tr><td><code>signals.py</code></td><td>Per-head state machine with fixed Y/AR durations; refuses illegal transitions</td><td>Decide when to change</td></tr>
+<tr><td><code>controller_smart.py</code></td><td>§7 algorithm; input = sensor states + time only</td><td>Import <code>vehicles</code></td></tr>
+<tr><td><code>controller_fixed.py</code></td><td>Timing plan (FT-A / FT-B / TOD), same signal machine</td><td>Read sensors</td></tr>
+<tr><td><code>stats.py</code></td><td>Per-vehicle records, 1 s samples, run summary</td><td>—</td></tr>
+<tr><td><code>viz.py</code></td><td>Pygame drawing; frame capture for video</td><td>Change simulation state</td></tr>
+<tr><td><code>run_experiments.py</code></td><td>Loop scenarios × controllers × seeds headless; save CSV</td><td>—</td></tr>
+<tr><td><code>make_graphs.py</code></td><td>Matplotlib G1–G12 from CSV</td><td>—</td></tr>
+</table></div>
+
+<h3>Visual simulation and technology</h3>
+<p><b>Recommendation: Python 3 + Pygame for the visual mode, the same code headless for experiments, and Matplotlib for graphs.</b> A single language keeps the simulation and the analysis identical, and a headless run of all scenarios (11 scenarios × 3 controllers × 10 seeds) takes minutes. Pygame can save each frame, and ffmpeg turns the frames into the video.</p>
+<p>The screen should show: the intersection drawn to scale with both lanes per approach, cars coloured by movement, 8 signal heads (G/Y/R) at the stop lines, 16 sensor markers that light up when occupied, a live panel with simulation time, scenario, controller name (Smart / FT-A / FT-B), current target group, each movement's waiting time and priority, a small queue-length bar per lane, and a speed control (1×, 5×, 20×). A side-by-side mode (fixed on the left, smart on the right, same arrivals) makes the most convincing video.</p>
+<p>Alternatives: a <b>browser JavaScript canvas</b> is easy to share but duplicates the analysis code. <b>SUMO</b> with TraCI is the research-grade microsimulator and would add credibility, but its learning curve is steep for a course project. Mention it as future work.</p>
+<p><b>Hardware link:</b> the two real IR sensors can drive the virtual NS D1 and D2 through serial (Arduino/ESP32 → Python) in a “hardware-in-the-loop” demo mode. The same controller code then reacts to a hand-moved model car.</p>
+</section>
+
+<!-- 14 -->
+<section id="s14">
+<h2><span class="n">14</span>Recommended parameter values</h2>
+<div class="tw"><table>
+<tr><th>Parameter</th><th class="num">Value</th><th>Basis</th><th>Why appropriate for our simulation</th></tr>
+<tr><td>Saturation flow, straight</td><td class="num">1900 veh/h (h = 1.9 s)</td><td><span class="tag s">Source</span> HCM base [6]</td><td>Passenger cars only, ideal lanes</td></tr>
+<tr><td>Saturation flow, left</td><td class="num">≈1800 veh/h (h = 2.0 s)</td><td><span class="tag d">Derived</span> HCM protected-left factor ≈ 0.95</td><td>Turning cars discharge slightly slower</td></tr>
+<tr><td>Start-up lost time l1</td><td class="num">2.0 s</td><td><span class="tag s">Source</span> HCM default [6]</td><td>First car crosses at ≈ 3.9 s, which matches observation</td></tr>
+<tr><td>Yellow used by drivers e</td><td class="num">2.0 s</td><td><span class="tag s">Source</span> HCM default [6]</td><td>Makes effective green = displayed green</td></tr>
+<tr><td>Approach speed</td><td class="num">50 km/h</td><td><span class="tag a">Assumption</span></td><td>Typical urban limit. Change it to your local posted speed.</td></tr>
+<tr><td>Left-turn speed</td><td class="num">30 km/h</td><td><span class="tag a">Assumption</span></td><td>Turning drivers slow down (FHWA §5.3.2)</td></tr>
+<tr><td>Perception–reaction t, deceleration a</td><td class="num">1.0 s, 3.05 m/s²</td><td><span class="tag s">Source</span> FHWA Eq. 5-2 [1]</td><td>Values for an expected yellow onset</td></tr>
+<tr><td>Yellow, straight / left</td><td class="num">3.5 s / 3.0 s</td><td><span class="tag d">Derived</span> Eq. 5-2; MUTCD 3–6 s [3]</td><td>Kinematic formula, rounded up</td></tr>
+<tr><td>All-red, straight / left</td><td class="num">2.0 s / 3.0 s</td><td><span class="tag d">Derived</span> (W+L)/v; MUTCD ≤ 6 s [1][3]</td><td>Clears 20 m / 25 m paths</td></tr>
+<tr><td>Min green, straight / left</td><td class="num">7 s / 5 s</td><td><span class="tag s">Source</span> FHWA Table 5-3 [1]</td><td>Driver expectancy; about 3 / 2 cars discharge</td></tr>
+<tr><td>Extended initial (D2 latched)</td><td class="num">12 s</td><td><span class="tag d">Derived</span> FHWA Table 5-4, Gq = 3+2n [1]</td><td>Clears the ≥ 5 cars the sensor proves are there</td></tr>
+<tr><td>Passage time</td><td class="num">2.5 s</td><td><span class="tag d">Derived</span> FHWA Eq. 5-5, MAH 3.0 s [1]</td><td>Point sensor, 50 km/h; within the 1–4 s efficient range</td></tr>
+<tr><td>Max green, straight / left</td><td class="num">45 s / 30 s</td><td><span class="tag s">Source</span> FHWA Table 5-5 [1]</td><td>Minor-arterial ranges; timer starts on a conflicting call</td></tr>
+<tr><td>Vehicle length / standstill gap</td><td class="num">4.5 m / 3.0 m</td><td><span class="tag a">Assumption</span>, checked against FHWA 25 ft spacing [1]</td><td>7.5 m queue slots</td></tr>
+<tr><td>Vehicle length for clearance</td><td class="num">6 m</td><td><span class="tag s">Source</span> FHWA L_v = 20 ft [1]</td><td>Conservative for all-red</td></tr>
+<tr><td>D1 / D2 position</td><td class="num">2 m / 32 m</td><td><span class="tag a">Assumption</span></td><td>Centres of queue slots 1 and 5</td></tr>
+<tr><td>D2 queue filter</td><td class="num">2.0 s</td><td><span class="tag a">Assumption</span></td><td>A passing car covers a point sensor for only ≈ 0.3–0.6 s</td></tr>
+<tr><td>Queue estimate Q̂</td><td class="num">2 / 6</td><td><span class="tag a">Assumption</span></td><td>Representative values for 1–4 and ≥ 5 cars</td></tr>
+<tr><td>Aging constant τ</td><td class="num">10 s</td><td><span class="tag a">Assumption</span></td><td>10 s waiting ≈ one queued car; test 5 and 20 s</td></tr>
+<tr><td>Starvation limit W_MAX</td><td class="num">90 s</td><td><span class="tag a">Assumption</span></td><td>≈ worst fixed-time red under FT-A</td></tr>
+<tr><td>Arrival headway</td><td class="num">1.5 s + exponential</td><td><span class="tag a">Assumption</span></td><td>Random arrivals at an isolated site</td></tr>
+<tr><td>Fixed-time cycle bounds</td><td class="num">60–120 s</td><td><span class="tag a">Assumption</span></td><td>Common practice; Webster [7] is unbounded as Y → 1</td></tr>
+<tr><td>Time step, warm-up, run, flush, seeds</td><td class="num">0.1 s, 300 s, 3600 s, ≤ 900 s, 10</td><td><span class="tag a">Assumption</span></td><td>Standard simulation practice</td></tr>
+</table></div>
+</section>
+
+<!-- 15 -->
+<section id="s15">
+<h2><span class="n">15</span>Weaknesses and limitations</h2>
+<ul>
+<li><b>Two point sensors carry little information.</b> The controller cannot tell 5 cars from 20. Ablation G12 (perfect-queue oracle) measures what this costs. Report it rather than hiding it.</li>
+<li><b>Oversaturation.</b> When demand exceeds capacity, actuated control degenerates to max-outs (S7b). Fixed max greens then act like a poorly tuned fixed plan.</li>
+<li><b>Dilemma-zone protection is not modelled.</b> Real 50 km/h approaches often use advance detectors farther upstream. Our D2 serves queue estimation, not safe termination.</li>
+<li><b>Simplified driving.</b> Discharge follows a headway rule, not car-following. There is no lane changing, no red-light running, no heavy vehicles and no driver variability beyond random arrivals.</li>
+<li><b>Left-lane storage is unlimited.</b> Real short turn bays can overflow and block the straight lane. The smart controller's advantage there is unknown.</li>
+<li><b>Merges treated as conflicts.</b> This is conservative. Some agencies would allow, for example, NS with EL when the receiving lanes are separate. That would change the group structure.</li>
+<li><b>No pedestrians.</b> Pedestrian clearance would raise minimum greens and reduce the flexibility of short, single-signal greens.</li>
+<li><b>Isolated intersection only.</b> In a corridor, fixed-time coordination can beat local actuation. That comparison is out of scope.</li>
+<li><b>Perfect sensors by default.</b> IR sensors outdoors suffer sunlight interference and missed detections. Hence the robustness runs.</li>
+<li><b>FT-B is an oracle.</b> It knows the demand in advance. Losing to it in steady scenarios is expected and not a failure of the smart design.</li>
+<li><b>Parameter tuning risk.</b> τ, Q̂ and W_MAX are our choices. Freeze them before testing (§10) and publish the sensitivity runs.</li>
+</ul>
+</section>
+
+<!-- 16 -->
+<section id="s16">
+<h2><span class="n">16</span>Implementation plan</h2>
+<ol class="steps">
+<li><b>Conflict model and invariant.</b> Code <code>conflicts.py</code> and unit-test all 64 matrix entries against §3.</li>
+<li><b>Signal state machine.</b> Implement G→Y→AR→R with fixed durations. Test that yellow never goes back to green and that a head cannot turn green while any conflicting head is non-red.</li>
+<li><b>Traffic generator.</b> Implement the scenario definitions (§10) as data (JSON/YAML). Write arrival CSVs per seed, and check the generated hourly counts against the target volumes.</li>
+<li><b>Vehicle and queue model.</b> Implement the discharge rule and the yellow rule. Test that a 10-car queue clears in 21.0 s.</li>
+<li><b>Fixed controller (FT-A).</b> Run S1 headless and validate delay against the Webster estimates (≈ 35 s straight, 58 s left). Only continue once this passes.</li>
+<li><b>Sensor model.</b> Implement point occupancy. Test level-1/level-2 detection with scripted queues of 3 and 6 cars, and test that a passing car does not latch level 2.</li>
+<li><b>Smart controller.</b> Implement §7 and replay the brief's SS/SL → SS/NS example as a scripted unit test. It should reproduce the timeline in §7.</li>
+<li><b>Statistics.</b> Record per-vehicle arrival, stop-line crossing and free-flow crossing times, plus 1 s queue samples and signal-change logs.</li>
+<li><b>Tuning freeze.</b> Adjust only on S1 with seeds 101–105, then lock the parameters.</li>
+<li><b>Experiments.</b> Run all scenarios × {FT-A, FT-B, Smart} × seeds 1–10, plus ablations and the demand sweep. Save everything to CSV.</li>
+<li><b>Graphs.</b> Generate G1–G8 (and the optional graphs) from the CSVs with one script, so they can be regenerated.</li>
+<li><b>Visualization and media.</b> Build the Pygame view, capture screenshots (S1 partial transition, S3 single-signal green, S5 burst, S10 starvation hold) and record a side-by-side video of S6.</li>
+<li><b>Hardware demo.</b> Map the 2 IR sensors to the NS D1/D2 inputs over serial.</li>
+<li><b>Report.</b> Sections follow this document. Results report means ± 95% CI and include the losses.</li>
+</ol>
+<p>The fixed-time green values in §8 came from a short Webster calculation using the parameters above. Reproduce them in your own code as step 5's first test.</p>
+</section>
+
+<section id="refs">
+<h2><span class="n">··</span>Sources</h2>
+<ol class="src-list">
+<li>FHWA, <i>Traffic Signal Timing Manual</i> (FHWA-HOP-08-024), Chapter 5: minimum/maximum green tables, Eq. 5-2 change interval, Eq. 5-5 passage time, Tables 5-3 to 5-10, variable initial. <a href="https://ops.fhwa.dot.gov/publications/fhwahop08024/chapter5.htm">ops.fhwa.dot.gov</a></li>
+<li>NCHRP Report 812, <i>Signal Timing Manual – Second Edition</i> (TRB, 2015). This is the current successor to [1]. Cite it as the up-to-date reference. <a href="https://nap.nationalacademies.org/catalog/22097/signal-timing-manual-second-edition">nap.nationalacademies.org</a></li>
+<li>MUTCD 2023 (11th ed.), Section 4F.17, Yellow Change and Red Clearance Intervals. <a href="https://up.codes/s/yellow-change-and-red-clearance-intervals">up.codes</a></li>
+<li>FHWA Office of Safety, <i>Yellow Change Intervals</i> (Proven Safety Countermeasure, FHWA-SA-21-043). <a href="https://highways.dot.gov/sites/fhwa.dot.gov/files/Yellow%20Change%20Intervals_508_0.pdf">highways.dot.gov</a></li>
+<li>NCHRP Project 03-95 final report (NCHRP Report 731), <i>Guidelines for Timing Yellow and All-Red Intervals</i>. <a href="https://onlinepubs.trb.org/onlinepubs/nchrp/docs/NCHRP03-95_FR.pdf">onlinepubs.trb.org</a></li>
+<li>McTrans (University of Florida), <i>Calibrating Driver Behavior at Signalized Intersections</i>: HCM defaults of 1,900 pc/h/ln, 2.0 s start-up lost time and 2.0 s yellow extension. <a href="https://mctrans.ce.ufl.edu/calibrating-driver-behavior-at-signalized-intersections/">mctrans.ce.ufl.edu</a></li>
+<li>Webster's optimum cycle length and green allocation, in <i>Fundamentals of Transportation</i>, §6.2 Traffic Signals. <a href="https://eng.libretexts.org/Bookshelves/Civil_Engineering/Fundamentals_of_Transportation/06:_Traffice_Control/6.02:_Traffic_Signals">eng.libretexts.org</a></li>
+<li>P. Varaiya, “Max pressure control of a network of signalized intersections,” <i>Transportation Research Part C</i> 36 (2013) 177–195. <a href="https://doi.org/10.1016/j.trc.2013.08.014">doi.org/10.1016/j.trc.2013.08.014</a></li>
+<li>Colorado DOT, <i>Vehicle Change and Clearance Interval Guidelines</i> (2024): an agency application of MUTCD guidance. <a href="https://www.codot.gov/safety/traffic-safety/assets/documents/cdot-vehicle-change-and-clearance-interval-guidelines-v1-31.pdf">codot.gov</a></li>
+<li>R. Jain, D. Chiu, W. Hawe, “A Quantitative Measure of Fairness and Discrimination for Resource Allocation in Shared Computer Systems,” DEC-TR-301, 1984. Source of the fairness index.</li>
+<li>Transportation Research Board, <i>Highway Capacity Manual</i>, 6th/7th ed., signalized intersection methodology (control delay, level of service). Consult your library copy for exhibit numbers.</li>
+</ol>
+</section>
+</main>
+</div>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

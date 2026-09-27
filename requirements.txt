@@ -1,0 +1,20 @@
+# SmartTrafficLights - Python dependencies
+# Requires Python 3.10-3.13 (pygame 2.6.1 has no Windows wheel for Python 3.14 yet).
+# Install:  pip install -r requirements.txt
+
+# Visual simulation (study §13: "Python 3 + Pygame")
+pygame==2.6.1
+
+# Graphs G1-G12 (study §12, §13: Matplotlib)
+matplotlib>=3.8,<4
+
+# Arrival generation, statistics, results CSV handling
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11          # paired t-test / 95% confidence intervals (study §10, §11)
+
+# Hardware-in-the-loop demo over serial (study §13, Arduino/ESP32 -> Python)
+pyserial>=3.5
+
+# Unit tests (study §16: conflict matrix, signal machine, discharge tests)
+pytest>=8
