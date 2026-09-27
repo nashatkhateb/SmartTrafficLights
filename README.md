@@ -12,10 +12,12 @@ All parameters, algorithms and scenarios come from that document; do not change 
   `traffic_gen.py` + `config/scenarios.json` (arrivals and scenarios S1–S10, §5, §10);
   `vehicles.py` (vehicle/queue model, §4–§5, R3); `sensors.py` (16 virtual IR detectors and
   demand logic, §4, §6); tests for all five.
-- Stage 9 (awaiting physical verification): ESP32 hardware — real IR detector(s) and physical
+- Stage 9 (physically verified): ESP32 hardware — real IR detector(s) and physical
   signal head(s) via `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`,
   `config/hardware.json`, firmware in `hardware/`. See `hardware/README.md`.
-- Not yet implemented: controllers, statistics, visualization, experiments.
+- Stage 10 (awaiting review): `controller_fixed.py` + `config/fixed_plans.json` — fixed-time
+  baselines FT-A, FT-B (per scenario) and S6 time-of-day. See "Fixed-time controller" below.
+- Not yet implemented: smart controller, statistics, visualization, experiments.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -29,7 +31,8 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 
 - Controllers issue only `start_green(m)` and `end_green(m)`; every other step runs on timers.
   `start_green` starts the sequence that *results* in green; it is not an instant green.
-- Cars may cross in GREEN and FLASHING_GREEN, and in the first 2.0 s of YELLOW (study rule).
+- Cars may cross in GREEN and FLASHING_GREEN, and in the first 2.0 s of YELLOW (study rule;
+  a car due exactly at yellow onset + 2.0 s still crosses).
   They may not cross in RED_YELLOW, ALL_RED or RED.
 - Every state except RED blocks conflicting movements. ALL_RED looks like RED, but it is the
   clearance interval and still blocks.
@@ -58,6 +61,22 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
   `SensorBank.detector_fault()` reports hardware faults.
 - Step order: `vehicles.advance` → `sensors.advance` → `signals.advance`.
 
+## Fixed-time controller (Stage 10)
+
+- Phase order φA NL+SL → φB NS+SS → φC EL+WL → φD ES+WS, never skipped, never sensor-driven.
+  It is the comparison baseline, so it deliberately takes no SensorBank at all.
+- Only `start_green` at the phase start and `end_green` at G − 3.0 s after GREEN onset;
+  RED_YELLOW, flashing green, yellow and all-red are SignalBank's. The next phase starts when
+  the previous phase's movements are RED.
+- FT-A: the study's table uses an 89 s cycle. Signals V2 added 1.0 s red+yellow before each of
+  the 4 phases, so the implemented cycle is 93 s (15 + 31.5 + 15 + 31.5 s); the published greens
+  8 / 25 / 8 / 25 s are unchanged. Validation and comparisons use the implemented cycle.
+  FT-B: the §8 per-scenario plans. FT-TOD: S6 plan switch at 1800 s.
+- Simulator check (study §16), FT-A on S1, 20 seeds: straight 36.0 s, left 65.8 s vs Webster at
+  93 s 38.6 s / 66.4 s (study's 89 s figures: 35 / 58 s).
+- Use: `load_fixed_plans().controller("FT-B", "S7a", start_time=-300)`, then `update(bank)`
+  every step before `bank.advance`; never step past `next_command_ms()`.
+
 ## Setup (Windows)
 
 1. Python 3.10–3.13 must be installed (3.14 is not yet supported by pygame).
@@ -75,12 +94,13 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 | `smarttraffic/conflicts.py` | Conflict matrix, 8 groups, `compatible()`, safety invariant | §3 |
 | `smarttraffic/signals.py` | Per-head R→RY→G→FG→Y→AR→R state machine, lamp outputs | §6–§7 |
 | `smarttraffic/controller_smart.py` | Actuated controller with partial transitions | §7, §9 |
-| `smarttraffic/controller_fixed.py` | FT-A / FT-B / time-of-day baselines | §8 |
+| `smarttraffic/controller_fixed.py` | FT-A / FT-B / time-of-day fixed-time controller | §8 |
 | `smarttraffic/stats.py` | Per-vehicle records, 1 s samples, summaries | §11 |
 | `smarttraffic/viz.py` | Pygame view, frame capture | §13 |
 | `smarttraffic/run_experiments.py` | Headless scenarios × controllers × seeds | §10 |
 | `smarttraffic/make_graphs.py` | Graphs G1–G12 | §12 |
 | `config/scenarios.json` | Scenario definitions S1–S10 | §10 |
+| `config/fixed_plans.json` | Fixed-time phases and plans (FT-A, FT-B per scenario, S6 TOD) | §8 |
 | `config/hardware.json` | Real detectors / physical heads → ESP32 device + channel | Stage 9 |
 | `smarttraffic/esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py` | ESP32 protocol, links, hybrid 16-detector source, signal mirror, live smoke test | Stage 9 |
 | `data/arrivals/` | Arrival CSVs, one per scenario × seed, read by every controller | §5 |

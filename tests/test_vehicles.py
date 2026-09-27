@@ -258,13 +258,21 @@ def test_yellow_first_2s_crossing():
     assert s.vm.queue_length("NS") == 5
 
 
-def test_yellow_boundary_exact():
-    # car 5 plans to cross at 111.5; yellow at 109.5 -> window ends at exactly 111.5 (exclusive)
-    s = _yellow_case(109.5).run(140)
-    assert len(s.vm.crossed("NS")) == 4
-    s = Sim(arrs(queue_spec("NS", 10)), dt=0.001).at(100, "NS", "G").at(109.501, "NS", "Y")
+@pytest.mark.parametrize("t_y, after_yellow_ms, crosses", [
+    (109.501, 1999, True),     # D = t_y + 1999 ms: allowed
+    (109.500, 2000, True),     # D = t_y + 2000 ms exactly: allowed (window end is inclusive)
+    (109.499, 2001, False),    # D = t_y + 2001 ms: blocked
+])
+def test_yellow_boundary_exact(t_y, after_yellow_ms, crosses):
+    # car 5 is due at D = 111.5 s; yellow begins at t_y
+    assert round((111.5 - t_y) * 1000) == after_yellow_ms
+    s = Sim(arrs(queue_spec("NS", 10)), dt=0.001).at(100, "NS", "G").at(t_y, "NS", "Y")
     s.run(115)
-    assert len(s.vm.crossed("NS")) == 5
+    assert len(s.vm.crossed("NS")) == (5 if crosses else 4)
+    car5 = s.vm.vehicle(4)
+    assert car5.cross_ms == (111500 if crosses else None)
+    if not crosses:
+        assert s.vm.lead_vehicle("NS") is car5 and car5.position == 0.5
 
 
 def test_no_crossing_during_all_red_or_red():
@@ -283,9 +291,18 @@ def test_no_crossing_during_all_red_or_red():
 def test_car_arriving_in_yellow_crosses_only_within_window():
     early = Sim(arrs([("SS", 0.0)])).at(0, "SS", "G").at(9.0, "SS", "Y").run(30)
     assert early.vm.vehicle(0).cross_ms == 10800             # 10.8 < 9.0 + 2.0
-    late = Sim(arrs([("SS", 0.0)])).at(0, "SS", "G").at(8.8, "SS", "Y").run(30)
-    assert late.vm.vehicle(0).cross_ms is None               # 10.8 >= 10.8
+    edge = Sim(arrs([("SS", 0.0)])).at(0, "SS", "G").at(8.8, "SS", "Y").run(30)
+    assert edge.vm.vehicle(0).cross_ms == 10800              # 10.8 <= 8.8 + 2.0 (inclusive)
+    late = Sim(arrs([("SS", 0.0)]), dt=0.001).at(0, "SS", "G").at(8.799, "SS", "Y").run(30)
+    assert late.vm.vehicle(0).cross_ms is None               # 10.8 > 8.799 + 2.0
     assert late.vm.vehicle(0).position == 0.5
+    # crossing time first granted when the window end is already known: GREEN at 100 is
+    # ended at once (FLASHING_GREEN 100-103, YELLOW 103, window end 105.0); the car arrives
+    # at the line at scheduled + 10.8 s
+    for sched, crosses in [(94.199, True), (94.200, True), (94.201, False)]:
+        g0 = Sim(arrs([("SS", sched)])).at(100, "SS", "G").at(100, "SS", "end").run(130)
+        v = g0.vm.vehicle(0)
+        assert v.cross_ms == (round(sched * 1000) + 10800 if crosses else None), sched
 
 
 def test_stopped_by_yellow_then_served_next_green():

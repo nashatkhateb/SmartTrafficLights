@@ -103,7 +103,7 @@ Visible sequence for each movement:
 |---|---|---|
 | Yellow | 3.5 s / 3.0 s | study §6, unchanged |
 | All-red | 2.0 s / 3.0 s | study §6, unchanged |
-| Crossing allowed in first part of yellow | 2.0 s | study §5, unchanged (`vehicles.py`) |
+| Crossing allowed in first part of yellow | 2.0 s, end inclusive | study §5 (`vehicles.py`); boundary see "Yellow permissive boundary" |
 | `RED_YELLOW_S` | 1.0 s | **project assumption.** Additional lost time before every green; no vehicle moves during it |
 | `FLASHING_GREEN_S` | 3.0 s | **project assumption.** Permissive, so it counts as green time |
 | `FLASH_PERIOD_S` / `FLASH_ON_S` | 1.0 s / 0.5 s | **project assumption.** Green lamp ON for the first 0.5 s of each period, from flash onset |
@@ -238,6 +238,106 @@ instants inside the step.
   `signals.advance` → `mirror.update(bank)` → controller decides.
 - **Protocol, wiring, extension steps and the smoke test:** `hardware/README.md`.
 
+## Fixed-time controller (Stage 10)
+
+**What it is.** `controller_fixed.FixedTimeController` is the study §8 baseline: a conventional
+four-phase, leading dual-left plan whose schedule depends only on simulation time, the
+configured plan and SignalBank's own intervals. It never skips, shortens or extends a phase and
+never reads detectors, queues, waiting times or hardware. That is deliberate: it is the
+reference the Smart Controller is measured against, so it must not benefit from sensors.
+It takes no SensorBank (constructor: plan schedule + start time) and imports only
+`conflicts` and `signals`; tests check both, and check that heavy traffic, empty roads,
+constantly occupied/toggling detectors and a "real" hybrid NS:D1 give identical signal logs.
+
+**Phase order** (config/fixed_plans.json, validated with the `conflicts` API):
+φA NL+SL -> φB NS+SS -> φC EL+WL -> φD ES+WS -> φA ...
+Each phase is a compatible pair and every movement is served exactly once per cycle.
+
+**One phase starting at s** (G = plan green = GREEN + FLASHING_GREEN):
+
+| Time | Event | Issued by |
+|---|---|---|
+| s | `start_green` for both movements (RED -> RED_YELLOW) | controller |
+| s + 1.0 | GREEN | SignalBank timer |
+| s + 1.0 + G − 3.0 | `end_green` (GREEN -> FLASHING_GREEN) | controller |
+| s + 1.0 + G | YELLOW (3.5 s straight / 3.0 s left) | SignalBank timer |
+| + Y | ALL_RED (2.0 s straight / 3.0 s left) | SignalBank timer |
+| + AR | RED; the next phase starts at this instant | SignalBank timer / controller |
+
+Interval values are read from `signals.py`, never copied. SignalBank stays authoritative: the
+controller calls only `start_green` / `end_green`, and SignalBank still refuses anything unsafe.
+
+**FT-A cycle: study 89 s, implemented 93 s (approved 2026-09-27).**
+- The study's FT-A table uses an **89 s** cycle: greens A 8 + B 25 + C 8 + D 25 = 66 s plus
+  lost time L = 2 × 5.5 + 2 × 6.0 = 23 s (each phase's yellow + all-red; the study has no
+  red+yellow).
+- Signals V2 then added a **1.0 s RED_YELLOW before each of the four phases**. Under the
+  approved safety rule it cannot overlap the previous phase's clearance, so it is extra lost time.
+- Therefore the **implemented runtime FT-A cycle is 93 s** (phases 15.0 + 31.5 + 15.0 + 31.5 s),
+  and every plan runs its study cycle + 4 s.
+- The **published green durations are unchanged**. Greens, yellow and all-red are not shortened,
+  and RED_YELLOW does not overlap clearance.
+- Comparisons and validation must use the **actual implemented cycle** where the cycle matters
+  (for example Webster's delay formula, capacity s·G/C, degree of saturation).
+
+**Plans** (config/fixed_plans.json). All greens are the study §8 table; each plan stores the
+study cycle and loading checks ΣG + 23 s against it. Plans must satisfy G >= FLASHING_GREEN
+(3 s) and the study minimum greens (7 s straight, 5 s left).
+
+| Baseline | How it is used |
+|---|---|
+| FT-A | `book.schedule("FT-A", any scenario)`: plan FT-A for every scenario |
+| FT-B | `book.schedule("FT-B", "S7a")`: the scenario's own Webster plan, fixed for the whole run |
+| FT-TOD | `book.schedule("FT-TOD", "S6")`: TOD/S6/first, then TOD/S6/second from 1800 s |
+
+A plan switch takes effect at the first phase that STARTS at or after the switch time (phase
+order never broken, no phase cut). The S9 FT-B cycle is 121 s as published (above the study's
+60–120 s bound).
+
+**Time and step size.** Integer ms. The runner calls `update(bank)` at the controller point of
+each step (after vehicles and sensors, before `bank.advance`). A command cannot be issued late
+without skipping safety intervals, so a runner must not advance past `next_command_ms()`
+(`update` raises `ScheduleOvershootError` instead of drifting). At dt = 0.1 s every command time
+is a multiple of 100 ms. `advance(bank, dt)` splits any dt at command times; one 3600 s call gives
+the same log as 36 000 steps of 0.1 s. The first phase starts at the controller's start time
+(the runner will use the warm-up start, −300 s) and requires an all-RED intersection. One
+controller per run.
+
+**Fair comparison.** Fixed and Smart runs will share the arrival file (R2), VehicleModel,
+detector model, SignalBank and its intervals, step order and metrics. Only the controller
+object differs.
+
+**Simulator validation (study §16 step 5), FT-A on S1, 20 seeds.** Mean control delay of the
+arrivals in [0, 3600) s (warm-up from −300 s; every car had crossed by 4500 s), 95% CI:
+
+| | Straight | Left |
+|---|---|---|
+| Simulation (93 s cycle) | 36.0 s ± 0.5 | 65.8 s ± 3.2 |
+| Webster's delay formula at the implemented 93 s | 38.6 s (−6.7%) | 66.4 s (−0.8%) |
+| Study's published figures (89 s) | 35 s (+2.8%) | 58 s (+13.5%) |
+
+All within the study's ±20%. This check needed the inclusive yellow boundary (below); with the
+old strict boundary, lefts got only 3 cars per 8 s green (≈116 veh/h < 120 veh/h demand) and
+the left delay was ≈245 s.
+
+**Still open.** Reproducing the §8 greens with a Webster script (study §16): the study does not
+state its rounding rule.
+
+## Yellow permissive boundary (approved 2026-09-27, Stage 10 review)
+
+The study (§5) says a vehicle "may still cross during the first 2.0 s of yellow". The vehicle
+model now treats the end of that window as **inclusive**: a car whose crossing time D is
+exactly yellow onset + 2000 ms crosses; D = onset + 2001 ms is blocked. The strict boundary
+was an implementation choice in Stage 7 (not specified by the study). The inclusive one matches
+the study's effective green = displayed green (l1 = e = 2.0 s) and its §8 capacities: an 8 s
+left green serves 4 cars (4 × 3600 / 89 = 162 veh/h).
+
+The only change is the comparison at that instant, made consistently in the three places in
+`vehicles.py` (granting a crossing time, withdrawing it when the window end becomes known, and
+the model's own check at the crossing). Nothing else in the vehicle model changed. A car that
+crosses at the boundary is still in YELLOW and clears the box before its own all-red ends, so
+signal safety is unaffected.
+
 ## Module status
 
 | Module | Status |
@@ -245,7 +345,8 @@ instants inside the step.
 | `conflicts.py` | Implemented and tested (study §3, §16 step 1) |
 | `signals.py` | Implemented and tested (study §6, §7, §16 step 2; visible-sequence revision) |
 | `traffic_gen.py` | Implemented and tested (study §5, §10, §16 step 3) |
-| `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8 |
+| `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8; yellow window end made inclusive in the Stage 10 review |
 | `sensors.py` | Stage 8: virtual detectors + demand logic; Stage 9 added `detector_fault()` / `faulted_detectors()` |
-| `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented and tested with fake serial; **physical integration test pending** |
+| `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68) |
+| `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented and tested; awaiting review |
 | everything else | Placeholder |

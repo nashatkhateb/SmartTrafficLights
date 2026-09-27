@@ -37,13 +37,16 @@ states supplied from outside.
   known in advance from signals.remaining()):
       RED_YELLOW        -> may not cross; GREEN (t_g) will begin at now + remaining
       GREEN since t_g   -> may cross at any time
-      FLASHING_GREEN    -> may cross only if D < (yellow onset = now + remaining) + 2.0 s
-      YELLOW since t_y  -> may cross only if D < t_y + 2.0 s (study §5, HCM e)
+      FLASHING_GREEN    -> may cross only if D <= (yellow onset = now + remaining) + 2.0 s
+      YELLOW since t_y  -> may cross only if D <= t_y + 2.0 s (study §5, HCM e)
+  The window end is INCLUSIVE: a car due exactly at t_y + 2.0 s still crosses. This
+  matches the study's effective green = displayed green (l1 = e = 2.0 s), i.e.
+  G / h headway slots per green (4 left cars in an 8 s green; §8 capacity 162 veh/h).
       ALL_RED, RED      -> may not cross
   t_g in the discharge rule is always the instant GREEN itself begins.
   Exact for any dt up to 3.9 s (no car can cross earlier than t_g + 3.9 s).
   As soon as the window end is known (at FLASHING_GREEN or YELLOW), cars whose
-  D is at or beyond it lose their crossing time and stop.
+  D is beyond it lose their crossing time and stop.
 * ENTRY (R3): a car appears with its front bumper 150 m upstream, but only if
   the car ahead has its front at <= 142.5 m (7.5 m spacing). Otherwise it
   waits outside the modelled road, first come first served, and enters at
@@ -79,7 +82,7 @@ ENTRY_POSITION = 150.0                   # m upstream of the stop line
 SLOT1_POSITION = 0.5                     # front bumper of queued car #1 (§4: occupies 0.5-5.0 m)
 START_UP_LOST_TIME = 2.0                 # l1, s
 SATURATION_HEADWAY = {"straight": 1.9, "left": 2.0}  # h, s
-YELLOW_EXTENSION = 2.0                   # e, s: crossing allowed in first 2.0 s of yellow
+YELLOW_EXTENSION = 2.0                   # e, s: crossing allowed up to and including t_y + 2.0 s
 BOX_LENGTH = {"straight": 20.0, "left": 25.0}         # m, path through the junction (§1)
 BOX_SPEED = 9.0                          # m/s, visual only (study: "about 8-10 m/s")
 
@@ -223,10 +226,10 @@ class _Lane:
             self.perm = None
         else:                                   # RED, ALL_RED
             self.perm = None
-        # revoke crossing times outside the window (they are increasing along the lane)
+        # revoke crossing times after the (inclusive) window end; they increase along the lane
         end = -math.inf if self.perm is None else self.perm[1]
         for v in self.road:
-            if v._cross_plan_ms is not None and v._cross_plan_ms >= end:
+            if v._cross_plan_ms is not None and v._cross_plan_ms > end:
                 v._cross_plan_ms = None
                 v._pinned = False
         self._release_in_order(now)
@@ -250,7 +253,7 @@ class _Lane:
         # physical guard: cannot reach the line faster than at v (never binding in
         # the study's cases; only matters if the model starts in mid-yellow)
         d = max(d, now + math.ceil(v._x / _V_PER_MS - 1e-6))
-        if d < end:
+        if d <= end:                                        # window end is inclusive
             v._cross_plan_ms = d
             v._released_ms = now
             v._pinned = v._state is VehicleState.STOPPED
@@ -400,7 +403,7 @@ class _Lane:
             if abs(v._x) > 1e-6:
                 raise ModelInvariantError(f"{v!r} scheduled to cross at {t} ms but is at {v._x} m")
             t_g, end = self.perm if self.perm is not None else (None, -math.inf)
-            if not t < end:
+            if not t <= end:
                 raise ModelInvariantError(f"{v!r} crossing at {t} ms outside its permission window")
             v._cross_ms = t
             v._exit_ms = t + self.box_ms

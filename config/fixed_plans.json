@@ -1,0 +1,56 @@
+{
+  "_about": [
+    "Fixed-time plans for controller_fixed.py (Stage 10). Source: study section 8.",
+    "Phase order and phase movements are the study's leading dual-left plan.",
+    "Greens are G = GREEN + FLASHING_GREEN in whole seconds (docs/ARCHITECTURE.md, green-time convention).",
+    "study_cycle_s is the study's cycle (sum of G + L with L = 23 s); it is checked on load, it is not used for timing.",
+    "RED_YELLOW (1.0 s per phase start) is extra lost time, so a plan actually runs study_cycle_s + 4 s.",
+    "Schedules: 'from_s' null = from the start of the run; a later entry takes effect at the first phase that starts at or after from_s."
+  ],
+  "version": 1,
+  "phases": [
+    {"name": "A", "movements": ["NL", "SL"]},
+    {"name": "B", "movements": ["NS", "SS"]},
+    {"name": "C", "movements": ["EL", "WL"]},
+    {"name": "D", "movements": ["ES", "WS"]}
+  ],
+  "min_green_s": {"straight": 7, "left": 5},
+  "plans": {
+    "FT-A":        {"greens_s": {"A": 8,  "B": 25, "C": 8,  "D": 25}, "study_cycle_s": 89},
+    "FT-B/S1":     {"greens_s": {"A": 8,  "B": 25, "C": 8,  "D": 25}, "study_cycle_s": 89},
+    "FT-B/S2":     {"greens_s": {"A": 14, "B": 47, "C": 9,  "D": 27}, "study_cycle_s": 120},
+    "FT-B/S3":     {"greens_s": {"A": 8,  "B": 25, "C": 8,  "D": 25}, "study_cycle_s": 89},
+    "FT-B/S4":     {"greens_s": {"A": 5,  "B": 14, "C": 5,  "D": 14}, "study_cycle_s": 61},
+    "FT-B/S5":     {"greens_s": {"A": 8,  "B": 25, "C": 8,  "D": 25}, "study_cycle_s": 89},
+    "FT-B/S6":     {"greens_s": {"A": 6,  "B": 22, "C": 6,  "D": 22}, "study_cycle_s": 79},
+    "FT-B/S7a":    {"greens_s": {"A": 11, "B": 37, "C": 11, "D": 37}, "study_cycle_s": 119},
+    "FT-B/S7b":    {"greens_s": {"A": 12, "B": 36, "C": 12, "D": 36}, "study_cycle_s": 119},
+    "FT-B/S8":     {"greens_s": {"A": 24, "B": 17, "C": 24, "D": 17}, "study_cycle_s": 105},
+    "FT-B/S9":     {"greens_s": {"A": 19, "B": 32, "C": 17, "D": 30}, "study_cycle_s": 121},
+    "FT-B/S10":    {"greens_s": {"A": 11, "B": 37, "C": 11, "D": 37}, "study_cycle_s": 119},
+    "TOD/S6/first":  {"greens_s": {"A": 9, "B": 35, "C": 5, "D": 9},  "study_cycle_s": 81},
+    "TOD/S6/second": {"greens_s": {"A": 5, "B": 9,  "C": 9, "D": 35}, "study_cycle_s": 81}
+  },
+  "baselines": {
+    "FT-A": {
+      "*": [{"from_s": null, "plan": "FT-A"}]
+    },
+    "FT-B": {
+      "S1":  [{"from_s": null, "plan": "FT-B/S1"}],
+      "S2":  [{"from_s": null, "plan": "FT-B/S2"}],
+      "S3":  [{"from_s": null, "plan": "FT-B/S3"}],
+      "S4":  [{"from_s": null, "plan": "FT-B/S4"}],
+      "S5":  [{"from_s": null, "plan": "FT-B/S5"}],
+      "S6":  [{"from_s": null, "plan": "FT-B/S6"}],
+      "S7a": [{"from_s": null, "plan": "FT-B/S7a"}],
+      "S7b": [{"from_s": null, "plan": "FT-B/S7b"}],
+      "S8":  [{"from_s": null, "plan": "FT-B/S8"}],
+      "S9":  [{"from_s": null, "plan": "FT-B/S9"}],
+      "S10": [{"from_s": null, "plan": "FT-B/S10"}]
+    },
+    "FT-TOD": {
+      "S6": [{"from_s": null, "plan": "TOD/S6/first"},
+             {"from_s": 1800, "plan": "TOD/S6/second"}]
+    }
+  }
+}
