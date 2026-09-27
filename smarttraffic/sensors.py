@@ -120,6 +120,8 @@ class DetectorSource(Protocol):
     poll(until_ms)      -- edges with now_ms < time_ms <= until_ms, sorted by
                            time, only real changes (on->off or off->on);
                            afterwards now_ms == until_ms.
+    faults()            -- OPTIONAL (Stage 9): sensor ids currently faulted
+                           (e.g. hardware link down). Virtual sources omit it.
     """
     sensor_ids: Tuple[Tuple[str, str], ...]
 
@@ -425,6 +427,18 @@ class SensorBank:
             gap_timer_ms=self.gap_timer_ms(m), gap_out=self.gap_out(m),
             extended_initial_required=self.extended_initial_required(m),
             green_onset_ms=self.green_onset_ms(m))
+
+    def detector_fault(self, m: str, detector: str) -> bool:
+        """True if the source reports this detector as faulted (Stage 9: e.g. its
+        hardware link is down). A faulted detector delivers no new edges; its last
+        confirmed state is held. Always False for virtual detectors."""
+        validate_movement(m)
+        validate_detector(detector)
+        return (m, detector) in self.faulted_detectors()
+
+    def faulted_detectors(self) -> Tuple[Tuple[str, str], ...]:
+        faults = getattr(self._src, "faults", None)
+        return tuple(faults()) if callable(faults) else ()
 
     def snapshot(self) -> Dict[str, MovementSensors]:
         """Status of all 8 movements at the current time."""

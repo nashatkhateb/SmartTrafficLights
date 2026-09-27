@@ -12,7 +12,10 @@ All parameters, algorithms and scenarios come from that document; do not change 
   `traffic_gen.py` + `config/scenarios.json` (arrivals and scenarios S1–S10, §5, §10);
   `vehicles.py` (vehicle/queue model, §4–§5, R3); `sensors.py` (16 virtual IR detectors and
   demand logic, §4, §6); tests for all five.
-- Not yet implemented: real sensors / ESP32 (Stage 9), sensors, controllers, visualization, experiments.
+- Stage 9 (awaiting physical verification): ESP32 hardware — real IR detector(s) and physical
+  signal head(s) via `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`,
+  `config/hardware.json`, firmware in `hardware/`. See `hardware/README.md`.
+- Not yet implemented: controllers, statistics, visualization, experiments.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -49,8 +52,10 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
   - At the actual GREEN onset, `extended_initial_required` tells the controller whether to
     use the 12 s initial green.
   - During GREEN / FLASHING_GREEN, `gap_out` becomes true after 2.5 s with both detectors clear.
-- Real ESP32 detectors will plug in behind the same `DetectorSource` interface in Stage 9.
-  **Stage 8 contains no serial / ESP32 code.**
+- Stage 9: real ESP32 detectors plug in behind the same `DetectorSource` interface through
+  `HybridDetectorSource`. Currently NS:D1 is real and the other 15 are virtual; this is set in
+  `config/hardware.json`. A physical NeoPixel head mirrors NS.
+  `SensorBank.detector_fault()` reports hardware faults.
 - Step order: `vehicles.advance` → `sensors.advance` → `signals.advance`.
 
 ## Setup (Windows)
@@ -76,11 +81,13 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 | `smarttraffic/run_experiments.py` | Headless scenarios × controllers × seeds | §10 |
 | `smarttraffic/make_graphs.py` | Graphs G1–G12 | §12 |
 | `config/scenarios.json` | Scenario definitions S1–S10 | §10 |
+| `config/hardware.json` | Real detectors / physical heads → ESP32 device + channel | Stage 9 |
+| `smarttraffic/esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py` | ESP32 protocol, links, hybrid 16-detector source, signal mirror, live smoke test | Stage 9 |
 | `data/arrivals/` | Arrival CSVs, one per scenario × seed, read by every controller | §5 |
 | `results/runs/` | Experiment result CSVs | §10–11 |
 | `figures/` | Generated graphs | §12 |
 | `media/frames`, `media/screenshots` | Pygame frame capture for video, report screenshots | §13, §16 |
-| `hardware/` | IR sensor → serial hardware-in-the-loop demo | §13 |
+| `hardware/` | ESP32 firmware + wiring/protocol documentation | §13, Stage 9 |
 | `tests/` | pytest unit tests | §16 |
 | `docs/ARCHITECTURE.md` | Requirements added after the study (R1: hybrid sensors) | — |
 | `check_env.py` | Environment verification script | — |

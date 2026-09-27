@@ -10,3 +10,6 @@ loads and validates it:
 
 Only `segments` and `events` affect generation. Their SHA-256 is stored in every arrival
 file, so an arrival file made with an older config is detected instead of reused.
+
+`hardware.json` (Stage 9) maps real detectors and physical signal heads to ESP32 devices and
+channels. Every detector not listed there is virtual. See `hardware/README.md`.

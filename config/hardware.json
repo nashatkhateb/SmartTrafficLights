@@ -1,0 +1,18 @@
+{
+  "_about": "Stage 9 hardware mapping. Detectors not listed under 'sensors' are virtual. Channels are indexes into the firmware's SENSORS[] / SIGNALS[] tables of that device. Change 'port' to your ESP32's COM port (python -m smarttraffic.hw_smoke --list-ports).",
+  "devices": {
+    "esp32_a": {"port": "COM3", "baud": 115200}
+  },
+  "sensors": {
+    "NS:D1": {"device": "esp32_a", "channel": 0}
+  },
+  "signals": {
+    "NS": {"device": "esp32_a", "channel": 0}
+  },
+  "link": {
+    "heartbeat_timeout_ms": 1500,
+    "reconnect_interval_ms": 2000,
+    "query_interval_ms": 1000,
+    "signal_refresh_ms": 1000
+  }
+}

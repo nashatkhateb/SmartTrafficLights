@@ -6,8 +6,9 @@ the study; they do not change any of its design decisions.
 
 ## R1 — Hybrid sensor source (added 2026-09-27)
 
-Status: the unified interface exists (`DetectorSource` -> `SensorBank`, Stage 8); the real ESP32
-source and per-sensor mixing are Stage 9.
+Status: implemented in Stage 9 (awaiting physical verification). `HybridDetectorSource` assigns
+each of the 16 detectors to exactly one source; `HardwareDetectorSource` provides the real ones;
+`config/hardware.json` holds the mapping. Details are in the Stage 9 section below.
 
 `sensors.py` must support a **hybrid** set of the 16 point sensors (D1 and D2 for each of the 8 movements):
 
@@ -205,6 +206,38 @@ the minimum-green timer itself belongs to the controller.
 the vehicle model. RED_YELLOW -> GREEN and FLASHING_GREEN -> YELLOW are applied at their exact
 instants inside the step.
 
+## Hardware integration (Stage 9)
+
+    VehicleModel -> VirtualDetectors ---------------------+   (computes all 16; only its assigned ones pass)
+    ESP32 link(s) -> HardwareDetectorSource (mapped ids) -+-> HybridDetectorSource -> SensorBank -> controllers
+    SignalBank --(read only)--> SignalMirror --SIG--> ESP32 NeoPixel head(s)
+
+- **Configuration drives everything.** `config/hardware.json` lists devices (port, baud), real
+  detectors (`"NS:D1": {device, channel}`) and physical heads (`"NS": {device, channel}`).
+  Unlisted detectors are virtual. The config is validated: unknown ids, devices or keys,
+  duplicate JSON keys, and a channel used twice all fail clearly. `build_hardware(config,
+  vehicle_model)` wires it all together.
+- **No duplicate events.** `HybridDetectorSource` forwards a source's edges only for the
+  detectors assigned to it, so the virtual NS:D1 edges are dropped (and counted in
+  `dropped_overridden`). `SensorBank` still sees exactly the 16 ids and cannot tell real from
+  virtual.
+- **Faults.** `SensorBank.detector_fault()` / `faulted_detectors()` (added in Stage 9) read an
+  optional `faults()` from the source. A real detector is faulted while its link is not
+  CONNECTED or its state hasn't been reported since `HELLO`. It then delivers no new edges and
+  holds its last confirmed state; it is not invented and not switched to virtual. Stage 11
+  decides the fail-safe.
+- **Time.** Device `millis()` is mapped to simulation time as device time + the minimum over
+  recent messages of (receive simulation time − device time). Wraparound is unwrapped, and a
+  device reset re-syncs. Late edges go to the next ms. The library reads no clock; `hw_smoke`
+  paces live runs; tests use fake transports.
+- **Physical heads are mirrors.** `SignalMirror.update(bank)` sends `SIG,channel,STATE` on
+  every change, after a reconnect and every 1 s. The ESP32 blinks FLASHING_GREEN itself (1 Hz,
+  ON first, phase from the command) and shows ALL_RED as red. A head is not a ninth signal and
+  never changes the `SignalBank`.
+- **Step order with hardware:** `vehicles.advance` → `sensors.advance` (pumps the links) →
+  `signals.advance` → `mirror.update(bank)` → controller decides.
+- **Protocol, wiring, extension steps and the smoke test:** `hardware/README.md`.
+
 ## Module status
 
 | Module | Status |
@@ -213,5 +246,6 @@ instants inside the step.
 | `signals.py` | Implemented and tested (study §6, §7, §16 step 2; visible-sequence revision) |
 | `traffic_gen.py` | Implemented and tested (study §5, §10, §16 step 3) |
 | `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8 |
-| `sensors.py` | Stage 8: virtual detectors + demand logic implemented and tested; no ESP32/serial yet (Stage 9) |
+| `sensors.py` | Stage 8: virtual detectors + demand logic; Stage 9 added `detector_fault()` / `faulted_detectors()` |
+| `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented and tested with fake serial; **physical integration test pending** |
 | everything else | Placeholder |
