@@ -35,7 +35,11 @@ All parameters, algorithms and scenarios come from that document; do not change 
 - Stage 14b: `custom.py`, `viz_custom.py` — Custom / Demo mode. See "Custom / Demo mode" below.
 - Vehicle policy change (2026-09-28): Stop on Yellow + immediate first vehicle on green is the
   standard behaviour everywhere. See "Vehicle policy" below.
-- Not yet implemented: graphs (Stage 15), demand sweep, remaining ablations and sensor-fault runs.
+- Stage 15 (awaiting review): `make_graphs.py` — result figures F01–F13 (PNG 300 dpi, PDF, SVG),
+  `figures_values.csv`, manifest and index in `results/figures/campaign_T1__legacy-study/`, built from
+  the committed Stage 14 summaries: `python -m smarttraffic.make_graphs`. These figures show the
+  **legacy-study** (historical) results; no standard-policy campaign has been run.
+- Not yet implemented: demand sweep (G6), remaining ablations and sensor-fault runs.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -238,7 +242,7 @@ policy. See `docs/ARCHITECTURE.md` ("Vehicle policy") for the exact list of assu
 | `config/tuning_plan.json`, `config/smart_params_locked.json` | Frozen tuning plan; locked Smart-T1 parameters | §10 |
 | `smarttraffic/custom.py`, `viz_custom.py` | Custom / Demo mode: validated demand, load check, parameter sets, tagged output; the panel's editable state | — |
 | `tests/golden/official_T1_baseline.csv` | Simulation fingerprints of the 490 approved official runs (equivalence baseline) | §10 |
-| `smarttraffic/make_graphs.py` | Graphs G1–G12 | §12 |
+| `smarttraffic/make_graphs.py` | Result figures F01–F13 (study G1–G5, G7, G11 and more) from the committed CSVs | §12 |
 | `config/scenarios.json` | Scenario definitions S1–S10 | §10 |
 | `config/fixed_plans.json` | Fixed-time phases and plans (FT-A, FT-B per scenario, S6 TOD) | §8 |
 | `config/hardware.json` | Real detectors / physical heads → ESP32 device + channel | Stage 9 |

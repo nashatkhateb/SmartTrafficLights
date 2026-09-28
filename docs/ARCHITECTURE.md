@@ -710,6 +710,34 @@ produced with `legacy-study` and are kept unchanged, as the record of that study
 Nothing above was rerun or overwritten. New standard-policy campaigns, if wanted later, go to
 their own folders.
 
+## Result figures (Stage 15)
+
+`python -m smarttraffic.make_graphs` builds the report / presentation figures from committed data
+only: the official campaign's `runs.csv`, `aggregates.csv`, `paired.csv` (each verified against the
+SHA-256 in `manifest.json`), the tuning `selection.json` / `runs.csv` (historical Smart-T1 vs
+Smart-study figure), and a committed S6 time-series extract. `make_graphs extract-s6` builds that
+extract from the per-run records (or re-simulates the 40 runs) and accepts a run only if its run
+key and simulated-trajectory fingerprint equal the official run's (`tests/golden/`).
+
+Policy separation: a figure set is built from one vehicle policy. The campaign and tuning manifests
+(missing field = legacy-study), the S6 extract and the output folder
+(`results/figures/<campaign>__<policy>`) must all agree, otherwise `PolicyMixError`. The Stage 14
+figures are therefore `results/figures/campaign_T1__legacy-study/`; every figure carries a
+"LEGACY-STUDY VEHICLE POLICY (HISTORICAL RESULTS)" tag, a source line and PNG/PDF/SVG metadata.
+
+Figures (study §12 numbering in brackets): F01 mean delay [G1], F02 P95 [G2], F03 max delay, F04
+throughput + unfinished [G4], F05 mean queue [G3], F06 Jain fairness, F07a vehicles > 90 s, F07b S10
+call waits vs W_MAX and the no-W_MAX extra [G7], F08a signal changes [G11], F08b green utilization,
+F09 / F10 paired Smart-T1 − FT-A / FT-B forest plots (CI vs zero only, unadjusted), F11 historical
+Smart-T1 vs Smart-study, F12 S6 queue over time and delay by arrival window [G5], F13 key scenarios.
+Style: DejaVu Sans, one validated colour per controller (FT-A blue, FT-B orange, Smart-T1 aqua,
+FT-TOD yellow; Smart-study violet and Smart-T1-noWMAX hatched magenta only where named), bar axes from
+zero, small multiples with per-panel scales where magnitudes differ by up to 50×.
+Outputs are deterministic: `figures_values.csv`, `figures_manifest.json` (no timestamps),
+`README.md`, `.pdf` and `.svg` are byte-identical on re-run on one machine.
+Not covered (no data): G6 demand sweep, G8 signal Gantt, G9 CDF, G10 per-movement, G12 ablations
+beyond no-aging.
+
 ## Module status
 
 | Module | Status |
@@ -726,4 +754,5 @@ their own folders.
 | `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` | Stage 13: implemented, tested, verified (commit 6d2ca41) |
 | `experiments.py`, `tuning.py`, `campaign.py`, `run_experiments.py`, `config/tuning_plan.json`, `config/smart_params_locked.json` | Stage 14: Smart-T1 approved and locked; official campaign run and accepted (490 runs) |
 | `custom.py`, `viz_custom.py`, `tests/golden/official_T1_baseline.csv` | Stage 14b: Custom / Demo mode (committed a7da151); standard vehicle policy project-wide (awaiting review) |
+| `make_graphs.py`, `results/figures/` | Stage 15: result figures from the Stage 14 (legacy-study) summaries (awaiting review) |
 | everything else | Placeholder |

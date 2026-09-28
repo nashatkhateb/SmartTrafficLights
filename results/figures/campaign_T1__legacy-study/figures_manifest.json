@@ -1,0 +1,220 @@
+{
+  "campaign": "campaign_T1",
+  "campaign_folder": "results/official/campaign_T1",
+  "figures": [
+    {
+      "files": [
+        "F01_mean_delay_by_scenario.png",
+        "F01_mean_delay_by_scenario.pdf",
+        "F01_mean_delay_by_scenario.svg"
+      ],
+      "id": "F01_mean_delay_by_scenario",
+      "metric": "Mean control delay (s/veh), 95 % CI",
+      "source": "results/official/campaign_T1/aggregates.csv (delay_mean_s; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Mean control delay by scenario",
+      "values": 34,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F02_p95_delay.png",
+        "F02_p95_delay.pdf",
+        "F02_p95_delay.svg"
+      ],
+      "id": "F02_p95_delay",
+      "metric": "P95 control delay (s/veh), 95 % CI",
+      "source": "results/official/campaign_T1/aggregates.csv (delay_p95_s; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "95th-percentile control delay",
+      "values": 34,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F03_max_delay.png",
+        "F03_max_delay.pdf",
+        "F03_max_delay.svg"
+      ],
+      "id": "F03_max_delay",
+      "metric": "Maximum control delay per run (s/veh), mean and 95 % CI over seeds",
+      "source": "results/official/campaign_T1/aggregates.csv (delay_max_s; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Maximum control delay",
+      "values": 34,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F04_throughput_unfinished.png",
+        "F04_throughput_unfinished.pdf",
+        "F04_throughput_unfinished.svg"
+      ],
+      "id": "F04_throughput_unfinished",
+      "metric": "Throughput (veh/h) with arrivals; unfinished vehicles",
+      "source": "results/official/campaign_T1/aggregates.csv (throughput_veh_h, unfinished) and runs.csv (arrivals)",
+      "title": "Throughput and unfinished vehicles",
+      "values": 77,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F05_mean_queue.png",
+        "F05_mean_queue.pdf",
+        "F05_mean_queue.svg"
+      ],
+      "id": "F05_mean_queue",
+      "metric": "Mean queue per movement (veh), 95 % CI",
+      "source": "results/official/campaign_T1/aggregates.csv (queue_mean_per_movement_veh; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Average queue length",
+      "values": 34,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F06_jain_fairness.png",
+        "F06_jain_fairness.pdf",
+        "F06_jain_fairness.svg"
+      ],
+      "id": "F06_jain_fairness",
+      "metric": "Jain's fairness index (0-1)",
+      "source": "results/official/campaign_T1/aggregates.csv (jain_fairness; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Fairness between movements (Jain's index)",
+      "values": 33,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F07a_long_waits.png",
+        "F07a_long_waits.pdf",
+        "F07a_long_waits.svg"
+      ],
+      "id": "F07a_long_waits",
+      "metric": "Vehicles with control delay > 90 s per run",
+      "source": "results/official/campaign_T1/aggregates.csv (vehicles_control_delay_over_90s; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Vehicles delayed more than 90 s",
+      "values": 33,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F07b_S10_starvation_WMAX.png",
+        "F07b_S10_starvation_WMAX.pdf",
+        "F07b_S10_starvation_WMAX.svg"
+      ],
+      "id": "F07b_S10_starvation_WMAX",
+      "metric": "S10 longest detector-call wait per seed (s); mean delay",
+      "source": "results/official/campaign_T1/runs.csv (detector_call_wait_max_s, per seed) and aggregates.csv (delay_mean_s)",
+      "title": "S10: starvation hold (W_MAX) is a threshold, not a hard bound",
+      "values": 44,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F08a_signal_changes.png",
+        "F08a_signal_changes.pdf",
+        "F08a_signal_changes.svg"
+      ],
+      "id": "F08a_signal_changes",
+      "metric": "Signal changes (green onsets) per hour",
+      "source": "results/official/campaign_T1/aggregates.csv (signal_changes_per_hour; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Signal changes per hour",
+      "values": 33,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F08b_green_utilization.png",
+        "F08b_green_utilization.pdf",
+        "F08b_green_utilization.svg"
+      ],
+      "id": "F08b_green_utilization",
+      "metric": "Green utilization (fraction)",
+      "source": "results/official/campaign_T1/aggregates.csv (green_utilization_mean; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Green utilization",
+      "values": 33,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F09_SmartT1_vs_FTA.png",
+        "F09_SmartT1_vs_FTA.pdf",
+        "F09_SmartT1_vs_FTA.svg"
+      ],
+      "id": "F09_SmartT1_vs_FTA",
+      "metric": "Paired difference Smart-T1 \u2212 FT-A in mean delay (s/veh)",
+      "source": "results/official/campaign_T1/paired.csv (delay_mean_s, same-seed pairs, n = 10, 95 % CI, unadjusted)",
+      "title": "Smart-T1 vs FT-A: difference in mean control delay",
+      "values": 11,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F10_SmartT1_vs_FTB.png",
+        "F10_SmartT1_vs_FTB.pdf",
+        "F10_SmartT1_vs_FTB.svg"
+      ],
+      "id": "F10_SmartT1_vs_FTB",
+      "metric": "Paired difference Smart-T1 \u2212 FT-B in mean delay (s/veh)",
+      "source": "results/official/campaign_T1/paired.csv (delay_mean_s, same-seed pairs, n = 10, 95 % CI, unadjusted)",
+      "title": "Smart-T1 vs FT-B: difference in mean control delay",
+      "values": 11,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F11_SmartT1_vs_SmartStudy_historical.png",
+        "F11_SmartT1_vs_SmartStudy_historical.pdf",
+        "F11_SmartT1_vs_SmartStudy_historical.svg"
+      ],
+      "id": "F11_SmartT1_vs_SmartStudy_historical",
+      "metric": "Smart-T1 vs Smart-study mean delay (tuning, evaluation)",
+      "source": "results/tuning/S1_T1/selection.json and results/official/campaign_T1/paired.csv (Smart-study vs Smart-T1)",
+      "title": "Historical: Smart-T1 vs Smart-study (tuning vs final evaluation)",
+      "values": 14,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F12_S6_time_varying_demand.png",
+        "F12_S6_time_varying_demand.pdf",
+        "F12_S6_time_varying_demand.svg"
+      ],
+      "id": "F12_S6_time_varying_demand",
+      "metric": "S6 queue over time and delay by arrival window",
+      "source": "data/S6_timeseries.csv (this folder) (from the official S6 runs, fingerprint-checked)",
+      "title": "S6: demand shifts sides at t = 1800 s",
+      "values": 528,
+      "vehicle_policy": "legacy-study"
+    },
+    {
+      "files": [
+        "F13_key_scenarios_mean_delay.png",
+        "F13_key_scenarios_mean_delay.pdf",
+        "F13_key_scenarios_mean_delay.svg"
+      ],
+      "id": "F13_key_scenarios_mean_delay",
+      "metric": "Mean control delay in S4, S6, S7b, S8, S10",
+      "source": "results/official/campaign_T1/aggregates.csv (delay_mean_s; n = 10 seeds, mean \u00b1 95 % CI)",
+      "title": "Key presentation scenarios: mean control delay",
+      "values": 16,
+      "vehicle_policy": "legacy-study"
+    }
+  ],
+  "figures_values_csv_sha256": "67a93ba7b0521fd24af1413d63dfb2610ef10ba9859dc7ed5210c70859722c83",
+  "figures_version": "stage15-1",
+  "font": "DejaVu Sans",
+  "inputs_sha256": {
+    "data/S6_timeseries.csv": "0948c82b163ae583e1fdc0047371ec56b26f1118db9d18f605924b4d34a34cc0",
+    "data/S6_timeseries.json": "714f8307c4685f996ea5957482f33a2ee210faedd355432372db577a6d4877b5",
+    "results/official/campaign_T1/aggregates.csv": "8f5a1bd114419325e8bbb71266c575fdb2b333225bb1722c27af75d123011c29",
+    "results/official/campaign_T1/manifest.json": "9e1b9dbb0358e3cd584f56713304cdf3850ed658685aec20277fe3e5aa1342e7",
+    "results/official/campaign_T1/paired.csv": "99cbca1fed849e93fac47c8f87e4e71a2c75a9f1bd4b204f6f518d2f2ac7f0b1",
+    "results/official/campaign_T1/runs.csv": "f4e6b6a0eea0f8a37e4ddf6a985f81755ea09785d5335540c2273431b17b97e4",
+    "results/tuning/S1_T1/manifest.json": "2b352a829ef48373c095e2c7fec48550879efbdf064d7607131863bf1d89b8ee",
+    "results/tuning/S1_T1/runs.csv": "00561723f595f350aff5388a7ca5289a10637422db6de3669541dde676100184",
+    "results/tuning/S1_T1/selection.json": "668f0a4e0948d21a6c0440cec9043c5b0c340b822a4eb9d0c560c3599a5253c5"
+  },
+  "lock_sha256": "3b3da0427f7f965f23a1c586a782fbeb3be8445608dc2eaf4135f5512e3ca84c",
+  "matplotlib": "3.11.2",
+  "png_dpi": 300,
+  "values": 969,
+  "vehicle_policy": "legacy-study"
+}
