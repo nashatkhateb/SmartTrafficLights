@@ -15,6 +15,12 @@ All parameters, algorithms and scenarios come from that document; do not change 
 - Stage 9 (physically verified): ESP32 hardware — real IR detector(s) and physical
   signal head(s) via `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`,
   `config/hardware.json`, firmware in `hardware/`. See `hardware/README.md`.
+- Hardware update (2026-09-28, awaiting review): the verified demo hardware is **2 real
+  detectors + 14 virtual** — NS:D1 (digital active-low IR on GPIO27) and NS:D2 (GPIO26) — and a
+  physical NS head with **discrete R/Y/G outputs** (GPIO32 / GPIO33 / GPIO25) that mirrors the
+  logical NS signal lamp for lamp (protocol v2; the ESP32 runs no signal timing).
+  In hardware mode NS is **real-demand-only**: no virtual NS vehicles are generated or drawn,
+  so NS:D1/NS:D2 change only from the physical sensors; the other 7 movements stay virtual.
 - Stage 10 (verified): `controller_fixed.py` + `config/fixed_plans.json` — fixed-time
   baselines FT-A, FT-B (per scenario) and S6 time-of-day. See "Fixed-time controller" below.
 - Stage 11 (verified): `controller_smart.py` — the study §7 actuated controller.
@@ -79,8 +85,9 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
     use the 12 s initial green.
   - During GREEN / FLASHING_GREEN, `gap_out` becomes true after 2.5 s with both detectors clear.
 - Stage 9: real ESP32 detectors plug in behind the same `DetectorSource` interface through
-  `HybridDetectorSource`. Currently NS:D1 is real and the other 15 are virtual; this is set in
-  `config/hardware.json`. A physical NeoPixel head mirrors NS.
+  `HybridDetectorSource`. Currently NS:D1 and NS:D2 are real (2 digital active-low IR modules)
+  and the other 14 are virtual; this is set in `config/hardware.json`. A physical 3-LED head with
+  discrete R/Y/G outputs mirrors the logical NS signal exactly (flashing green included).
   `SensorBank.detector_fault()` reports hardware faults.
 - Step order: `vehicles.advance` → `sensors.advance` → `signals.advance` → controller `update(bank)`.
 
@@ -130,7 +137,7 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 ```
 python -m smarttraffic.viz                                  # S1, seed 1, Smart; press Space to run
 python -m smarttraffic.viz --controller FT-A --scenario S5 --speed 5
-python -m smarttraffic.viz --hardware --port COM5            # real IR detector + mirrored head
+python -m smarttraffic.viz --hardware --port COM5            # 2 real IR detectors + mirrored R/Y/G head
 python -m smarttraffic.viz --screenshot shot.png --at 120    # still frame, no window
 ```
 
@@ -142,8 +149,10 @@ python -m smarttraffic.viz --screenshot shot.png --at 120    # still frame, no w
   left-turning cars blink their indicator.
 - Every lamp is SignalBank state (FLASHING_GREEN blinks with `lamps_for`); vehicles are the
   VehicleModel's (positions interpolated between steps for smooth motion, display only);
-  the 16 detector loops show clear / occupied / call / LEVEL_2; the real detector
-  (config/hardware.json, NS:D1) is drawn in its own slot as "IR", never as a 17th.
+  the 16 detector loops show clear / occupied / call / LEVEL_2; the real detectors
+  (config/hardware.json: NS:D1 and NS:D2) are drawn in their own slots as "IR", never as extra
+  detectors (2 real + 14 virtual = 16). In hardware mode NS gets no virtual vehicles (real
+  demand only; the hardware card says so); virtual-only mode keeps the full scenario.
 - Side panel: run controls (Run/Pause, Reset, speed 0.5–10× and Max, controller FT-A / FT-B /
   Smart and FT-TOD for S6, scenario, seed, hardware on/off); live metrics; Smart: target,
   starvation hold and a plain-language reason (minimum green, gap-out, max-out), per-movement
@@ -247,6 +256,7 @@ policy. See `docs/ARCHITECTURE.md` ("Vehicle policy") for the exact list of assu
 | `config/fixed_plans.json` | Fixed-time phases and plans (FT-A, FT-B per scenario, S6 TOD) | §8 |
 | `config/hardware.json` | Real detectors / physical heads → ESP32 device + channel | Stage 9 |
 | `smarttraffic/esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py` | ESP32 protocol, links, hybrid 16-detector source, signal mirror, live smoke test | Stage 9 |
+| `smarttraffic/esp_sim.py` | Executable model of the ESP32 firmware (2 active-low sensors, R/Y/G outputs) for tests | Stage 9 hardware update |
 | `data/arrivals/` | Arrival CSVs, one per scenario × seed, read by every controller | §5 |
 | `results/runs/` | Experiment result CSVs | §10–11 |
 | `figures/` | Generated graphs | §12 |

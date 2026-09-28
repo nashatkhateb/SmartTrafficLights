@@ -1,4 +1,5 @@
-"""esp_protocol -- line protocol between Python and the ESP32 hardware nodes (Stage 9).
+"""esp_protocol -- line protocol between Python and the ESP32 hardware nodes (Stage 9;
+version 2 since the discrete R/Y/G traffic light, 2026-09-28).
 
 Pure encode/decode functions: no I/O, no clock, no serial import.
 
@@ -15,7 +16,7 @@ Device -> host  (every message: TYPE, seq, device_ms, ...)
     HELLO,seq,ms,proto,device_id,boot_id,n_sensors,n_signals
     SEN,seq,ms,channel,OCC|CLR        sensor state (edge, or a full-state report)
     HB,seq,ms                         heartbeat (default every 200 ms)
-    ACK,seq,ms,channel,STATE          signal command applied
+    ACK,seq,ms,channel,STATE,LAMPS    signal command applied (echoes the lamps set)
     ERR,seq,ms,text                   device-side problem (e.g. bad command)
 
 seq is a 32-bit counter that restarts at 0 on every boot; ms is the device's
@@ -23,12 +24,23 @@ millis() (32-bit, wraps after ~49.7 days); boot_id is random hex chosen at boot.
 
 Host -> device
 --------------
-    SIG,channel,STATE                 display STATE on physical signal `channel`
+    SIG,channel,STATE,LAMPS           show LAMPS on physical signal `channel` (STATE for status)
     QRY                               re-send HELLO and the state of every sensor
 
 STATE is one of the Signals V2 states RED, RED_YELLOW, GREEN, FLASHING_GREEN,
-YELLOW, ALL_RED, or OFF (all lamps dark; used only at shutdown). The ESP32
-performs the FLASHING_GREEN blinking itself (see hardware/README.md).
+YELLOW, ALL_RED, or OFF (all lamps dark; used only at shutdown). LAMPS is three
+characters '0'/'1' for the red, yellow and green lamp, exactly
+signals.lamps_for(state, elapsed) of the logical signal at the moment the command is
+sent. The host sends a command on every lamp change (so FLASHING_GREEN is sent as
+"001"/"000" at every flash edge, 0.5 s apart) and refreshes the current one every
+signal_refresh_ms. The ESP32 runs NO traffic-light timing of its own: it sets the
+three outputs exactly as commanded. Its only local timing is the fail-safe: no
+command for 3 s (or none since boot) -> yellow blinking fault indication.
+
+Version history: 1 = STATE only, the ESP32 blinked FLASHING_GREEN itself and drove a
+NeoPixel head (obsolete). 2 = LAMPS added (discrete R/Y/G outputs); a device that says
+HELLO with another version is refused (link state PROTOCOL_MISMATCH -> real detectors
+faulted, nothing sent to its heads).
 """
 from dataclasses import dataclass
 import re
@@ -38,16 +50,21 @@ from smarttraffic.signals import SignalState
 
 __all__ = [
     "PROTOCOL_VERSION", "MAX_LINE", "U32", "ProtocolError", "SIGNAL_COMMAND_STATES",
+    "LAMP_PATTERNS", "encode_lamps", "decode_lamps",
     "checksum", "encode_frame", "decode_frame",
     "Hello", "SensorReport", "Heartbeat", "Ack", "DeviceError", "DeviceMessage",
     "parse_device_message", "encode_hello", "encode_sensor", "encode_heartbeat",
     "encode_ack", "encode_error", "encode_signal_command", "encode_query",
 ]
 
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = 2
 MAX_LINE = 120
 U32 = 2 ** 32
 SIGNAL_COMMAND_STATES = tuple(s.name for s in SignalState) + ("OFF",)
+# lamps ("RYG", '1' = ON) a state may show; FLASHING_GREEN alternates between its two
+LAMP_PATTERNS = {"RED": ("100",), "RED_YELLOW": ("110",), "GREEN": ("001",),
+                 "FLASHING_GREEN": ("001", "000"), "YELLOW": ("010",), "ALL_RED": ("100",),
+                 "OFF": ("000",)}
 
 _FIELD_OK = re.compile(r"^[A-Za-z0-9_.\- ]*$")
 _DEVICE_ID = re.compile(r"^[A-Za-z0-9_\-]{1,32}$")
@@ -135,6 +152,7 @@ class Ack:
     device_ms: int
     channel: int
     state: str
+    lamps: str
 
 
 @dataclass(frozen=True)
@@ -163,7 +181,7 @@ def _small(s: str, what: str, hi: int = 255) -> int:
     return v
 
 
-_ARITY = {"HELLO": 8, "SEN": 5, "HB": 3, "ACK": 5, "ERR": 4}
+_ARITY = {"HELLO": 8, "SEN": 5, "HB": 3, "ACK": 6, "ERR": 4}
 
 
 def parse_device_message(line: Union[bytes, str]) -> DeviceMessage:
@@ -190,7 +208,9 @@ def parse_device_message(line: Union[bytes, str]) -> DeviceMessage:
     if kind == "ACK":
         if f[4] not in SIGNAL_COMMAND_STATES:
             raise ProtocolError(f"unknown signal state {f[4]!r}")
-        return Ack(seq, ms, _small(f[3], "channel"), f[4])
+        if f[5] not in LAMP_PATTERNS[f[4]]:
+            raise ProtocolError(f"lamps {f[5]!r} are not valid for {f[4]}")
+        return Ack(seq, ms, _small(f[3], "channel"), f[4], f[5])
     return DeviceError(seq, ms, f[3])
 
 
@@ -208,22 +228,47 @@ def encode_heartbeat(seq, device_ms) -> bytes:
     return encode_frame(["HB", seq, device_ms])
 
 
-def encode_ack(seq, device_ms, channel, state) -> bytes:
-    return encode_frame(["ACK", seq, device_ms, channel, state])
+def encode_ack(seq, device_ms, channel, state, lamps) -> bytes:
+    return encode_frame(["ACK", seq, device_ms, channel, state, encode_lamps(lamps)])
 
 
 def encode_error(seq, device_ms, text) -> bytes:
     return encode_frame(["ERR", seq, device_ms, text])
 
 
-def encode_signal_command(channel: int, state: Union[SignalState, str]) -> bytes:
-    """Host -> device: show `state` (a SignalState, or 'OFF') on physical signal `channel`."""
+def encode_lamps(lamps) -> str:
+    """(red, yellow, green) booleans -- e.g. a signals.Lamps -- or an 'RYG' string -> '100' etc."""
+    if isinstance(lamps, str):
+        if len(lamps) != 3 or set(lamps) - {"0", "1"}:
+            raise ProtocolError(f"lamps must be three characters 0/1 (red, yellow, green), got {lamps!r}")
+        return lamps
+    try:
+        r, y, g = lamps
+    except (TypeError, ValueError):
+        raise ProtocolError(f"lamps must be (red, yellow, green), got {lamps!r}") from None
+    if not all(isinstance(v, bool) for v in (r, y, g)):
+        raise ProtocolError(f"lamps must be booleans, got {lamps!r}")
+    return "".join("1" if v else "0" for v in (r, y, g))
+
+
+def decode_lamps(text: str):
+    """'110' -> (True, True, False) = (red, yellow, green)."""
+    encode_lamps(text)
+    return tuple(c == "1" for c in text)
+
+
+def encode_signal_command(channel: int, state: Union[SignalState, str], lamps) -> bytes:
+    """Host -> device: set the lamps of physical signal `channel`. `state` (a SignalState, or
+    'OFF') is the logical state they show; `lamps` must be a pattern that state can show."""
     name = state.name if isinstance(state, SignalState) else state
     if name not in SIGNAL_COMMAND_STATES:
         raise ProtocolError(f"unknown signal state {state!r}")
     if isinstance(channel, bool) or not isinstance(channel, int) or not 0 <= channel <= 255:
         raise ProtocolError(f"signal channel must be an int 0..255, got {channel!r}")
-    return encode_frame(["SIG", channel, name])
+    lp = encode_lamps(lamps)
+    if lp not in LAMP_PATTERNS[name]:
+        raise ProtocolError(f"lamps {lp!r} are not valid for {name}")
+    return encode_frame(["SIG", channel, name, lp])
 
 
 def encode_query() -> bytes:

@@ -5,7 +5,7 @@ Spec: docs/Eight-Movement_Intersection_Study.html §13; docs/ARCHITECTURE.md
 
     python -m smarttraffic.viz                      # window, S1, seed 1, Smart, paused at start
     python -m smarttraffic.viz --controller FT-A --scenario S5 --speed 5
-    python -m smarttraffic.viz --hardware [--port COM5]   # real IR detector + mirrored head
+    python -m smarttraffic.viz --hardware [--port COM5]   # 2 real IR detectors (NS:D1, NS:D2) + mirrored R/Y/G head
     python -m smarttraffic.viz --screenshot out.png --at 120   # headless still frame
 
 Presentation layer only. The simulation runs unchanged in viz_session (Stage 12 runner
@@ -431,6 +431,7 @@ def capture(config: RunConfig, times_ms: Sequence[int], *, hw_config=None, trans
     kw = {"observers": [obs]}
     if hw_config is not None:
         kw["source_factory"] = factory
+        kw["exclude_movements"] = hw_config.real_only_movements   # same rule as VizSession
     if arrivals is not None:
         kw["arrivals"] = arrivals
     try:

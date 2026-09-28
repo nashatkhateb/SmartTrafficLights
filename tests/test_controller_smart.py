@@ -614,10 +614,12 @@ def test_controller_uses_only_public_sensorbank_queries():
 
 
 def test_fixed_controller_and_firmware_untouched():
-    # SHA-256 of the Stage 10 checkpoint versions (commit 7e4ae52)
+    # SHA-256 of the Stage 10 checkpoint version of the fixed controller (commit 7e4ae52) and of
+    # the firmware for the verified demo hardware (protocol v2, 2 active-low IR sensors + R/Y/G
+    # head, 2026-09-28; the Stage 9/10 NeoPixel firmware was 81c6f85e...)
     want = {"smarttraffic/controller_fixed.py": "aefddb0b55492cd8b446fb3eb9de8aa4cb46499a528b82ed2f54d26e348b4714",
             "hardware/esp32_smart_traffic/esp32_smart_traffic.ino":
-                "81c6f85e8620d2425fad4d1412c99fc2c583e2aeadcd73551974dc619d3e8b64"}
+                "460f079c5d4fd28c4e1c63e3d1003ee7e898464a413844a1df65db00a505dfa2"}
     for f, h in want.items():
         data = (ROOT / f).read_bytes().replace(b"\r\n", b"\n")
         assert hashlib.sha256(data).hexdigest() == h, f
@@ -813,8 +815,9 @@ def test_real_esp32_sensor_report_is_served_like_any_call():
     c.update(bank)
     while t < 20000:
         if t == 100:
-            ports["esp32_a"].inbox += p.encode_hello(next(seq), t + 5000, "esp32_a", "0000BEEF", 1, 1)
-            ports["esp32_a"].inbox += p.encode_sensor(next(seq), t + 5000, 0, False)
+            ports["esp32_a"].inbox += p.encode_hello(next(seq), t + 5000, "esp32_a", "0000BEEF", 2, 1)
+            ports["esp32_a"].inbox += p.encode_sensor(next(seq), t + 5000, 0, False)     # NS:D1
+            ports["esp32_a"].inbox += p.encode_sensor(next(seq), t + 5000, 1, False)     # NS:D2
         elif t > 100 and t % 200 == 0:
             ports["esp32_a"].inbox += p.encode_heartbeat(next(seq), t + 5000)
         if t == 3000:
@@ -827,7 +830,8 @@ def test_real_esp32_sensor_report_is_served_like_any_call():
         bank.advance(0.1)
         c.update(bank)
     starts = [cmd for cmd in c.command_log if cmd.kind == START_GREEN]
-    # before the ESP32 reported NS:D1 it was faulted -> recall; afterwards the real call counts
+    # before the ESP32 reported NS:D1 / NS:D2 they were faulted -> recall; afterwards the real call counts
+    assert sb.faulted_detectors() == ()
     assert starts[0].movement == "NS"
     assert bank.state("NS") in (GREEN, RED_YELLOW, FLASHING_GREEN)
     hw.close()
@@ -851,6 +855,6 @@ def test_disconnected_real_detector_puts_its_movement_on_recall():
         sb.advance(0.1, bank)
         bank.advance(0.1)
         c.update(bank)
-    assert sb.faulted_detectors() == (("NS", "D1"),)
+    assert sb.faulted_detectors() == (("NS", "D1"), ("NS", "D2"))
     assert c.faulted_movements() == ("NS",)
     assert bank.state("NS") is GREEN                      # recall: served without any detection

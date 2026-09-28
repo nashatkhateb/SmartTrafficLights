@@ -1,75 +1,87 @@
 /*
- * SmartTrafficLights - ESP32 hardware node (Stage 9)
+ * SmartTrafficLights - ESP32 hardware node (protocol v2, discrete R/Y/G light)
  *
- * Role: report real IR detectors and display commanded signal states.
- * It makes NO traffic decisions: Python's SignalBank is authoritative.
+ * Role: report the two real IR detectors and set the physical traffic light
+ * exactly as commanded. It makes NO traffic decisions and runs NO traffic-light
+ * timing: Python's SignalBank / controller is the only timing authority.
+ *
+ * Verified demo hardware
+ *   Sensor channel 0 = NS:D1 : digital IR obstacle module, OUT -> GPIO27, active-low
+ *   Sensor channel 1 = NS:D2 : digital IR obstacle module, OUT -> GPIO26, active-low
+ *                              (both: VCC -> 3.3V, GND -> GND; HIGH = clear, LOW = car)
+ *   Signal channel 0 = NS    : 3-LED module, G -> GPIO25, Y -> GPIO33, R -> GPIO32,
+ *                              GND -> GND; output HIGH = lamp ON
  *
  * Protocol (see smarttraffic/esp_protocol.py and hardware/README.md):
  *   frames  "$FIELD,FIELD,...*CS\n", CS = XOR of bytes between '$' and '*' (2 hex digits)
  *   ESP32 -> PC : HELLO,seq,ms,proto,device_id,boot_id,n_sensors,n_signals
  *                 SEN,seq,ms,channel,OCC|CLR     (edge, or full-state report)
  *                 HB,seq,ms                      (heartbeat, every HEARTBEAT_MS)
- *                 ACK,seq,ms,channel,STATE       (signal command applied)
+ *                 ACK,seq,ms,channel,STATE,LAMPS (signal command applied)
  *                 ERR,seq,ms,text
- *   PC -> ESP32 : SIG,channel,STATE   STATE = RED|RED_YELLOW|GREEN|FLASHING_GREEN|YELLOW|ALL_RED|OFF
- *                 QRY                 re-send HELLO + all sensor states
+ *   PC -> ESP32 : SIG,channel,STATE,LAMPS  STATE = RED|RED_YELLOW|GREEN|FLASHING_GREEN|YELLOW|ALL_RED|OFF
+ *                                          LAMPS = "RYG" as 0/1, e.g. 100 = red, 110 = red+yellow
+ *                 QRY                      re-send HELLO + all sensor states
  *
- * FLASHING_GREEN is blinked HERE: 1 Hz, lamp ON for the first 500 ms of each
- * second, phase starting when the FLASHING_GREEN command arrives. Re-sending the
- * same state (refresh) does not restart the phase. ALL_RED shows the red lamp.
- * If no SIG command arrives for SIGNAL_TIMEOUT_MS, every head shows the fault
- * indication (yellow blinking at 1 Hz) until commands resume.
+ * The PC sends a SIG on every lamp change of the logical signal (FLASHING_GREEN
+ * arrives as 001 / 000 at each flash edge) and refreshes it every second. The
+ * lamps are applied exactly as received; the pattern must be one the state can
+ * show, otherwise the command is refused (ERR bad_lamps) and nothing changes.
  *
- * Library: Adafruit NeoPixel (Arduino Library Manager). Board: any ESP32.
+ * Fail-safe: if no SIG arrives for SIGNAL_TIMEOUT_MS (USB unplugged, PC program
+ * stopped or paused), or none has arrived since boot, the head shows the fault
+ * indication: yellow blinking at 1 Hz, red and green off. Normal display resumes
+ * with the next command. A sensor module that is disconnected reads HIGH through
+ * the internal pull-up, i.e. CLEAR (no phantom vehicle).
+ *
+ * No extra library needed. Board: any ESP32 (Arduino core).
  */
-#include <Adafruit_NeoPixel.h>
 
 // ============================ CONFIGURATION ============================
 static const char *DEVICE_ID = "esp32_a";      // must match config/hardware.json
 static const uint32_t BAUD = 115200;
 
 struct SensorCfg {
-  uint8_t  pin;            // ADC pin (ADC1: 32-39 recommended)
-  uint16_t threshold;      // raw analogRead threshold
-  bool     occupiedAbove;  // true: value > threshold means OCCUPIED
+  uint8_t  pin;            // digital input
+  bool     activeLow;      // true: LOW = OCCUPIED (car), HIGH = CLEAR
   uint16_t debounceMs;     // new state must persist this long before it is reported
 };
 // channel = index in this table (config/hardware.json "channel")
 static const SensorCfg SENSORS[] = {
-  {34, 2000, true, 20},    // channel 0: analog IR, car present when analogRead > 2000
+  {27, true, 20},          // channel 0: NS:D1, digital IR, LOW = car
+  {26, true, 20},          // channel 1: NS:D2, digital IR, LOW = car
 };
 
 struct SignalCfg {
-  uint8_t pin;             // NeoPixel data pin
-  uint8_t numLeds;
-  uint8_t greenIdx, yellowIdx, redIdx;
-  uint8_t brightness;      // 0-255
+  uint8_t greenPin, yellowPin, redPin;
+  bool    activeHigh;      // true: output HIGH = lamp ON
 };
 static const SignalCfg SIGNALS[] = {
-  {13, 3, 0, 1, 2, 80},    // channel 0: 3-LED module, GREEN=0, YELLOW=1, RED=2
+  {25, 33, 32, true},      // channel 0: NS head, G=GPIO25 Y=GPIO33 R=GPIO32
 };
 
 static const uint32_t HEARTBEAT_MS      = 200;
 static const uint32_t SIGNAL_TIMEOUT_MS = 3000;
 static const uint32_t SAMPLE_MS         = 2;
-static const uint32_t FLASH_PERIOD_MS   = 1000;
-static const uint32_t FLASH_ON_MS       = 500;
-static const int      PROTOCOL_VERSION  = 1;
+static const uint32_t FAULT_BLINK_PERIOD_MS = 1000;   // fail-safe indication only
+static const uint32_t FAULT_BLINK_ON_MS     = 500;
+static const int      PROTOCOL_VERSION  = 2;
 // =======================================================================
 
 static const uint8_t N_SENSORS = sizeof(SENSORS) / sizeof(SENSORS[0]);
 static const uint8_t N_SIGNALS = sizeof(SIGNALS) / sizeof(SIGNALS[0]);
 
-enum SigState { S_RED, S_RED_YELLOW, S_GREEN, S_FLASHING_GREEN, S_YELLOW, S_ALL_RED, S_OFF, S_FAULT };
+enum SigState { S_RED, S_RED_YELLOW, S_GREEN, S_FLASHING_GREEN, S_YELLOW, S_ALL_RED, S_OFF };
 static const char *STATE_NAMES[] = {"RED", "RED_YELLOW", "GREEN", "FLASHING_GREEN", "YELLOW", "ALL_RED", "OFF"};
+// lamp patterns ("RYG") each state may show; FLASHING_GREEN alternates 001 / 000
+static const char *STATE_LAMPS_A[] = {"100", "110", "001", "001", "010", "100", "000"};
+static const char *STATE_LAMPS_B[] = {"100", "110", "001", "000", "010", "100", "000"};
 
-static Adafruit_NeoPixel *strips[N_SIGNALS];
-static SigState sigState[N_SIGNALS];
-static uint32_t sigSince[N_SIGNALS];
+static bool     lampR[N_SIGNALS], lampY[N_SIGNALS], lampG[N_SIGNALS];   // last commanded lamps
 static uint32_t lastCommandMs = 0;
 static bool     everCommanded = false;
 
-static bool     sensState[N_SENSORS];        // reported state
+static bool     sensState[N_SENSORS];        // reported state (true = occupied)
 static bool     sensCandidate[N_SENSORS];    // raw state waiting for debounce
 static uint32_t sensCandidateSince[N_SENSORS];
 
@@ -112,32 +124,22 @@ static void sendError(const char *text) {
 }
 
 // ------------------------------------------------------------ lamps
-static int8_t lastLamps[N_SIGNALS];          // bitmask R=4 Y=2 G=1; -1 = unknown
+static void writeLamp(uint8_t pin, bool on, bool activeHigh) {
+  digitalWrite(pin, (on == activeHigh) ? HIGH : LOW);
+}
 
-static void setLamps(uint8_t ch, bool r, bool y, bool g) {
-  int8_t mask = (r ? 4 : 0) | (y ? 2 : 0) | (g ? 1 : 0);
-  if (mask == lastLamps[ch]) return;          // only drive the LEDs when something changes
-  lastLamps[ch] = mask;
-  Adafruit_NeoPixel *s = strips[ch];
+static void setOutputs(uint8_t ch, bool r, bool y, bool g) {
   const SignalCfg &c = SIGNALS[ch];
-  s->clear();
-  if (r) s->setPixelColor(c.redIdx, s->Color(255, 0, 0));
-  if (y) s->setPixelColor(c.yellowIdx, s->Color(255, 140, 0));
-  if (g) s->setPixelColor(c.greenIdx, s->Color(0, 255, 0));
-  s->show();
+  writeLamp(c.redPin, r, c.activeHigh);
+  writeLamp(c.yellowPin, y, c.activeHigh);
+  writeLamp(c.greenPin, g, c.activeHigh);
 }
 
 static void render(uint8_t ch, uint32_t now) {
-  SigState st = sigState[ch];
-  if (!everCommanded || now - lastCommandMs > SIGNAL_TIMEOUT_MS) st = S_FAULT;
-  switch (st) {
-    case S_RED: case S_ALL_RED: setLamps(ch, true, false, false); break;
-    case S_RED_YELLOW:          setLamps(ch, true, true, false); break;
-    case S_GREEN:               setLamps(ch, false, false, true); break;
-    case S_FLASHING_GREEN:      setLamps(ch, false, false, ((now - sigSince[ch]) % FLASH_PERIOD_MS) < FLASH_ON_MS); break;
-    case S_YELLOW:              setLamps(ch, false, true, false); break;
-    case S_OFF:                 setLamps(ch, false, false, false); break;
-    case S_FAULT:               setLamps(ch, false, (now % FLASH_PERIOD_MS) < FLASH_ON_MS, false); break;
+  if (!everCommanded || now - lastCommandMs > SIGNAL_TIMEOUT_MS) {       // fail-safe
+    setOutputs(ch, false, (now % FAULT_BLINK_PERIOD_MS) < FAULT_BLINK_ON_MS, false);
+  } else {
+    setOutputs(ch, lampR[ch], lampY[ch], lampG[ch]);                   // exactly as commanded
   }
 }
 
@@ -161,21 +163,31 @@ static void handleLine(char *line) {
   if (strcmp(body, "QRY") == 0) { sendHello(); sendAllSensors(); return; }
   if (strncmp(body, "SIG,", 4) == 0) {
     char *chStr = body + 4;
-    char *comma = strchr(chStr, ',');
-    if (!comma) { sendError("bad_sig"); return; }
-    *comma = '\0';
+    char *c1 = strchr(chStr, ',');
+    if (!c1) { sendError("bad_sig"); return; }
+    *c1 = '\0';
+    char *name = c1 + 1;
+    char *c2 = strchr(name, ',');
+    if (!c2) { sendError("bad_sig"); return; }
+    *c2 = '\0';
+    const char *lamps = c2 + 1;
     int ch = atoi(chStr);
-    const char *name = comma + 1;
     if (ch < 0 || ch >= N_SIGNALS) { sendError("bad_channel"); return; }
     int st = -1;
     for (int i = 0; i <= S_OFF; ++i) if (strcmp(name, STATE_NAMES[i]) == 0) st = i;
     if (st < 0) { sendError("bad_state"); return; }
+    if (strcmp(lamps, STATE_LAMPS_A[st]) != 0 && strcmp(lamps, STATE_LAMPS_B[st]) != 0) {
+      sendError("bad_lamps"); return;
+    }
     uint32_t now = millis();
     lastCommandMs = now;
     everCommanded = true;
-    if ((SigState)st != sigState[ch]) { sigState[ch] = (SigState)st; sigSince[ch] = now; }  // refresh keeps phase
+    lampR[ch] = lamps[0] == '1';
+    lampY[ch] = lamps[1] == '1';
+    lampG[ch] = lamps[2] == '1';
+    render(ch, now);                                   // apply immediately
     char b[64];
-    snprintf(b, sizeof(b), "ACK,%lu,%lu,%d,%s", (unsigned long)seqNo++, (unsigned long)now, ch, name);
+    snprintf(b, sizeof(b), "ACK,%lu,%lu,%d,%s,%s", (unsigned long)seqNo++, (unsigned long)now, ch, name, lamps);
     sendFrame(b);
     return;
   }
@@ -193,8 +205,8 @@ static void readSerial() {
 
 // ------------------------------------------------------------ sensors
 static bool rawOccupied(uint8_t i) {
-  int v = analogRead(SENSORS[i].pin);
-  return SENSORS[i].occupiedAbove ? (v > SENSORS[i].threshold) : (v < SENSORS[i].threshold);
+  int level = digitalRead(SENSORS[i].pin);
+  return SENSORS[i].activeLow ? (level == LOW) : (level == HIGH);
 }
 
 static void sampleSensors(uint32_t now) {
@@ -213,16 +225,15 @@ void setup() {
   Serial.begin(BAUD);
   snprintf(bootId, sizeof(bootId), "%08lX", (unsigned long)esp_random());
   for (uint8_t i = 0; i < N_SIGNALS; ++i) {
-    strips[i] = new Adafruit_NeoPixel(SIGNALS[i].numLeds, SIGNALS[i].pin, NEO_GRB + NEO_KHZ800);
-    strips[i]->begin();
-    strips[i]->setBrightness(SIGNALS[i].brightness);
-    sigState[i] = S_RED;
-    sigSince[i] = 0;
-    lastLamps[i] = -1;
+    pinMode(SIGNALS[i].greenPin, OUTPUT);
+    pinMode(SIGNALS[i].yellowPin, OUTPUT);
+    pinMode(SIGNALS[i].redPin, OUTPUT);
+    lampR[i] = lampY[i] = lampG[i] = false;
+    setOutputs(i, false, false, false);
   }
-  analogReadResolution(12);
   uint32_t now = millis();
   for (uint8_t i = 0; i < N_SENSORS; ++i) {
+    pinMode(SENSORS[i].pin, INPUT_PULLUP);     // unplugged module reads HIGH = CLEAR
     sensState[i] = sensCandidate[i] = rawOccupied(i);
     sensCandidateSince[i] = now;
   }

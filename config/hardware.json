@@ -1,10 +1,11 @@
 {
-  "_about": "Stage 9 hardware mapping. Detectors not listed under 'sensors' are virtual. Channels are indexes into the firmware's SENSORS[] / SIGNALS[] tables of that device. Change 'port' to your ESP32's COM port (python -m smarttraffic.hw_smoke --list-ports).",
+  "_about": "Hardware mapping (protocol v2). Detectors not listed under 'sensors' are virtual. Channels are indexes into the firmware's SENSORS[] / SIGNALS[] tables of that device: sensor channel 0 = GPIO27 (NS:D1), channel 1 = GPIO26 (NS:D2), both digital active-low IR modules; signal channel 0 = discrete R/Y/G outputs (G GPIO25, Y GPIO33, R GPIO32). Change 'port' to your ESP32's COM port (python -m smarttraffic.hw_smoke --list-ports).",
   "devices": {
     "esp32_a": {"port": "COM3", "baud": 115200}
   },
   "sensors": {
-    "NS:D1": {"device": "esp32_a", "channel": 0}
+    "NS:D1": {"device": "esp32_a", "channel": 0},
+    "NS:D2": {"device": "esp32_a", "channel": 1}
   },
   "signals": {
     "NS": {"device": "esp32_a", "channel": 0}

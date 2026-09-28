@@ -42,6 +42,7 @@ import hashlib
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, NamedTuple, Optional, Sequence, Tuple, Union
 
+from smarttraffic.conflicts import validate_movement
 from smarttraffic.controller_fixed import load_fixed_plans
 from smarttraffic.controller_smart import SmartController, SmartParams
 from smarttraffic.custom import CUSTOM_CONTROLLERS, CUSTOM_SCENARIO, CUSTOM_TAG, CustomDemand
@@ -189,11 +190,16 @@ def _load_arrivals(config: RunConfig, arrivals, arrivals_dir):
 
 def simulate(config: RunConfig, *, arrivals=None, arrivals_dir: Optional[Union[str, Path]] = None,
              source_factory: Optional[Callable] = None, observers: Sequence[Callable[[StepView], None]] = (),
-             collect_stats: bool = True) -> Simulation:
+             collect_stats: bool = True, exclude_movements: Sequence[str] = ()) -> Simulation:
     """Run the simulation; statistics are collected only if collect_stats (the run itself is
-    identical either way)."""
+    identical either way). exclude_movements (hardware demo only; default none) drops every
+    virtual arrival of those movements before the VehicleModel is built: their demand then comes
+    only from real detectors (hardware.real_only_movements)."""
     w = config.window()
     items = _load_arrivals(config, arrivals, arrivals_dir)
+    if exclude_movements:
+        excl = {validate_movement(m) for m in exclude_movements}
+        items = tuple(a for a in items if a.movement not in excl)
     start = w.start_ms
     vm = VehicleModel(list(items), start=start / 1000, policy=config.policy)
     src = source_factory(vm) if source_factory is not None else VirtualDetectors(vm)
@@ -258,6 +264,8 @@ def run(config: RunConfig, **kw) -> RunResult:
         "detector_source": "custom" if kw.get("source_factory") else "virtual",
         "steps": sim.steps,
     }
+    if kw.get("exclude_movements"):        # hardware demo only; absent in every other run
+        meta["virtual_arrivals_excluded"] = sorted(kw["exclude_movements"])
     if not config.is_legacy:               # legacy-study metadata is exactly Stage 14's
         meta.update(config.policy.describe())
     if config.mode == "custom":

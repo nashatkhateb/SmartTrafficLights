@@ -214,10 +214,32 @@ instants inside the step.
 
     VehicleModel -> VirtualDetectors ---------------------+   (computes all 16; only its assigned ones pass)
     ESP32 link(s) -> HardwareDetectorSource (mapped ids) -+-> HybridDetectorSource -> SensorBank -> controllers
-    SignalBank --(read only)--> SignalMirror --SIG--> ESP32 NeoPixel head(s)
+    SignalBank --(read only)--> SignalMirror --SIG (state + lamps)--> ESP32 R/Y/G head(s)
+
+**Verified demo hardware (2026-09-28, protocol v2).** NS:D1 = digital IR obstacle module on
+GPIO27, NS:D2 = the same module on GPIO26, both active-low (HIGH = clear, LOW = car; decoded on
+the ESP32, 20 ms debounce, INPUT_PULLUP so an unplugged module reads clear). The hybrid source is
+therefore **2 real + 14 virtual = 16** detectors. The NS head is a 3-LED module with discrete
+outputs R = GPIO32, Y = GPIO33, G = GPIO25 (HIGH = ON). The earlier analog IR on GPIO34
+(threshold 2000) and the NeoPixel head on GPIO13 are obsolete and removed from the firmware.
+`smarttraffic/esp_sim.py` is an executable model of the firmware used by the tests.
+
+**Real-demand-only movement (hardware demo).** `hardware.real_only_movements(config)` lists the
+movements whose D1 and D2 are both real (demo config: NS). In hardware mode (`VizSession` /
+`viz.capture` with a hardware config, `hw_smoke --mode hybrid --traffic`) the runner is called
+with `exclude_movements=("NS",)`: every virtual NS arrival is dropped before the VehicleModel is
+built, so no NS vehicle exists, is drawn or produces a virtual detector event, and NS demand
+comes only from the two IR sensors. The other 7 movements keep exactly the scenario arrivals and
+the 14 virtual detectors. The 16-detector SensorBank, the controllers and the signals are
+unchanged; the run metadata records `"virtual_arrivals_excluded": ["NS"]`. The default
+`exclude_movements=()` leaves every virtual-only run byte-identical (no metadata key). The rule
+is fixed for the whole hardware session: while the ESP32 is disconnected (or missing from the
+start) NS still has no virtual vehicles, NS:D1/NS:D2 are faulted with their last state held
+(never virtual), Smart serves NS by its existing fail-safe recall, and a reconnect re-syncs from
+`HELLO` + the full-state report. Switching hardware off starts a new virtual-only session.
 
 - **Configuration drives everything.** `config/hardware.json` lists devices (port, baud), real
-  detectors (`"NS:D1": {device, channel}`) and physical heads (`"NS": {device, channel}`).
+  detectors (`"NS:D1": {device, channel}`, `"NS:D2": ...`) and physical heads (`"NS": {device, channel}`).
   Unlisted detectors are virtual. The config is validated: unknown ids, devices or keys,
   duplicate JSON keys, and a channel used twice all fail clearly. `build_hardware(config,
   vehicle_model)` wires it all together.
@@ -234,10 +256,14 @@ instants inside the step.
   recent messages of (receive simulation time − device time). Wraparound is unwrapped, and a
   device reset re-syncs. Late edges go to the next ms. The library reads no clock; `hw_smoke`
   paces live runs; tests use fake transports.
-- **Physical heads are mirrors.** `SignalMirror.update(bank)` sends `SIG,channel,STATE` on
-  every change, after a reconnect and every 1 s. The ESP32 blinks FLASHING_GREEN itself (1 Hz,
-  ON first, phase from the command) and shows ALL_RED as red. A head is not a ninth signal and
-  never changes the `SignalBank`.
+- **Physical heads are mirrors.** `SignalMirror.update(bank)` sends `SIG,channel,STATE,LAMPS`,
+  where LAMPS (`RYG`, e.g. `110`) is `SignalBank.lamp_state(m)` = `signals.lamps_for`, on every
+  state or lamp change (so FLASHING_GREEN arrives as `001`/`000` at each logical 500 ms edge),
+  after a reconnect and every 1 s. The ESP32 sets its three outputs exactly as commanded and runs
+  no signal timing of its own: RED / ALL_RED -> red, RED_YELLOW -> red + yellow, GREEN -> green,
+  YELLOW -> yellow. Its only local timing is the fail-safe (no command for 3 s or none since
+  boot -> yellow blinking). Protocol v1 (state only, blinking on the ESP32) is refused as
+  PROTOCOL_MISMATCH. A head is not a ninth signal and never changes the `SignalBank`.
 - **Step order with hardware:** `vehicles.advance` → `sensors.advance` (pumps the links) →
   `signals.advance` → `mirror.update(bank)` → controller decides.
 - **Protocol, wiring, extension steps and the smoke test:** `hardware/README.md`.
@@ -747,7 +773,7 @@ beyond no-aging.
 | `traffic_gen.py` | Implemented and tested (study §5, §10, §16 step 3) |
 | `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8; yellow window end made inclusive in the Stage 10 review; named vehicle policies (standard default, legacy-study compatibility) 2026-09-28 |
 | `sensors.py` | Stage 8: virtual detectors + demand logic; Stage 9 added `detector_fault()` / `faulted_detectors()` |
-| `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68) |
+| `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68); updated to the verified 2-sensor + R/Y/G demo hardware, protocol v2, `esp_sim.py` firmware model (awaiting review) |
 | `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented, tested, verified (commit 7e4ae52) |
 | `controller_smart.py` | Stage 11: study §7 policy implemented, tested, verified (commit d98c4dd) |
 | `stats.py`, `runner.py` | Stage 12: implemented, tested, verified (commit fde1505) |

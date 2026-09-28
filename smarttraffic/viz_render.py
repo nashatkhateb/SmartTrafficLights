@@ -9,7 +9,8 @@ Scene (world metres, x east, y south, light from the north-west):
     lines, lane lines, zebra crossings, lane-use arrows); kerbs with rounded returns;
     paved sidewalks; city blocks with buildings and street trees; per approach a signal
     pole carrying the STRAIGHT and the LEFT head; inductive loops for the 16 detectors
-    and the real IR detector drawn as a kerb-side sensor with its beam in its own slot.
+    and the real IR detectors (NS:D1, NS:D2 with the demo hardware) drawn as kerb-side sensors
+    with their beams, each in its own slot.
 UI: top bar, a sidebar of cards (controls, live metrics, controller) and floating glass
 cards on the canvas (hardware, legend, scale).
 """
@@ -1235,7 +1236,7 @@ class Renderer:
         knob = (track.right - z(9) if on else track.x + z(9), track.centery)
         aa_circle(surf, knob, z(6.5), T.text if on else T.text2)
         text(surf, f, "ESP32 hardware", (track.right + z(10), hw.centery - z(1)), z(12), T.text, True, "bottomleft")
-        text(surf, f, "on · real IR + head" if on else "off · all simulated", (track.right + z(10), hw.centery + z(1)),
+        text(surf, f, "on · real IR + R/Y/G head" if on else "off · all simulated", (track.right + z(10), hw.centery + z(1)),
              z(11), T.muted, anchor="topleft")
         self._register(hw, st.toggle_hardware, "hardware")
         y += bh + gap
@@ -1523,7 +1524,7 @@ class Renderer:
         lw, lh = z(262), z(148)
         self._legend(surf, pygame.Rect(canvas.right - m - lw, canvas.bottom - m - lh, lw, lh))
         hw = a.hardware if a is not None else None
-        self._hardware(surf, pygame.Rect(canvas.x + m, canvas.bottom - m - z(132), z(300), z(132)), st, hw)
+        self._hardware(surf, pygame.Rect(canvas.x + m, canvas.bottom - m - z(190), z(300), z(190)), st, hw)
         self._scale(surf, canvas)
         bx, by = canvas.x + m, canvas.y + m
         if st.error:
@@ -1620,7 +1621,7 @@ class Renderer:
             text(surf, f, lab, (xx + z(28), yy + z(8)), z(12), T.text2, anchor="midleft")
         y += 3 * rowh + z(4)
         self._chip(surf, "IR", (x + z(10), y + z(6)), T.real)
-        text(surf, f, "Real IR detector (in its own D1 slot)", (x + z(28), y + z(6)), z(11), T.text2, anchor="midleft")
+        text(surf, f, "Real IR detector (in its own slot)", (x + z(28), y + z(6)), z(11), T.text2, anchor="midleft")
 
     # ================================================================ Custom / Demo panel (Stage 14b)
     def text_button(self, surf, rect, label, action, name, enabled=True, primary=False, size=None):
@@ -1785,8 +1786,11 @@ class Renderer:
             aa_circle(surf, (x + z(4), y + z(8)), z(4), T.muted)
             text(surf, f, "Off · 16 simulated detectors", (x + z(16), y + z(8)), z(13), T.text, True, "midleft")
             y += z(24)
-            self._wrap(surf, "IR marks the real detector's slot (NS:D1). Press H to connect the ESP32.",
-                       x, y, r.w - z(32), z(12), T.text2)
+            ids = ", ".join(f"{m}:{d}" for m, d in self.real_ids_hint) or "none configured"
+            n = len(self.real_ids_hint)
+            self._wrap(surf, f"On: {n} real + {16 - n} virtual detectors. IR marks the real slots ({ids}); "
+                             "their movement then gets real demand only (no virtual cars). "
+                             "Press H to connect the ESP32.", x, y, r.w - z(32), z(12), T.text2)
             return
         for dev, port, state in hw.links:
             ok = state == "CONNECTED"
@@ -1798,6 +1802,13 @@ class Renderer:
                                  y + z(8)), z(11), T.muted, anchor="midleft")
             text(surf, f, state.replace("_", " ").title(), (right, y + z(8)), z(12), col, True, "midright")
             y += z(24)
+        n = len(hw.real)
+        text(surf, f, f"{n} real + {16 - n} virtual detectors", (x + z(16), y + z(8)), z(12), T.text2, anchor="midleft")
+        y += z(21)
+        for m in getattr(hw, "real_only", ()):
+            text(surf, f, f"{m}: real demand only · no virtual cars", (x + z(16), y + z(8)), z(12), T.text2,
+                 anchor="midleft")
+            y += z(21)
         for sid, occ, faulted in hw.real:
             s = "Fault · held" if faulted else ("Occupied" if occ else "Clear")
             col = T.fault if faulted else (T.det_on if occ else T.text2)
@@ -1810,7 +1821,7 @@ class Renderer:
             else:
                 s = sent.replace("_", " ").title() + (" · acked" if acked == sent else " · sent")
                 col = T.text
-            text(surf, f, f"Physical head mirrors {m}", (x + z(16), y + z(8)), z(12), T.text2, anchor="midleft")
+            text(surf, f, f"R/Y/G head mirrors {m}", (x + z(16), y + z(8)), z(12), T.text2, anchor="midleft")
             text(surf, f, s, (right, y + z(8)), z(12), col, True, "midright")
             y += z(21)
 

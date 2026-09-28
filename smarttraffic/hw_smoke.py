@@ -1,4 +1,4 @@
-"""hw_smoke -- live ESP32 integration check (Stage 9). Needs the real hardware.
+"""hw_smoke -- live ESP32 integration check (Stage 9; protocol v2 hardware). Needs the real hardware.
 
     python -m smarttraffic.hw_smoke --list-ports
     python -m smarttraffic.hw_smoke --mode link   --port COM5 --seconds 30
@@ -6,14 +6,17 @@
     python -m smarttraffic.hw_smoke --mode hybrid --port COM5 --seconds 120 [--traffic S4]
 
 Modes
-  link    connect, show HELLO / link state / every real sensor edge.
+  link    connect, show HELLO / link state / every real sensor edge (NS:D1 on GPIO27 and
+          NS:D2 on GPIO26 with the demo config: hold a hand in front of each IR module).
   light   drive the mapped movement(s) through the full Signals V2 sequence twice
-          and mirror it on the physical head(s).
-  hybrid  the full Stage 9 stack: VehicleModel + VirtualDetectors (15 virtual)
-          + real detector(s) via HybridDetectorSource -> SensorBank, SignalBank with a
+          and mirror it on the physical R/Y/G head(s), flashing green included.
+  hybrid  the full Stage 9 stack: VehicleModel + VirtualDetectors (14 virtual with the
+          demo config) + the 2 real detectors via HybridDetectorSource -> SensorBank, SignalBank with a
           repeating TEST PATTERN on the mirrored movement (not a controller), and the
-          physical head mirroring it. Prints every sensor-bank change of the real
-          detector's movement, link changes and faults.
+          physical head mirroring it. Movements whose detectors are all real (NS)
+          get no virtual vehicles (--traffic arrivals for them are dropped). Prints
+          every sensor-bank change of the real detector's movement, link changes and
+          faults.
 
 This is the only module that reads the wall clock: it paces simulation time to
 real time. The library modules it uses stay deterministic.
@@ -95,7 +98,7 @@ def run_light(cfg: HardwareConfig, out=print, transport_factory=None, pacer: Opt
         for t in range(0, cycles * 30000 + 3000, DT_MS):
             _pattern_commands(bank, movements, t % 30000)
             for m, st in mirror.update(bank):
-                out(f"[{t / 1000:7.1f}s] physical {m} <- {st}")
+                out(f"[{t / 1000:7.1f}s] physical {m} <- {st} lamps {mirror.status()[m]['lamps']} (R Y G)")
             bank.advance(DT_MS / 1000)
             pacer.wait_until(t + DT_MS)
     finally:
@@ -107,7 +110,8 @@ def run_light(cfg: HardwareConfig, out=print, transport_factory=None, pacer: Opt
 def run_hybrid(cfg: HardwareConfig, seconds: float, out=print, transport_factory=None,
                pacer: Optional[Pacer] = None, arrivals=()) -> dict:
     start = 0.0
-    vm = VehicleModel(list(arrivals), start=start)
+    real_only = set(cfg.real_only_movements)       # real demand only: no virtual vehicles there
+    vm = VehicleModel([a for a in arrivals if a.movement not in real_only], start=start)
     hw = build_hardware(cfg, vm, transport_factory)
     sb = SensorBank(hw.detectors)
     bank = SignalBank(start_time=start)
@@ -116,6 +120,7 @@ def run_hybrid(cfg: HardwareConfig, seconds: float, out=print, transport_factory
     mirrored = list(cfg.signals)
     out("Real detectors : " + (", ".join(format_sensor_id(s) for s in cfg.sensors) or "none"))
     out("Virtual        : " + str(16 - len(cfg.sensors)) + " detectors")
+    out("Real-only      : " + (", ".join(sorted(real_only)) + " (no virtual vehicles)" if real_only else "none"))
     out("Physical heads : " + (", ".join(f"{m}->{t.device}/{t.channel}" for m, t in cfg.signals.items()) or "none"))
     last = {}
     last_link = {}

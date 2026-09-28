@@ -4,6 +4,8 @@ Everything is driven by config/hardware.json (see load_hardware_config):
 
     devices : {device_id: {port, baud}}                       one entry per ESP32
     sensors : {"NS:D1": {device, channel}, ...}              real detectors; all others virtual
+              (demo hardware: NS:D1 -> channel 0 = GPIO27, NS:D2 -> channel 1 = GPIO26,
+              both digital active-low IR modules; the firmware reports OCC/CLR)
     signals : {"NS": {device, channel}, ...}                 physical heads mirroring a movement
     link    : optional timing overrides (LinkSettings)
 
@@ -13,8 +15,10 @@ Pieces
 * EspLink       -- one per device: connect/reconnect, framing, checksums, sequence
                    checks, device reset and millis() wraparound, time base, health.
 * HardwareDetectorSource -- DetectorSource for the mapped real detectors.
-* SignalMirror  -- sends the Python SignalBank state of mapped movements to physical
-                   heads. Read-only on the SignalBank; a head is NOT a logical signal.
+* SignalMirror  -- sends the Python SignalBank state AND lamps of mapped movements to
+                   physical heads (protocol v2: every lamp change, incl. each flashing-green
+                   edge). Read-only on the SignalBank; a head is NOT a logical signal. The
+                   ESP32 runs no signal timing: it only sets its R/Y/G outputs.
 * build_hardware -- wires config + VehicleModel into a HybridDetectorSource (for
                    SensorBank) and a SignalMirror.
 
@@ -59,7 +63,7 @@ __all__ = [
     "HardwareConfigError", "LinkSettings", "DeviceConfig", "Target", "HardwareConfig",
     "load_hardware_config", "parse_hardware_config", "Transport", "SerialTransport",
     "LinkState", "EspLink", "HardwareHub", "HardwareDetectorSource", "SignalMirror",
-    "HardwareSystem", "build_hardware", "DEFAULT_CONFIG_FILE",
+    "HardwareSystem", "build_hardware", "DEFAULT_CONFIG_FILE", "real_only_movements",
 ]
 
 SensorId = Tuple[str, str]
@@ -107,12 +111,28 @@ class HardwareConfig:
     signals: Mapping[str, Target]               # movement -> physical head
     link: LinkSettings = field(default_factory=LinkSettings)
 
+    @property
+    def real_only_movements(self) -> Tuple[str, ...]:
+        return real_only_movements(self)
+
     def with_port(self, device_id: str, port: str) -> "HardwareConfig":
         if device_id not in self.devices:
             raise HardwareConfigError(f"unknown device {device_id!r}")
         devs = dict(self.devices)
         devs[device_id] = DeviceConfig(device_id, port, devs[device_id].baud)
         return HardwareConfig(devs, self.sensors, self.signals, self.link)
+
+
+def real_only_movements(config: "HardwareConfig") -> Tuple[str, ...]:
+    """Movements whose detectors are ALL real (demo config: NS, with NS:D1 and NS:D2 real).
+
+    In a hardware run such a movement gets its demand ONLY from the physical sensors: its
+    virtual vehicles are not generated (runner.simulate(exclude_movements=...)), so no virtual
+    vehicle is drawn on it and no virtual detector event can exist for it. A movement with only
+    some detectors real keeps its virtual vehicles (the virtual edges of the real detectors are
+    still dropped by HybridDetectorSource)."""
+    real = set(config.sensors)
+    return tuple(m for m in MOVES if all((m, d) in real for d in DETECTORS))
 
 
 def _no_duplicate_keys(pairs):
@@ -263,7 +283,8 @@ class EspLink:
         self.stats: Counter = Counter()
         self.errors: Deque[str] = deque(maxlen=50)
         self.synced_channels = set()
-        self.last_ack: Dict[int, Tuple[str, int]] = {}
+        self.last_ack: Dict[int, Tuple[str, int]] = {}        # channel -> (state, host ms)
+        self.last_ack_lamps: Dict[int, str] = {}              # channel -> lamps "RYG"
         self._buf = bytearray()
         self._last_pump: Optional[int] = None
         self._last_open_try: Optional[int] = None
@@ -466,6 +487,7 @@ class EspLink:
             self.synced_channels.add(msg.channel)
         elif isinstance(msg, proto.Ack):
             self.last_ack[msg.channel] = (msg.state, now_ms)
+            self.last_ack_lamps[msg.channel] = msg.lamps
         elif isinstance(msg, proto.DeviceError):
             self.stats["device_errors"] += 1
             self._error(f"device: {msg.text}")
@@ -583,7 +605,12 @@ class HardwareDetectorSource:
 
 # ======================================================== signal mirror
 class SignalMirror:
-    """Shows the SignalBank state of mapped movements on physical heads (read-only)."""
+    """Shows the SignalBank lamps of mapped movements on physical heads (read-only).
+
+    Every command carries the logical state and its lamps (signals.lamps_for at the
+    current simulation time), so the head is an exact copy of the logical signal:
+    RED / ALL_RED -> red, RED_YELLOW -> red + yellow, GREEN -> green, FLASHING_GREEN ->
+    green ON/OFF on the logical flash edges, YELLOW -> yellow."""
 
     def __init__(self, hub: HardwareHub, mapping: Mapping[str, Target]):
         self._hub = hub
@@ -593,32 +620,36 @@ class SignalMirror:
             hub.link(t.device)
             self._map[m] = t
         self._sent: Dict[str, Optional[str]] = {m: None for m in self._map}
+        self._sent_lamps: Dict[str, Optional[str]] = {m: None for m in self._map}
         self._sent_ms: Dict[str, Optional[int]] = {m: None for m in self._map}
         self._hello_seen: Dict[str, int] = {m: -1 for m in self._map}
-        self.log: List[Tuple[int, str, str, int, str]] = []    # (ms, movement, device, channel, state)
+        self.log: List[Tuple[int, str, str, int, str, str]] = []   # (ms, movement, device, channel, state, lamps)
 
     @property
     def movements(self) -> Tuple[str, ...]:
         return tuple(self._map)
 
     def update(self, signals) -> List[Tuple[str, str]]:
-        """Call after SignalBank.advance(). Sends a command on every state change, after a
-        (re)connect, and every signal_refresh_ms. Returns [(movement, state)] sent."""
+        """Call after SignalBank.advance(). Sends a command on every state or lamp change
+        (flashing-green edges included), after a (re)connect, and every signal_refresh_ms.
+        Returns [(movement, state)] sent."""
         now = round(signals.now * 1000)
         sent = []
         for m, t in self._map.items():
             link = self._hub.link(t.device)
             link.pump(now)
             if not link.healthy():
-                self._sent[m] = None                    # re-send once the link is back
+                self._sent[m] = self._sent_lamps[m] = None      # re-send once the link is back
                 continue
             state = signals.state(m).name
-            due = (self._sent[m] != state or link.hello_count != self._hello_seen[m]
+            lamps = proto.encode_lamps(signals.lamp_state(m))
+            due = (self._sent[m] != state or self._sent_lamps[m] != lamps
+                   or link.hello_count != self._hello_seen[m]
                    or now - self._sent_ms[m] >= self._hub.config.link.signal_refresh_ms)
-            if due and link.send(proto.encode_signal_command(t.channel, state)):
-                self._sent[m], self._sent_ms[m] = state, now
+            if due and link.send(proto.encode_signal_command(t.channel, state, lamps)):
+                self._sent[m], self._sent_lamps[m], self._sent_ms[m] = state, lamps, now
                 self._hello_seen[m] = link.hello_count
-                self.log.append((now, m, t.device, t.channel, state))
+                self.log.append((now, m, t.device, t.channel, state, lamps))
                 sent.append((m, state))
         return sent
 
@@ -627,14 +658,16 @@ class SignalMirror:
         for m, t in self._map.items():
             link = self._hub.link(t.device)
             if link.transport.is_open:
-                link.send(proto.encode_signal_command(t.channel, "OFF"))
+                link.send(proto.encode_signal_command(t.channel, "OFF", "000"))
 
     def status(self) -> Dict[str, Dict[str, object]]:
         out = {}
         for m, t in self._map.items():
             link = self._hub.link(t.device)
             out[m] = {"device": t.device, "channel": t.channel, "sent": self._sent[m],
+                      "lamps": self._sent_lamps[m],
                       "acked": link.last_ack.get(t.channel, (None, None))[0],
+                      "acked_lamps": link.last_ack_lamps.get(t.channel),
                       "link": link.state.name}
         return out
 

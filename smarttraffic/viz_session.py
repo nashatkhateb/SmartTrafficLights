@@ -121,6 +121,7 @@ class HardwareView(NamedTuple):
     mirror: Tuple[Tuple[str, Optional[str], Optional[str], str], ...]   # (movement, sent, acked, link)
     real_ids: Tuple[Tuple[str, str], ...]              # detector positions served by hardware
     note: str
+    real_only: Tuple[str, ...] = ()                    # movements with real demand only (no virtual vehicles)
 
 
 NO_HARDWARE = HardwareView(False, (), (), (), (), "Hardware off: all 16 detectors are simulated")
@@ -230,6 +231,7 @@ class SnapshotBuilder:
         self.hw = hardware
         self.hw_config = hw_config
         self.real_ids: Tuple[Tuple[str, str], ...] = tuple(hw_config.sensors) if hw_config else ()
+        self.real_only: Tuple[str, ...] = hw_config.real_only_movements if hw_config else ()
 
     # -------------------------------------------------------------- vehicles
     @staticmethod
@@ -354,8 +356,8 @@ class SnapshotBuilder:
             mirror = tuple((m, v["sent"], v["acked"], v["link"]) for m, v in self.hw.mirror.status().items())
         bad = [d for d, _, s in links if s != "CONNECTED"]
         note = ("All hardware links connected" if not bad else
-                "ESP32 not connected: real detector faulted (held), movement on fail-safe recall")
-        return HardwareView(True, links, real, mirror, self.real_ids, note)
+                "ESP32 not connected: real detectors faulted (held), movement on fail-safe recall")
+        return HardwareView(True, links, real, mirror, self.real_ids, note, self.real_only)
 
     # -------------------------------------------------------------- snapshot
     def build(self, view: StepView, step: int) -> Snapshot:
@@ -584,6 +586,11 @@ class VizSession:
                 kw["source_factory"] = sf
             if self.arrivals is not None:
                 kw["arrivals"] = self.arrivals
+            if self.hw_config is not None:
+                # Hardware mode (fixed for the whole session, connected or not): movements whose
+                # detectors are all real get NO virtual vehicles; their demand comes only from the
+                # physical sensors. Other movements keep the full scenario arrivals.
+                kw["exclude_movements"] = self.hw_config.real_only_movements
             self.result = run(self.config, **kw)
             if self._last_view is not None:              # the run is over: nothing moves any more
                 snap = self._builder.build(self._last_view, self._steps)

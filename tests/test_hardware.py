@@ -85,8 +85,8 @@ class FakeEsp:
     def hb(self, ms):
         return p.encode_heartbeat(self._s(), ms)
 
-    def ack(self, ms, ch, st):
-        return p.encode_ack(self._s(), ms, ch, st)
+    def ack(self, ms, ch, st, lamps):
+        return p.encode_ack(self._s(), ms, ch, st, lamps)
 
     def reboot(self, boot):
         self.boot, self.seq = boot, 0
@@ -125,11 +125,17 @@ def connected_link(esp=None, now=100, dev_ms=1000, settings=LinkSettings()):
 
 # =================================================================== config
 def test_default_config_is_the_demo_mapping():
+    """Verified demo hardware: NS:D1 = sensor channel 0 (GPIO27), NS:D2 = channel 1 (GPIO26),
+    the NS head = signal channel 0 (R/Y/G on GPIO32/33/25); the other 14 detectors are virtual."""
     cfg = load_hardware_config()
     assert set(cfg.devices) == {"esp32_a"}
-    assert dict(cfg.sensors) == {("NS", "D1"): Target("esp32_a", 0)}
+    assert dict(cfg.sensors) == {("NS", "D1"): Target("esp32_a", 0), ("NS", "D2"): Target("esp32_a", 1)}
     assert dict(cfg.signals) == {"NS": Target("esp32_a", 0)}
     assert cfg.devices["esp32_a"].baud == 115200
+    from smarttraffic import esp_sim
+    assert esp_sim.SENSOR_PINS[cfg.sensors[("NS", "D1")].channel] == 27
+    assert esp_sim.SENSOR_PINS[cfg.sensors[("NS", "D2")].channel] == 26
+    assert esp_sim.SIGNAL_PINS[cfg.signals["NS"].channel] == (25, 33, 32)
 
 
 def test_with_port_override():
@@ -210,7 +216,7 @@ def test_wrong_device_and_protocol_mismatch():
     t2 = FakeTransport()
     l2 = EspLink("esp32_a", t2)
     l2.pump(0)
-    t2.feed(p.encode_hello(0, 1, "esp32_a", "AB", 1, 1, proto=2))
+    t2.feed(p.encode_hello(0, 1, "esp32_a", "AB", 1, 1, proto=1))     # old Stage 9 firmware
     l2.pump(100)
     assert l2.state is LinkState.PROTOCOL_MISMATCH
 
@@ -643,15 +649,26 @@ def test_mirror_sends_every_v2_state_once_per_change():
     assert all(c[1] == "0" for c in t.commands() if c[0] == "SIG")
 
 
-def test_flashing_green_is_sent_as_a_state_not_lamp_toggles():
+def test_flashing_green_lamps_follow_the_logical_flash_edges():
+    """Protocol v2: the host sends the lamps at every logical flash edge; the ESP32 does not
+    blink by itself."""
     rig, t, esp = mirror_rig()
     rig.step([("NS", "start")])
     rig.run_to(3000)
     rig.step([("NS", "end")])
-    n0 = len(sig_cmds(t))
-    rig.run_to(5900)                                           # FLASHING_GREEN runs 3.0 s -> 6.0 s
-    fg = sig_cmds(t)[n0:]
-    assert set(fg) == {"FLASHING_GREEN"} and len(fg) <= 3      # 1 change + <= 2 refreshes
+    n0 = len(t.commands())
+    fg_start = round(rig.bank.since("NS") * 1000)
+    rig.run_to(5900)                                           # FLASHING_GREEN runs 3 s
+    cmds = [c for c in t.commands()[n0:] if c[0] == "SIG"]
+    assert {c[2] for c in cmds} == {"FLASHING_GREEN"}
+    changes = []
+    for (ms, m, dev, ch, st, lamps) in rig.hw.mirror.log:
+        if st == "FLASHING_GREEN" and (not changes or changes[-1][1] != lamps):
+            changes.append((ms - fg_start, lamps))
+    # end_green is issued before this rig's step, so the mirror first sees FLASHING_GREEN at the
+    # end of that step (+100 ms, green still on); every later edge is exactly on the logical
+    # 500 ms flash edges (in the runner the controller acts before the mirror: no delay at all)
+    assert changes == [(100, "001"), (500, "000"), (1000, "001"), (1500, "000"), (2000, "001"), (2500, "000")]
 
 
 def test_all_red_sent_as_all_red():
@@ -683,7 +700,7 @@ def test_nothing_sent_while_disconnected_and_resent_after_hello():
     rig.run_to(2500)                                           # reopened, QRY sent
     t.feed(esp.hello(3000), esp.sen(3000, 0, False), esp.sen(3000, 1, False))
     rig.run_to(2700)
-    assert t.commands()[-1] == ["SIG", "0", "RED"]
+    assert t.commands()[-1] == ["SIG", "0", "RED", "100"]
 
 
 def test_no_signal_commands_before_device_is_identified():
@@ -737,15 +754,16 @@ def test_multiple_physical_signals():
 def test_blackout_on_close():
     rig, t, esp = mirror_rig()
     rig.hw.close()
-    assert ["SIG", "0", "OFF"] in t.commands() and not t.is_open
+    assert ["SIG", "0", "OFF", "000"] in t.commands() and not t.is_open
 
 
 def test_mirror_status_reports_ack():
     rig, t, esp = mirror_rig()
-    t.feed(esp.ack(300, 0, "RED"))
+    t.feed(esp.ack(300, 0, "RED", "100"))
     rig.run_to(400)
     st = rig.hw.mirror.status()["NS"]
     assert st["sent"] == "RED" and st["acked"] == "RED" and st["link"] == "CONNECTED"
+    assert st["lamps"] == "100" and st["acked_lamps"] == "100"
 
 
 # ============================================================ smoke-test runner (fake, fast)
@@ -770,10 +788,10 @@ def test_hw_smoke_hybrid_runs_with_fake_device():
     status = hw_smoke.run_hybrid(cfg, 12, out=lines.append, transport_factory=fake_factory(store),
                                  pacer=FeedingPacer(realtime=False))
     text = "\n".join(lines)
-    assert "Real detectors : NS:D1" in text and "Virtual        : 15 detectors" in text
+    assert "Real detectors : NS:D1" in text and "Virtual        : 15 detectors" in text   # 1-sensor config
     assert "NS: D1=ON" in text and "signal NS: RED_YELLOW" in text
     assert status["faults"] == () and status["real"]["NS:D1"]["occupied"] is True
-    assert ["SIG", "0", "OFF"] in store["esp32_a"].commands()
+    assert ["SIG", "0", "OFF", "000"] in store["esp32_a"].commands()
 
 
 def test_hw_smoke_light_runs_full_sequence_with_fake_device():
@@ -790,7 +808,7 @@ def test_hw_smoke_light_runs_full_sequence_with_fake_device():
     log = hw_smoke.run_light(cfg, out=lambda *_: None, transport_factory=fake_factory(store),
                              pacer=P(realtime=False), cycles=1)
     states = []
-    for *_, s in log:
+    for *_, s, _lamps in log:
         if not states or states[-1] != s:
             states.append(s)
     # the pattern starts green at t=0, before the device has said HELLO, so the head
@@ -831,3 +849,226 @@ def test_sensor_layer_still_hardware_free():
     for f in ("sensors.py", "hybrid_sensors.py"):
         _, anywhere = _imports(ROOT / "smarttraffic" / f)
         assert not any(x in (m or "") for m in anywhere for x in ("serial", "hardware", "time", "controller"))
+
+
+# ============================================================ verified demo hardware, end to end
+# SimulatedEsp32 (smarttraffic/esp_sim.py) runs the protocol-v2 firmware logic on the verified
+# wiring: NS:D1 = GPIO27, NS:D2 = GPIO26 (digital, active-low), NS head = R GPIO32 / Y GPIO33 /
+# G GPIO25 (HIGH = ON). The whole host stack is used unchanged (default config/hardware.json).
+from smarttraffic import esp_sim                                    # noqa: E402
+from smarttraffic.signals import lamps_for                          # noqa: E402
+
+
+class DemoRig:
+    """Default config + SimulatedEsp32 + VehicleModel + SensorBank + SignalBank, 100 ms steps.
+    Device time = host time (the link estimates the offset itself)."""
+    def __init__(self, arrivals=(), cfg=None, esp=None):
+        self.cfg = cfg or load_hardware_config()
+        self.esp = esp or esp_sim.SimulatedEsp32()
+        self.vm = VehicleModel(list(arrivals), start=0)
+        self.hw = build_hardware(self.cfg, self.vm, lambda d: self.esp)
+        self.sb = SensorBank(self.hw.detectors)
+        self.bank = SignalBank(start_time=0)
+        self.lamp_trace = []                      # (ms, state, logical lamps, physical lamps)
+
+    def step(self, cmds=()):
+        for m, c in cmds:
+            (self.bank.start_green if c == "start" else self.bank.end_green)(m)
+        t1 = self.vm.now_ms + 100
+        self.esp.advance_to(t1)                   # the board runs during the step
+        self.vm.advance(0.1, self.bank)
+        self.sb.advance(0.1, self.bank)
+        self.bank.advance(0.1)
+        self.hw.mirror.update(self.bank)
+        self.lamp_trace.append((t1, self.bank.state("NS"), tuple(self.bank.lamp_state("NS")),
+                                self.esp.lamps(0)))
+
+    def run_to(self, ms, cmds_at=None):
+        while self.vm.now_ms < ms:
+            self.step((cmds_at or {}).get(self.vm.now_ms, ()))
+
+
+def test_demo_hardware_is_2_real_and_14_virtual_detectors():
+    rig = DemoRig()
+    det = rig.hw.detectors
+    real = {s for s in SENSOR_IDS if det.source_of(s) is rig.hw.real}
+    assert real == {("NS", "D1"), ("NS", "D2")}
+    assert sum(det.source_of(s) is rig.hw.virtual for s in SENSOR_IDS) == 14
+    assert len(det.sensor_ids) == 16 and rig.hw.mirror.movements == ("NS",)
+
+
+def test_firmware_model_decodes_active_low_with_debounce():
+    esp = esp_sim.SimulatedEsp32()
+    esp.open()
+    esp.write(p.encode_query())
+    esp.read_available()
+    esp.advance_to(1000)
+    esp.read_available()
+    esp.set_input(27, 0)                          # LOW on GPIO27 = car at NS:D1
+    esp.advance_to(1010)                          # 10 ms: still debouncing
+    assert not [m for m in map(p.parse_device_message, esp.read_available().splitlines(True))
+                if isinstance(m, p.SensorReport)]
+    esp.advance_to(1030)
+    reps = [m for m in map(p.parse_device_message, esp.read_available().splitlines(True))
+            if isinstance(m, p.SensorReport)]
+    assert [(r.channel, r.occupied, r.device_ms) for r in reps] == [(0, True, 1002)]   # first LOW sample
+    esp.set_input(27, 1)                          # 6 ms glitch back to HIGH is filtered
+    esp.advance_to(1036)
+    esp.set_input(27, 0)
+    esp.advance_to(1100)
+    assert not [m for m in map(p.parse_device_message, esp.read_available().splitlines(True))
+                if isinstance(m, p.SensorReport)]
+    esp.set_input(27, 1)                          # HIGH = clear
+    esp.set_input(26, 0)                          # LOW on GPIO26 = car at NS:D2
+    esp.advance_to(1200)
+    reps = [(m.channel, m.occupied) for m in map(p.parse_device_message, esp.read_available().splitlines(True))
+            if isinstance(m, p.SensorReport)]
+    assert sorted(reps) == [(0, False), (1, True)]
+
+
+def test_real_d1_and_d2_drive_sensorbank_ns_only():
+    rig = DemoRig()
+    rig.run_to(1000)
+    assert rig.sb.faulted_detectors() == ()
+    rig.esp.car(0, True)                                          # GPIO27 LOW
+    rig.run_to(1500)
+    assert rig.sb.d1("NS") is True and rig.sb.d2("NS") is False and rig.sb.has_call("NS")
+    rig.esp.car(1, True)                                          # GPIO26 LOW
+    rig.run_to(2000)
+    assert rig.sb.d1("NS") and rig.sb.d2("NS")
+    rig.esp.car(0, False)
+    rig.run_to(2500)
+    assert rig.sb.d1("NS") is False and rig.sb.d2("NS") is True
+    rig.esp.car(1, False)
+    rig.run_to(3000)
+    real_edges = [(e.movement, e.detector, e.occupied) for e in rig.sb.edge_log]
+    assert real_edges == [("NS", "D1", True), ("NS", "D2", True), ("NS", "D1", False), ("NS", "D2", False)]
+    t = {(e.detector, e.occupied): e.time_ms for e in rig.sb.edge_log}
+    assert t[("D1", True)] == 1002 and t[("D2", True)] == 1502              # debounce start, mapped to sim time
+    for m in MOVES:
+        if m != "NS":
+            assert not rig.sb.d1(m) and not rig.sb.d2(m)
+
+
+def test_physical_lamps_mirror_the_logical_ns_signal_exactly():
+    rig = DemoRig()
+    rig.run_to(500)
+    rig.run_to(30_000, cmds_at={1000: [("NS", "start")], 9000: [("NS", "end")]})
+    seen = set()
+    for ms, st, logical, physical in rig.lamp_trace:
+        assert physical == logical, (ms, st, logical, physical)      # every 100 ms step
+        seen.add((st.name, physical))
+    R, Y, G = (True, False, False), (False, True, False), (False, False, True)
+    assert seen == {("RED", R), ("RED_YELLOW", (True, True, False)), ("GREEN", G),
+                    ("FLASHING_GREEN", G), ("FLASHING_GREEN", (False, False, False)),
+                    ("YELLOW", Y), ("ALL_RED", R)}
+    # pin level check for one state: RED -> GPIO32 HIGH, GPIO33 / GPIO25 LOW
+    assert rig.bank.state("NS") is SignalState.RED
+    assert (rig.esp.outputs[32], rig.esp.outputs[33], rig.esp.outputs[25]) == (1, 0, 0)
+    # flashing green uses the logical timing: 500 ms on / 500 ms off from its onset
+    fg = [(ms, ph[2]) for ms, st, lg, ph in rig.lamp_trace if st is SignalState.FLASHING_GREEN]
+    onset = fg[0][0] - 100
+    assert all(g == lamps_for(SignalState.FLASHING_GREEN, ms - onset).green for ms, g in fg)
+    assert rig.esp.errors == [] and not rig.esp.in_fault()
+
+
+def test_disconnect_and_reconnect_are_safe():
+    rig = DemoRig()
+    rig.run_to(1500, cmds_at={200: [("NS", "start")]})          # RED_YELLOW 0.2-1.2 s, then GREEN
+    assert rig.hw.hub.link("esp32_a").healthy() and rig.esp.lamps(0) == (False, False, True)
+    rig.esp.car(0, True)
+    rig.run_to(2000)
+    assert rig.sb.d1("NS")
+    rig.esp.unplug()                                   # USB cable pulled
+    rig.run_to(6500)                                   # simulation keeps running, no exception
+    link = rig.hw.hub.link("esp32_a")
+    assert link.state is LinkState.DISCONNECTED
+    assert rig.sb.faulted_detectors() == (("NS", "D1"), ("NS", "D2"))
+    assert rig.sb.d1("NS") is True                     # last confirmed state held, nothing invented
+    rig.esp.car(0, False)                              # changes while unplugged are not seen
+    rig.esp.car(1, True)
+    rig.run_to(7000)
+    assert rig.sb.d1("NS") is True and rig.sb.d2("NS") is False
+    assert rig.esp.in_fault()                          # board alone: fail-safe yellow blinking
+    r, y, g = rig.esp.lamps(0)
+    assert not r and not g
+    rig.esp.plug()                                     # cable back in
+    rig.run_to(10_000)
+    assert link.state is LinkState.CONNECTED and rig.sb.faulted_detectors() == ()
+    assert rig.sb.d1("NS") is False and rig.sb.d2("NS") is True          # re-synced from full-state report
+    assert not rig.esp.in_fault()
+    assert rig.lamp_trace[-1][2] == rig.lamp_trace[-1][3]               # head mirrors again
+    assert link.stats["disconnects"] >= 1 and link.stats["opens"] >= 2
+
+
+def test_port_missing_at_start_never_crashes_and_heads_stay_fail_safe():
+    esp = esp_sim.SimulatedEsp32()
+    esp.unplug()
+    rig = DemoRig(esp=esp)
+    rig.run_to(5000, cmds_at={200: [("NS", "start")]})
+    assert rig.hw.hub.link("esp32_a").state is LinkState.DISCONNECTED
+    assert rig.sb.faulted_detectors() == (("NS", "D1"), ("NS", "D2"))
+    assert esp.commands == [] and esp.in_fault()
+
+
+def test_old_protocol_v1_firmware_is_refused_safely():
+    esp = esp_sim.SimulatedEsp32(proto_version=1)
+    rig = DemoRig(esp=esp)
+    rig.run_to(3000, cmds_at={200: [("NS", "start")]})
+    assert rig.hw.hub.link("esp32_a").state is LinkState.PROTOCOL_MISMATCH
+    assert rig.sb.faulted_detectors() == (("NS", "D1"), ("NS", "D2"))
+    assert esp.commands == []                           # nothing sent to an incompatible head
+
+
+def test_firmware_model_refuses_impossible_lamps_and_keeps_outputs():
+    esp = esp_sim.SimulatedEsp32()
+    esp.open()
+    esp.write(p.encode_signal_command(0, "RED", "100"))
+    assert esp.lamps(0) == (True, False, False)
+    esp.write(p.encode_frame(["SIG", 0, "RED", "001"]))           # green for RED: refused
+    esp.write(p.encode_frame(["SIG", 0, "RED"]))                   # v1 command: refused
+    esp.write(p.encode_frame(["SIG", 5, "RED", "100"]))            # no such head
+    assert esp.errors == ["bad_lamps", "bad_sig", "bad_channel"] and esp.lamps(0) == (True, False, False)
+
+
+def test_virtual_detectors_unchanged_by_the_two_real_ones():
+    spec = arrs([("SS", 0.0), ("ES", 1.0), ("WL", 2.0), ("NL", 3.0), ("NS", 4.0)])
+    demo = DemoRig(arrivals=spec)
+    virt_cfg = parse_hardware_config({"devices": {"esp32_a": {"port": "COM3"}}})
+    plain_vm = VehicleModel(list(spec), start=0)
+    plain = SensorBank(VirtualDetectors(plain_vm))
+    bank = SignalBank(start_time=0)
+    for _ in range(300):
+        demo.step()
+        plain_vm.advance(0.1, bank)
+        plain.advance(0.1, bank)
+        bank.advance(0.1)
+    others = lambda log: [(e.time_ms, e.movement, e.detector, e.occupied) for e in log  # noqa: E731
+                          if (e.movement, e.detector) not in {("NS", "D1"), ("NS", "D2")}]
+    assert others(demo.sb.edge_log) == others(plain.edge_log) and others(plain.edge_log)
+    assert virt_cfg.sensors == {} and virt_cfg.signals == {}
+
+
+def test_hw_smoke_hybrid_with_the_demo_config_reports_2_real_and_14_virtual():
+    esp = esp_sim.SimulatedEsp32()
+
+    class P(hw_smoke.Pacer):
+        def wait_until(self, sim_ms):
+            esp.advance_to(sim_ms)
+            if sim_ms == 2000:
+                esp.car(0, True)
+            if sim_ms == 2500:
+                esp.car(1, True)
+    lines = []
+    status = hw_smoke.run_hybrid(load_hardware_config(), 5, out=lines.append,
+                                 transport_factory=lambda d: esp, pacer=P(realtime=False))
+    text = "\n".join(lines)
+    assert "Real detectors : NS:D1, NS:D2" in text and "Virtual        : 14 detectors" in text
+    assert "NS: D1=ON  D2=ON" in text
+    assert status["faults"] == () and status["real"]["NS:D1"]["occupied"] and status["real"]["NS:D2"]["occupied"]
+    assert esp.commands[-1][2:] == ("OFF", "000") and esp.lamps(0) == (False, False, False)   # dark at exit
+
+
+def test_esp_sim_is_pure():
+    top, anywhere = _imports(ROOT / "smarttraffic" / "esp_sim.py")
+    assert not anywhere & {"serial", "time", "random", "threading", "pygame"}

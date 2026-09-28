@@ -102,13 +102,13 @@ def test_exactly_sixteen_detector_positions():
         assert d.upstream_m == DETECTOR_POSITION[d.detector]
 
 
-def test_real_detector_replaces_its_virtual_slot_not_a_seventeenth():
+def test_real_detectors_replace_their_virtual_slots_not_extra_ones():
     real = tuple(load_hardware_config().sensors)
-    assert real == (("NS", "D1"),)
+    assert real == (("NS", "D1"), ("NS", "D2"))
     spots = g.detector_spots(real)
     assert len(spots) == 16
-    assert [(d.movement, d.detector) for d in spots if d.real] == [("NS", "D1")]
-    assert sum(not d.real for d in spots) == 15
+    assert [(d.movement, d.detector) for d in spots if d.real] == [("NS", "D1"), ("NS", "D2")]
+    assert sum(not d.real for d in spots) == 14
     plain = {(d.movement, d.detector): d.centre for d in g.detector_spots()}
     assert {(d.movement, d.detector): d.centre for d in spots} == plain     # same place
     two = g.detector_spots([("NS", "D1"), ("EL", "D2")])
@@ -490,7 +490,8 @@ class DeadPort:
 
 class LiveEsp:
     """A fake ESP32 that answers like the firmware: HELLO on open, heartbeats, ACKs; the
-    IR detector is occupied between device times 4000 and 6000 ms."""
+    NS:D1 IR detector (channel 0) is occupied between device times 4000 and 6000 ms, the
+    NS:D2 detector (channel 1) between 5000 and 7000 ms."""
 
     def __init__(self):
         self.is_open = False
@@ -518,6 +519,10 @@ class LiveEsp:
             self.out += proto.encode_sensor(self._s(), self.ms, 0, True)
         if self.ms == 6000:
             self.out += proto.encode_sensor(self._s(), self.ms, 0, False)
+        if self.ms == 5000:
+            self.out += proto.encode_sensor(self._s(), self.ms, 1, True)
+        if self.ms == 7000:
+            self.out += proto.encode_sensor(self._s(), self.ms, 1, False)
         self.out += proto.encode_heartbeat(self._s(), self.ms)
         data, self.out = bytes(self.out), bytearray()
         return data
@@ -526,7 +531,7 @@ class LiveEsp:
         self.written.append(data)
         f = proto.decode_frame(data)
         if f and f[0] == "SIG":
-            self.out += proto.encode_ack(self._s(), self.ms, int(f[1]), f[2])
+            self.out += proto.encode_ack(self._s(), self.ms, int(f[1]), f[2], f[3])
 
 
 def test_hardware_disconnected_session_runs_and_reports_the_fault():
@@ -543,9 +548,9 @@ def test_hardware_disconnected_session_runs_and_reports_the_fault():
     snap = s.latest()
     h = snap.hardware
     assert h.enabled and h.links == (("esp32_a", "COM3", "DISCONNECTED"),)
-    assert h.real == (("NS:D1", False, True),)           # faulted, state held
-    assert h.real_ids == (("NS", "D1"),)
-    assert snap.sensors["NS"].faulted == ("D1",)
+    assert h.real == (("NS:D1", False, True), ("NS:D2", False, True))    # faulted, state held
+    assert h.real_ids == (("NS", "D1"), ("NS", "D2"))
+    assert snap.sensors["NS"].faulted == ("D1", "D2")
     assert "NS" in snap.smart.recall                     # Stage 11 fail-safe recall
     assert h.mirror[0][0] == "NS" and h.mirror[0][3] == "DISCONNECTED"
 
@@ -558,9 +563,10 @@ def test_hardware_connected_real_detector_and_mirror_are_shown():
     snaps = capture(c, [5000, 12000], hw_config=hw, transport_factory=lambda d: port, arrivals=arr(c))
     h5 = snaps[5000][0].hardware
     assert h5.links == (("esp32_a", "COM3", "CONNECTED"),)
-    assert h5.real == (("NS:D1", True, False),)          # the real IR is occupied
-    assert snaps[5000][0].sensors["NS"].d1 is True       # ... and SensorBank sees it
-    assert snaps[12000][0].hardware.real == (("NS:D1", False, False),)
+    assert h5.real == (("NS:D1", True, False), ("NS:D2", True, False))   # both real IRs occupied
+    assert snaps[5000][0].sensors["NS"].d1 is True       # ... and SensorBank sees them
+    assert snaps[5000][0].sensors["NS"].d2 is True
+    assert snaps[12000][0].hardware.real == (("NS:D1", False, False), ("NS:D2", False, False))
     m, sent, acked, link = snaps[12000][0].hardware.mirror[0]
     assert m == "NS" and link == "CONNECTED"
     assert sent == snaps[12000][0].signals["NS"].state.name
@@ -568,7 +574,8 @@ def test_hardware_connected_real_detector_and_mirror_are_shown():
 
 
 def test_hardware_mode_does_not_change_the_run():
-    """Same fake device with and without the visualization: identical RunResult."""
+    """Same fake device with and without the visualization: identical RunResult (both use the
+    hardware-mode rule: no virtual vehicles on the real-only movement NS)."""
     from smarttraffic.hardware import build_hardware
     c = cfg(warm=0, meas=30, flush=30)
     hw = load_hardware_config()
@@ -580,7 +587,8 @@ def test_hardware_mode_does_not_change_the_run():
 
     def mirror(view):
         box["hw"].mirror.update(view.signals)
-    ref = run(c, arrivals=arr(c), source_factory=factory, observers=[mirror]).to_json()
+    ref = run(c, arrivals=arr(c), source_factory=factory, observers=[mirror],
+              exclude_movements=("NS",)).to_json()
     fast = lambda: time.monotonic() * 500
     s = VizSession(c, arrivals=arr(c), hw_config=hw, transport_factory=lambda d: LiveEsp(),
                    running=True, clock=fast).start()
@@ -754,3 +762,10 @@ def test_heads_are_three_equal_stacked_modules_and_left_arrows_turn_at_right_ang
             assert abs(d1[0] * d2[0] + d1[1] * d2[1]) < 1e-9, h.movement      # 90 degree corner
         else:
             assert len(shaft) == 2
+
+
+def test_render_hardware_connected_with_two_real_detectors(screen):
+    c = cfg(warm=0, meas=30, flush=30)
+    r, a = _render(screen, c, 5_000, hw=load_hardware_config(), tf=lambda d: LiveEsp())
+    assert a.hardware.links[0][2] == "CONNECTED"
+    assert [sid for sid, _, _ in a.hardware.real] == ["NS:D1", "NS:D2"]
