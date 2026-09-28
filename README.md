@@ -21,9 +21,18 @@ All parameters, algorithms and scenarios come from that document; do not change 
   See "Smart controller" below.
 - Stage 12 (verified): `stats.py` + `runner.py` — study §11 metrics and the shared
   run used by every controller. See "Statistics" below.
-- Stage 13 (awaiting review): `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` — real-time
+- Stage 13 (verified): `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` — real-time
   visualization. See "Visualization" below.
-- Not yet implemented: experiment campaign, graphs.
+- Stage 14 (official results accepted 2026-09-28): `experiments.py`, `tuning.py`, `campaign.py`, `run_experiments.py` —
+  resumable parallel experiment runs, the pre-registered S1 tuning
+  (`python -m smarttraffic.run_experiments tune`), the approved Smart-T1 lock (τ 15 s, W_MAX 90 s)
+  and the locked official campaign (`python -m smarttraffic.run_experiments official --lock-sha …`).
+  A reproduction never rewrites the lock: `tune --out <dir> --verify-lock <sha>` only verifies it.
+  W_MAX = 90 s is a starvation-hold threshold, not a hard 90 s guarantee: in the official results
+  detector-call waits exceeded 90 s (up to about 156 s), yet removing W_MAX made S10 much worse.
+- Stage 14b (awaiting review): `custom.py`, `viz_custom.py` — Custom / Demo mode, yellow policy
+  (study default / Stop on Yellow), immediate first vehicle. See "Custom / Demo mode" below.
+- Not yet implemented: graphs (Stage 15), demand sweep, remaining ablations and sensor-fault runs.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
 sensor source) are recorded in `docs/ARCHITECTURE.md`.
@@ -131,11 +140,39 @@ python -m smarttraffic.viz --screenshot shot.png --at 120    # still frame, no w
   Smart and FT-TOD for S6, scenario, seed, hardware on/off); live metrics; Smart: target,
   starvation hold and a plain-language reason (minimum green, gap-out, max-out), per-movement
   calls, Q̂, wait and priority P, recent decisions; Fixed: phase ring, current phase and time left.
-- Keys: Space run/pause · R reset · 1–6 speed · C controller · ←/→ scenario · ↑/↓ seed ·
-  H hardware · F11 full screen · Esc quit.
+- Keys: Space run/pause · R reset · 1–6 speed · C controller · ←/→ scenario (incl. Custom…) ·
+  ↑/↓ seed · H hardware · F11 full screen · Esc quit. In the Custom panel: Tab next field,
+  digits type, Enter apply, Esc cancel.
 - The visualization is an observer of the Stage 12 runner: a run shown on screen gives the
   same `RunResult` as the same run without it (tested, also with pauses and speed changes).
   With hardware on, the speed is fixed at 1× (the ESP32 link follows the wall clock).
+
+## Custom / Demo mode (Stage 14b)
+
+```
+python -m smarttraffic.custom --demand NS=400,SS=400,ES=400,WS=400,NL=120,SL=120,EL=120,WL=120 \
+    --controller Smart --seed 1 --measure 600 [--params T1|custom] [--yellow study|stop] [--immediate-first]
+```
+
+- In the visualization: "Custom…" after S10 in the scenario selector opens the Custom / Demo
+  panel (8 demands, seed, FT-A or Smart, measurement 5–60 min, presets, load warning; Advanced
+  settings collapsed: yellow policy, green start-up, Smart parameter set Smart-T1 or custom
+  τ, W_MAX and max greens). In the UI Smart is always Smart-T1 for the official scenarios
+  (locked τ 15 s, W_MAX 90 s); Smart-study is used only internally for comparisons. A purple CUSTOM / DEMO badge is shown while it is active;
+  official scenarios show "OFFICIAL · LOCKED".
+- Demands: numbers, finite, ≥ 0, rejected at ≥ 2400 veh/h (arrival-model limit); the
+  interface caps input at 1800 veh/h; 0 is allowed. A load check warns near capacity
+  (X ≥ 0.85) and when oversaturated (X ≥ 1).
+- Custom results are tagged `CUSTOM / DEMO` (metadata `mode: custom`), are saved only under
+  `results/custom/` (not committed) and never enter official results: official mode refuses
+  custom demand, Stop on Yellow and the immediate first vehicle, and campaigns refuse the
+  custom folder. Custom arrivals are generated in memory (S1 demands + seed reproduce S1's
+  arrivals exactly).
+- Yellow policy: study default = permissive first 2.0 s of yellow (inclusive; the only value
+  official runs accept); Stop on Yellow = 0.0 s (no crossing after yellow onset).
+- Immediate first vehicle (Custom only): the first queued car starts at green onset instead
+  of crossing at t_g + 3.9 s; following cars keep the saturation headway 1.9 / 2.0 s, so
+  about 2 more cars leave per green.
 
 ## Setup (Windows)
 
@@ -161,7 +198,10 @@ python -m smarttraffic.viz --screenshot shot.png --at 120    # still frame, no w
 | `smarttraffic/viz_render.py` | Drawing: urban intersection scene (asphalt, paint, kerbs, blocks, signal poles, cars) and the UI panels | §13 |
 | `smarttraffic/viz_session.py` | Runs the shared runner on a thread with a read-only observer: snapshots, pacing, pause, reset | §13 |
 | `smarttraffic/viz_geometry.py` | Pure drawing geometry: lanes, paths, 8 heads, 16 detector positions | §13 |
-| `smarttraffic/run_experiments.py` | Headless scenarios × controllers × seeds | §10 |
+| `smarttraffic/experiments.py`, `tuning.py`, `campaign.py`, `run_experiments.py` | Resumable parallel runs, pre-registered tuning, Smart-T1 lock, official campaign and statistics, CLI | §10–11 |
+| `config/tuning_plan.json`, `config/smart_params_locked.json` | Frozen tuning plan; locked Smart-T1 parameters | §10 |
+| `smarttraffic/custom.py`, `viz_custom.py` | Custom / Demo mode: validated demand, load check, parameter sets, tagged output; the panel's editable state | — |
+| `tests/golden/official_T1_baseline.csv` | Simulation fingerprints of the 490 approved official runs (equivalence baseline) | §10 |
 | `smarttraffic/make_graphs.py` | Graphs G1–G12 | §12 |
 | `config/scenarios.json` | Scenario definitions S1–S10 | §10 |
 | `config/fixed_plans.json` | Fixed-time phases and plans (FT-A, FT-B per scenario, S6 TOD) | §8 |

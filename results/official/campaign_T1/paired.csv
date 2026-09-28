@@ -1,0 +1,761 @@
+scenario,a,b,metric,n,mean_a,mean_b,mean_diff_b_minus_a,sd_diff,ci_low,ci_high,t,p_unadjusted,test_valid,note
+S1,FT-A,Smart-T1,delay_mean_s,10,43.467454033,56.784646714,13.317192681,2.307174307,11.666739608,14.967645755,18.252916907,2e-08,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,delay_p95_s,10,97.657685,121.345125,23.68744,12.5804942,14.687896594,32.686983406,5.954158966,0.000214239,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,delay_max_s,10,229.9475,225.4469,-4.5006,38.537308276,-32.068529613,23.067329613,-0.369308275,0.720437332,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,queue_mean_per_movement_veh,10,3.137451389,4.103847222,0.966395833,0.149556187,0.859409782,1.073381885,20.433871749,8e-09,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,queue_max_movement_veh,10,16.9,27.8,10.9,5.321862665,7.09296879,14.70703121,6.476835023,0.000114498,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,queue_total_mean_veh,10,25.099611111,32.830777778,7.731166667,1.1964495,6.875278254,8.587055079,20.433871749,8e-09,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,queue_total_max_veh,10,45.3,61.8,16.5,5.700877125,12.421838178,20.578161822,9.152553238,7.44e-06,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,throughput_veh_h,10,2088.1,2080.4,-7.7,6.183310871,-12.123274134,-3.276725866,-3.937944976,0.003416597,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,pct_served,10,98.592069547,97.968574365,-0.623495182,0.239276176,-0.794663047,-0.452327317,-8.240122012,1.7463e-05,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,delay_total_veh_h,10,25.210997111,32.921814361,7.71081725,1.285583291,6.791166365,8.630468135,18.967067557,1.4e-08,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,green_utilization_mean,10,0.786250378,0.656472621,-0.129777757,0.007688174,-0.135277546,-0.124277968,-53.379811288,0.0,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,220.4,-87.6,5.399588462,-91.462632895,-83.737367105,-51.30308078,0.0,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,129.3,404.4,275.1,37.313834194,248.407291021,301.792708979,23.314210483,2e-09,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,jain_fairness,10,0.895406167,0.985386159,0.089979991,0.036639005,0.063770026,0.116189957,7.766087382,2.8035e-05,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,FT-A,Smart-T1,waiting_mean_s,10,43.467454033,56.784646714,13.317192681,2.307174307,11.666739608,14.967645755,18.252916907,2e-08,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,delay_mean_lower_bound_s,10,43.467454033,56.784646714,13.317192681,2.307174307,11.666739608,14.967645755,18.252916907,2e-08,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,147.8712,62.9712,13.74537105,53.138353895,72.804046105,14.487234886,1.53e-07,true,unadjusted for multiple comparisons
+S1,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,18.5,18.5,5.317685378,14.695957041,22.304042959,11.001428734,1.608e-06,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,delay_mean_s,10,43.467454033,56.784646714,13.317192681,2.307174307,11.666739608,14.967645755,18.252916907,2e-08,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,delay_p95_s,10,97.657685,121.345125,23.68744,12.5804942,14.687896594,32.686983406,5.954158966,0.000214239,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,delay_max_s,10,229.9475,225.4469,-4.5006,38.537308276,-32.068529613,23.067329613,-0.369308275,0.720437332,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,queue_mean_per_movement_veh,10,3.137451389,4.103847222,0.966395833,0.149556187,0.859409782,1.073381885,20.433871749,8e-09,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,queue_max_movement_veh,10,16.9,27.8,10.9,5.321862665,7.09296879,14.70703121,6.476835023,0.000114498,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,queue_total_mean_veh,10,25.099611111,32.830777778,7.731166667,1.1964495,6.875278254,8.587055079,20.433871749,8e-09,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,queue_total_max_veh,10,45.3,61.8,16.5,5.700877125,12.421838178,20.578161822,9.152553238,7.44e-06,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,throughput_veh_h,10,2088.1,2080.4,-7.7,6.183310871,-12.123274134,-3.276725866,-3.937944976,0.003416597,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,pct_served,10,98.592069547,97.968574365,-0.623495182,0.239276176,-0.794663047,-0.452327317,-8.240122012,1.7463e-05,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,delay_total_veh_h,10,25.210997111,32.921814361,7.71081725,1.285583291,6.791166365,8.630468135,18.967067557,1.4e-08,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,green_utilization_mean,10,0.786250378,0.656472621,-0.129777757,0.007688174,-0.135277546,-0.124277968,-53.379811288,0.0,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,signal_changes_per_hour,10,308.0,220.4,-87.6,5.399588462,-91.462632895,-83.737367105,-51.30308078,0.0,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,129.3,404.4,275.1,37.313834194,248.407291021,301.792708979,23.314210483,2e-09,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,jain_fairness,10,0.895406167,0.985386159,0.089979991,0.036639005,0.063770026,0.116189957,7.766087382,2.8035e-05,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,FT-B,Smart-T1,waiting_mean_s,10,43.467454033,56.784646714,13.317192681,2.307174307,11.666739608,14.967645755,18.252916907,2e-08,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,delay_mean_lower_bound_s,10,43.467454033,56.784646714,13.317192681,2.307174307,11.666739608,14.967645755,18.252916907,2e-08,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,detector_call_wait_max_s,10,84.9,147.8712,62.9712,13.74537105,53.138353895,72.804046105,14.487234886,1.53e-07,true,unadjusted for multiple comparisons
+S1,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,18.5,18.5,5.317685378,14.695957041,22.304042959,11.001428734,1.608e-06,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,delay_mean_s,10,58.001601735,56.784646714,-1.216955021,2.833390922,-3.243840784,0.809930743,-1.358213456,0.207464111,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,delay_p95_s,10,126.32682,121.345125,-4.981695,15.305866668,-15.930852423,5.967462423,-1.02924605,0.330229633,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,delay_max_s,10,221.5846,225.4469,3.8623,46.581084335,-29.459800366,37.184400366,0.262202248,0.799068271,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,4.183166667,4.103847222,-0.079319444,0.210337587,-0.22978589,0.071147001,-1.192512053,0.263551894,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,queue_max_movement_veh,10,29.5,27.8,-1.7,5.334374898,-5.515981923,2.115981923,-1.007779192,0.339885351,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,queue_total_mean_veh,10,33.465333333,32.830777778,-0.634555556,1.682700693,-1.838287117,0.569176006,-1.192512053,0.263551894,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,queue_total_max_veh,10,62.0,61.8,-0.2,6.924994986,-5.153842987,4.753842987,-0.091329385,0.92923132,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,throughput_veh_h,10,2077.4,2080.4,3.0,12.256517541,-5.767784466,11.767784466,0.774023531,0.458765848,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,pct_served,10,97.825739519,97.968574365,0.142834846,0.586998451,-0.27707855,0.562748242,0.769479786,0.461325414,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,delay_total_veh_h,10,33.641331,32.921814361,-0.719516639,1.657910262,-1.905514195,0.466480917,-1.372397195,0.203169269,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,green_utilization_mean,10,0.654216086,0.656472621,0.002256535,0.003371647,-0.000155396,0.004668466,2.116410394,0.063406238,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,signal_changes_per_hour,10,218.6,220.4,1.8,6.196773354,-2.632904613,6.232904613,0.918558654,0.382284168,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,427.7,404.4,-23.3,33.651976993,-47.373174142,0.773174142,-2.189501957,0.056295935,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,jain_fairness,10,0.987444092,0.985386159,-0.002057933,0.012871371,-0.011265557,0.007149691,-0.505599241,0.625287968,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,Smart-study,Smart-T1,waiting_mean_s,10,58.001601735,56.784646714,-1.216955021,2.833390922,-3.243840784,0.809930743,-1.358213456,0.207464111,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,58.001601735,56.784646714,-1.216955021,2.833390922,-3.243840784,0.809930743,-1.358213456,0.207464111,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,detector_call_wait_max_s,10,144.3985,147.8712,3.4727,17.39801126,-8.973087505,15.918487505,0.631200973,0.543604655,true,unadjusted for multiple comparisons
+S1,Smart-study,Smart-T1,detector_calls_over_120s,10,17.2,18.5,1.3,6.307843442,-3.212359368,5.812359368,0.651722097,0.530868959,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,delay_mean_s,10,56.784646714,64.992805786,8.208159072,7.219029953,3.043976141,13.372342003,3.595563148,0.005788269,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,delay_p95_s,10,121.345125,146.72184,25.376715,28.426593956,5.0415547,45.7118753,2.822998037,0.019949124,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,delay_max_s,10,225.4469,238.8483,13.4014,50.667809288,-22.844167285,49.646967285,0.83640774,0.424575491,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,queue_mean_per_movement_veh,10,4.103847222,4.687621528,0.583774306,0.51917074,0.212381932,0.95516668,3.555779061,0.006159866,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,queue_max_movement_veh,10,27.8,29.4,1.6,9.00863783,-4.844391285,8.044391285,0.561643653,0.588069759,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,queue_total_mean_veh,10,32.830777778,37.500972222,4.670194444,4.153365917,1.699055453,7.641333436,3.555779061,0.006159866,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,queue_total_max_veh,10,61.8,66.7,4.9,10.224697768,-2.41430816,12.21430816,1.515463918,0.163958488,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,throughput_veh_h,10,2080.4,2073.8,-6.6,8.921883209,-12.982330768,-0.217669232,-2.339307977,0.044070199,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,pct_served,10,97.968574365,97.712539793,-0.256034572,0.388620021,-0.534036588,0.021967444,-2.083403745,0.066895048,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,delay_total_veh_h,10,32.921814361,37.689147444,4.767333083,4.141904239,1.804393282,7.730272885,3.639782583,0.005402715,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,green_utilization_mean,10,0.656472621,0.671657117,0.015184497,0.004016733,0.012311099,0.018057894,11.95439146,7.95e-07,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,signal_changes_per_hour,10,220.4,242.5,22.1,6.33245608,17.570033812,26.629966188,11.036213345,1.566e-06,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,vehicles_control_delay_over_90s,10,404.4,556.7,152.3,111.402224195,72.607649582,231.992350418,4.323207109,0.001924124,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,jain_fairness,10,0.985386159,0.979421885,-0.005964274,0.023714973,-0.022928944,0.011000396,-0.795307252,0.446901211,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,Smart-T1,Smart-T1-noAging,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S1,Smart-T1,Smart-T1-noAging,waiting_mean_s,10,56.784646714,64.992805786,8.208159072,7.219029953,3.043976141,13.372342003,3.595563148,0.005788269,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,delay_mean_lower_bound_s,10,56.784646714,64.992805786,8.208159072,7.219029953,3.043976141,13.372342003,3.595563148,0.005788269,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,detector_call_wait_max_s,10,147.8712,146.668,-1.2032,17.83562911,-13.962040456,11.555640456,-0.213328751,0.835824662,true,unadjusted for multiple comparisons
+S1,Smart-T1,Smart-T1-noAging,detector_calls_over_120s,10,18.5,11.9,-6.6,5.719362824,-10.691385694,-2.508614306,-3.649188415,0.005324242,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,delay_mean_s,10,268.476796463,196.334995966,-72.141800496,29.66667821,-93.364063631,-50.919537362,-7.689853325,3.0315e-05,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,delay_p95_s,10,1117.486545,734.50069,-382.985855,119.299464261,-468.327550637,-297.644159363,-10.151827763,3.156e-06,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,delay_max_s,10,1352.0159,884.78,-467.2359,117.997303432,-551.646085896,-382.825714104,-12.52172385,5.35e-07,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,queue_mean_per_movement_veh,10,20.29090625,15.435642361,-4.855263889,2.28859613,-6.492426935,-3.218100842,-6.708782004,8.7656e-05,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,queue_max_movement_veh,10,219.9,174.5,-45.4,22.046415682,-61.17105571,-29.62894429,-6.51205202,0.000109901,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,queue_total_mean_veh,10,162.32725,123.485138889,-38.842111111,18.308769039,-51.939415483,-25.744806739,-6.708782004,8.7656e-05,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,queue_total_max_veh,10,292.9,220.4,-72.5,30.493168634,-94.313498767,-50.686501233,-7.518573524,3.6215e-05,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,throughput_veh_h,10,2232.8,2307.8,75.0,25.028872217,57.095423411,92.904576589,9.475889383,5.591e-06,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,pct_served,10,88.229134245,91.217369251,2.988235006,1.043515865,2.241748726,3.734721286,9.055567935,8.119e-06,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,delay_total_veh_h,10,176.558596889,134.615754944,-41.942841944,21.242566622,-57.138858678,-26.746825211,-6.24382705,0.000150742,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,green_utilization_mean,10,0.842008313,0.729334504,-0.11267381,0.011393081,-0.120823929,-0.10452369,-31.273882122,0.0,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,211.1,-96.9,3.725288952,-99.564911179,-94.235088821,-82.255285214,0.0,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,898.5,1221.0,322.5,79.370089524,265.722058331,379.277941669,12.849104134,4.29e-07,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,jain_fairness,10,0.36792103,0.467438343,0.099517312,0.071589034,0.048305603,0.150729022,4.395943864,0.001730542,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,unfinished,10,101.7,0.0,-101.7,13.515834335,-111.368645432,-92.031354568,-23.794582714,2e-09,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S2,FT-A,Smart-T1,waiting_mean_s,10,268.476796463,196.334995966,-72.141800496,29.66667821,-93.364063631,-50.919537362,-7.689853325,3.0315e-05,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,delay_mean_lower_bound_s,10,302.685440431,196.334995966,-106.350444465,27.348171909,-125.914148105,-86.786740824,-12.297335113,6.25e-07,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,151.4162,66.5162,11.119586571,58.561726955,74.470673045,18.91641312,1.5e-08,true,unadjusted for multiple comparisons
+S2,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,39.9,39.9,4.483302354,36.692838699,43.107161301,28.143290073,0.0,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,delay_mean_s,10,105.053468312,196.334995966,91.281527655,42.058550394,61.194653175,121.368402134,6.863230734,7.3634e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,delay_p95_s,10,310.62713,734.50069,423.87356,195.143131764,284.27657304,563.47054696,6.86883457,7.3173e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,delay_max_s,10,649.5068,884.78,235.2732,187.9472938,100.823805421,369.722594579,3.958552259,0.003311527,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,queue_mean_per_movement_veh,10,8.596961806,15.435642361,6.838680556,3.194436375,4.553518434,9.123842677,6.769834864,8.1792e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,queue_max_movement_veh,10,39.6,174.5,134.9,27.862559506,114.968325639,154.831674361,15.310555237,9.4e-08,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,queue_total_mean_veh,10,68.775694444,123.485138889,54.709444444,25.555491002,36.42814747,72.990741418,6.769834864,8.1792e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,queue_total_max_veh,10,112.4,220.4,108.0,45.291647501,75.600307178,140.399692822,7.540595367,3.5391e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,throughput_veh_h,10,2413.3,2307.8,-105.5,37.660028914,-132.440361762,-78.559638238,-8.858737042,9.716e-06,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,pct_served,10,95.910985887,91.217369251,-4.693616637,1.649020544,-5.873254871,-3.513978402,-9.000809048,8.532e-06,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,delay_total_veh_h,10,72.14852675,134.615754944,62.467228194,28.698010995,41.937907842,82.996548547,6.883359277,7.1995e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,green_utilization_mean,10,0.838586017,0.729334504,-0.109251513,0.015804799,-0.120557585,-0.097945441,-21.859412887,4e-09,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,signal_changes_per_hour,10,232.0,211.1,-20.9,3.725288952,-23.564911179,-18.235088821,-17.741336026,2.6e-08,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,1046.8,1221.0,174.2,174.13902492,49.628445925,298.771554075,3.163384937,0.011487511,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,jain_fairness,10,0.666424722,0.467438343,-0.198986379,0.114625007,-0.280984169,-0.116988588,-5.489641366,0.000385319,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S2,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S2,FT-B,Smart-T1,waiting_mean_s,10,105.053468312,196.334995966,91.281527655,42.058550394,61.194653175,121.368402134,6.863230734,7.3634e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,delay_mean_lower_bound_s,10,105.053468312,196.334995966,91.281527655,42.058550394,61.194653175,121.368402134,6.863230734,7.3634e-05,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,detector_call_wait_max_s,10,114.9,151.4162,36.5162,11.119586571,28.561726955,44.470673045,10.3847713,2.611e-06,true,unadjusted for multiple comparisons
+S2,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,39.9,39.9,4.483302354,36.692838699,43.107161301,28.143290073,0.0,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,delay_mean_s,10,208.925247831,196.334995966,-12.590251865,37.846041906,-39.663679306,14.483175577,-1.05199567,0.320225841,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,delay_p95_s,10,819.81769,734.50069,-85.317,174.621104692,-210.233413169,39.599413169,-1.545036859,0.15673671,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,delay_max_s,10,968.7777,884.78,-83.9977,160.04189933,-198.48477793,30.48937793,-1.659715683,0.131343337,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,16.276444444,15.435642361,-0.840802083,2.862971159,-2.888848274,1.207244107,-0.928702909,0.377278403,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,queue_max_movement_veh,10,190.2,174.5,-15.7,30.948164548,-37.838983237,6.438983237,-1.604223061,0.143128077,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,queue_total_mean_veh,10,130.211555556,123.485138889,-6.726416667,22.903769273,-23.110786189,9.657952856,-0.928702909,0.377278403,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,queue_total_max_veh,10,234.5,220.4,-14.1,37.642912864,-41.028117678,12.828117678,-1.184502251,0.266550714,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,throughput_veh_h,10,2294.8,2307.8,13.0,35.282982993,-12.239925547,38.239925547,1.165139852,0.273913579,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,pct_served,10,90.697112502,91.217369251,0.520256749,1.494625803,-0.548934141,1.589447639,1.100741263,0.299576718,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,delay_total_veh_h,10,143.19957675,134.615754944,-8.583821806,25.829708598,-27.061282231,9.893638619,-1.050899503,0.320702482,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,green_utilization_mean,10,0.721474621,0.729334504,0.007859882,0.015292021,-0.00307937,0.018799135,1.625366021,0.138529897,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,signal_changes_per_hour,10,209.8,211.1,1.3,5.056349144,-2.317094279,4.917094279,0.813029488,0.437179564,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,1202.6,1221.0,18.4,102.450204707,-54.888461455,91.688461455,0.567943316,0.583962184,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,jain_fairness,10,0.413677809,0.467438343,0.053760534,0.082027807,-0.004918624,0.112439693,2.072537861,0.068083534,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S2,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S2,Smart-study,Smart-T1,waiting_mean_s,10,208.925247831,196.334995966,-12.590251865,37.846041906,-39.663679306,14.483175577,-1.05199567,0.320225841,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,208.925247831,196.334995966,-12.590251865,37.846041906,-39.663679306,14.483175577,-1.05199567,0.320225841,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,detector_call_wait_max_s,10,146.7009,151.4162,4.7153,11.123397213,-3.241899014,12.672499014,1.340515632,0.212931056,true,unadjusted for multiple comparisons
+S2,Smart-study,Smart-T1,detector_calls_over_120s,10,37.6,39.9,2.3,4.62000481,-1.004952346,5.604952346,1.574292434,0.149871928,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,delay_mean_s,10,43.027829512,39.4246451,-3.603184412,2.521889267,-5.407235315,-1.799133509,-4.518148248,0.001450643,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,delay_p95_s,10,96.22164,92.793525,-3.428115,12.246090722,-12.188440569,5.332210569,-0.885233641,0.399063797,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,delay_max_s,10,225.6673,142.0604,-83.6069,32.3415896,-106.742679471,-60.471120529,-8.174868192,1.8615e-05,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,queue_mean_per_movement_veh,10,2.382631944,2.194388889,-0.188243056,0.13649216,-0.285883665,-0.090602446,-4.361252752,0.001820138,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,queue_max_movement_veh,10,16.0,19.1,3.1,4.408325457,-0.053526059,6.253526059,2.223760664,0.053236276,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,queue_total_mean_veh,10,19.061055556,17.555111111,-1.505944444,1.091937282,-2.28706932,-0.724819569,-4.361252752,0.001820138,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,queue_total_max_veh,10,37.4,38.3,0.9,6.297265721,-3.604792522,5.404792522,0.451950103,0.662000155,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,throughput_veh_h,10,1603.0,1602.7,-0.3,4.854551129,-3.772736676,3.172736676,-0.195421425,0.849403761,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,pct_served,10,98.44448226,98.785317061,0.340834801,0.380748904,0.068463444,0.613206159,2.830774478,0.019697492,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,delay_total_veh_h,10,19.182882389,17.572745278,-1.610137111,1.128349735,-2.417309886,-0.802964336,-4.512519886,0.001462409,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,green_utilization_mean,10,0.605855608,0.461359822,-0.144495785,0.007994844,-0.150214952,-0.138776619,-57.15381117,0.0,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,228.6,-79.4,3.687817783,-82.038105919,-76.761894081,-68.084938302,0.0,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,95.2,94.9,-0.3,34.935019043,-25.291007133,24.691007133,-0.027155654,0.978928194,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,jain_fairness,10,0.871671857,0.90663273,0.034960874,0.049478258,-0.00043374,0.070355487,2.234435796,0.052316497,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S3,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S3,FT-A,Smart-T1,waiting_mean_s,10,43.027829512,39.4246451,-3.603184412,2.521889267,-5.407235315,-1.799133509,-4.518148248,0.001450643,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,delay_mean_lower_bound_s,10,43.027829512,39.4246451,-3.603184412,2.521889267,-5.407235315,-1.799133509,-4.518148248,0.001450643,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,132.7213,47.8213,9.183422166,41.251875533,54.390724467,16.467088841,5e-08,true,unadjusted for multiple comparisons
+S3,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,2.5,2.5,1.509230856,1.420361284,3.579638716,5.238227218,0.000536024,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,delay_mean_s,10,43.027829512,39.4246451,-3.603184412,2.521889267,-5.407235315,-1.799133509,-4.518148248,0.001450643,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,delay_p95_s,10,96.22164,92.793525,-3.428115,12.246090722,-12.188440569,5.332210569,-0.885233641,0.399063797,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,delay_max_s,10,225.6673,142.0604,-83.6069,32.3415896,-106.742679471,-60.471120529,-8.174868192,1.8615e-05,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,queue_mean_per_movement_veh,10,2.382631944,2.194388889,-0.188243056,0.13649216,-0.285883665,-0.090602446,-4.361252752,0.001820138,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,queue_max_movement_veh,10,16.0,19.1,3.1,4.408325457,-0.053526059,6.253526059,2.223760664,0.053236276,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,queue_total_mean_veh,10,19.061055556,17.555111111,-1.505944444,1.091937282,-2.28706932,-0.724819569,-4.361252752,0.001820138,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,queue_total_max_veh,10,37.4,38.3,0.9,6.297265721,-3.604792522,5.404792522,0.451950103,0.662000155,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,throughput_veh_h,10,1603.0,1602.7,-0.3,4.854551129,-3.772736676,3.172736676,-0.195421425,0.849403761,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,pct_served,10,98.44448226,98.785317061,0.340834801,0.380748904,0.068463444,0.613206159,2.830774478,0.019697492,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,delay_total_veh_h,10,19.182882389,17.572745278,-1.610137111,1.128349735,-2.417309886,-0.802964336,-4.512519886,0.001462409,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,green_utilization_mean,10,0.605855608,0.461359822,-0.144495785,0.007994844,-0.150214952,-0.138776619,-57.15381117,0.0,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,signal_changes_per_hour,10,308.0,228.6,-79.4,3.687817783,-82.038105919,-76.761894081,-68.084938302,0.0,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,95.2,94.9,-0.3,34.935019043,-25.291007133,24.691007133,-0.027155654,0.978928194,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,jain_fairness,10,0.871671857,0.90663273,0.034960874,0.049478258,-0.00043374,0.070355487,2.234435796,0.052316497,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S3,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S3,FT-B,Smart-T1,waiting_mean_s,10,43.027829512,39.4246451,-3.603184412,2.521889267,-5.407235315,-1.799133509,-4.518148248,0.001450643,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,delay_mean_lower_bound_s,10,43.027829512,39.4246451,-3.603184412,2.521889267,-5.407235315,-1.799133509,-4.518148248,0.001450643,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,detector_call_wait_max_s,10,84.9,132.7213,47.8213,9.183422166,41.251875533,54.390724467,16.467088841,5e-08,true,unadjusted for multiple comparisons
+S3,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,2.5,2.5,1.509230856,1.420361284,3.579638716,5.238227218,0.000536024,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,delay_mean_s,10,40.558790008,39.4246451,-1.134144908,1.441497296,-2.165329954,-0.102959863,-2.48802486,0.034533741,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,delay_p95_s,10,93.843295,92.793525,-1.04977,3.383747085,-3.470356845,1.370816845,-0.981061568,0.35219743,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,delay_max_s,10,145.98,142.0604,-3.9196,21.05805458,-18.98362477,11.14442477,-0.588604397,0.570601475,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,2.256211806,2.194388889,-0.061822917,0.079252108,-0.11851646,-0.005129374,-2.466826842,0.035755931,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,queue_max_movement_veh,10,20.5,19.1,-1.4,2.59058123,-3.253190174,0.453190174,-1.708955763,0.121631625,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,queue_total_mean_veh,10,18.049694444,17.555111111,-0.494583333,0.634016867,-0.948131678,-0.041034989,-2.466826842,0.035755931,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,queue_total_max_veh,10,38.6,38.3,-0.3,4.321779469,-3.391614789,2.791614789,-0.219512195,0.831148829,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,throughput_veh_h,10,1600.1,1602.7,2.6,7.290785661,-2.615513873,7.815513873,1.127714117,0.28860619,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,pct_served,10,98.604429429,98.785317061,0.180887632,0.417095081,-0.117484215,0.479259479,1.371430505,0.203459556,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,delay_total_veh_h,10,18.076817583,17.572745278,-0.504072306,0.634284943,-0.95781242,-0.050332191,-2.513092274,0.033142171,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,green_utilization_mean,10,0.458341345,0.461359822,0.003018477,0.00310463,0.000797559,0.005239395,3.074525041,0.013256704,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,signal_changes_per_hour,10,227.6,228.6,1.0,2.748737084,-0.966328056,2.966328056,1.150447483,0.279608694,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,104.8,94.9,-9.9,18.021283713,-22.791649759,2.991649759,-1.7371986,0.116362275,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,jain_fairness,10,0.921880627,0.90663273,-0.015247897,0.015419463,-0.026278317,-0.004217477,-3.127092202,0.012178625,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S3,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S3,Smart-study,Smart-T1,waiting_mean_s,10,40.558790008,39.4246451,-1.134144908,1.441497296,-2.165329954,-0.102959863,-2.48802486,0.034533741,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,40.558790008,39.4246451,-1.134144908,1.441497296,-2.165329954,-0.102959863,-2.48802486,0.034533741,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,detector_call_wait_max_s,10,123.2874,132.7213,9.4339,11.518172062,1.194296071,17.673503929,2.590047367,0.029211204,true,unadjusted for multiple comparisons
+S3,Smart-study,Smart-T1,detector_calls_over_120s,10,0.9,2.5,1.6,1.264911064,0.695137135,2.504862865,4.0,0.003110428,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,delay_mean_s,10,30.773848528,15.63860488,-15.135243648,1.8510634,-16.459414634,-13.811072662,-25.85640388,1e-09,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,delay_p95_s,10,70.75651,39.18451,-31.572,3.092333037,-33.784121794,-29.359878206,-32.286118307,0.0,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,delay_max_s,10,86.1466,64.5999,-21.5467,8.873167104,-27.894181366,-15.199218634,-7.67895468,3.0657e-05,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,queue_mean_per_movement_veh,10,0.344996528,0.175430556,-0.169565972,0.020955789,-0.18455684,-0.154575104,-25.587902704,1e-09,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,queue_max_movement_veh,10,4.5,3.6,-0.9,0.875595036,-1.526362956,-0.273637044,-3.250418033,0.009990685,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,queue_total_mean_veh,10,2.759972222,1.403444444,-1.356527778,0.167646311,-1.476454724,-1.236600832,-25.587902704,1e-09,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,queue_total_max_veh,10,10.2,7.7,-2.5,1.354006401,-3.46859783,-1.53140217,-5.838742081,0.000247205,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,throughput_veh_h,10,323.6,323.0,-0.6,2.011080417,-2.038640265,0.838640265,-0.943456353,0.370083122,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,pct_served,10,99.077592481,99.205583867,0.127991386,0.441493876,-0.187834307,0.443817079,0.916760852,0.383176274,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,delay_total_veh_h,10,2.769175,1.409121389,-1.360053611,0.17339581,-1.484093501,-1.236013721,-24.803754742,1e-09,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,green_utilization_mean,10,0.12845312,0.159766936,0.031313816,0.006322576,0.026790917,0.035836715,15.661808283,7.7e-08,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,227.4,-80.6,13.929983648,-90.564910003,-70.635089997,-18.297191572,2e-08,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,FT-A,Smart-T1,jain_fairness,10,0.936172554,0.96795078,0.031778226,0.020397916,0.017186435,0.046370016,4.926560663,0.000817197,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,FT-A,Smart-T1,waiting_mean_s,10,30.773848528,15.63860488,-15.135243648,1.8510634,-16.459414634,-13.811072662,-25.85640388,1e-09,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,delay_mean_lower_bound_s,10,30.773848528,15.63860488,-15.135243648,1.8510634,-16.459414634,-13.811072662,-25.85640388,1e-09,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,detector_call_wait_max_s,10,84.8229,63.7236,-21.0993,7.539301722,-26.492591553,-15.706008447,-8.849870651,9.796e-06,true,unadjusted for multiple comparisons
+S4,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,FT-B,Smart-T1,delay_mean_s,10,24.757723103,15.63860488,-9.119118223,1.295013329,-10.045514951,-8.192721495,-22.267866436,4e-09,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,delay_p95_s,10,52.268135,39.18451,-13.083625,2.92317663,-15.17473959,-10.99251041,-14.153799199,1.87e-07,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,delay_max_s,10,82.7092,64.5999,-18.1093,17.935863527,-30.939843839,-5.278756161,-3.192856299,0.010956212,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,queue_mean_per_movement_veh,10,0.276479167,0.175430556,-0.101048611,0.013236185,-0.110517208,-0.091580015,-24.141681369,2e-09,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,queue_max_movement_veh,10,4.5,3.6,-0.9,1.100504935,-1.687253805,-0.112746195,-2.58613097,0.029399461,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,queue_total_mean_veh,10,2.211833333,1.403444444,-0.808388889,0.105889482,-0.884137661,-0.732640117,-24.141681369,2e-09,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,queue_total_max_veh,10,8.7,7.7,-1.0,1.247219129,-1.892206817,-0.107793183,-2.535462764,0.031947733,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,throughput_veh_h,10,323.3,323.0,-0.3,1.946506843,-1.692447112,1.092447112,-0.487377325,0.637642205,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,pct_served,10,99.082856764,99.205583867,0.122727104,0.40596497,-0.167682741,0.413136948,0.955986863,0.364050945,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,delay_total_veh_h,10,2.227088472,1.409121389,-0.817967083,0.108688318,-0.895718022,-0.740216145,-23.798684952,2e-09,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,green_utilization_mean,10,0.15089535,0.159766936,0.008871585,0.006825808,0.003988696,0.013754475,4.110050319,0.002636814,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,signal_changes_per_hour,10,442.0,227.4,-214.6,13.929983648,-224.564910003,-204.635089997,-48.716840091,0.0,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,0.3,0.0,-0.3,0.483045892,-0.645550214,0.045550214,-1.963961012,0.081126189,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,jain_fairness,10,0.960564633,0.96795078,0.007386147,0.023857185,-0.009680256,0.024452549,0.979036148,0.353144155,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,FT-B,Smart-T1,waiting_mean_s,10,24.757723103,15.63860488,-9.119118223,1.295013329,-10.045514951,-8.192721495,-22.267866436,4e-09,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,delay_mean_lower_bound_s,10,24.757723103,15.63860488,-9.119118223,1.295013329,-10.045514951,-8.192721495,-22.267866436,4e-09,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,detector_call_wait_max_s,10,59.7434,63.7236,3.9802,7.682820154,-1.515758454,9.476158454,1.638265284,0.13579044,true,unadjusted for multiple comparisons
+S4,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,Smart-study,Smart-T1,delay_mean_s,10,15.643764823,15.63860488,-0.005159943,0.196296105,-0.145581718,0.135261831,-0.083125305,0.935571394,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,delay_p95_s,10,39.080855,39.18451,0.103655,0.347449383,-0.144895315,0.352205315,0.943406168,0.370107427,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,delay_max_s,10,64.9519,64.5999,-0.352,1.241519947,-1.240129868,0.536129868,-0.896579825,0.393293133,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,0.175503472,0.175430556,-7.2917e-05,0.002267541,-0.001695018,0.001549184,-0.101688457,0.921233466,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,queue_max_movement_veh,10,3.7,3.6,-0.1,0.316227766,-0.326215716,0.126215716,-1.0,0.343436396,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,queue_total_mean_veh,10,1.404027778,1.403444444,-0.000583333,0.018140328,-0.013560142,0.012393476,-0.101688457,0.921233466,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,queue_total_max_veh,10,7.8,7.7,-0.1,0.316227766,-0.326215716,0.126215716,-1.0,0.343436396,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,throughput_veh_h,10,323.0,323.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,Smart-study,Smart-T1,pct_served,10,99.205583867,99.205583867,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,Smart-study,Smart-T1,delay_total_veh_h,10,1.409749528,1.409121389,-0.000628139,0.018103245,-0.01357842,0.012322142,-0.1097234,0.915036372,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,green_utilization_mean,10,0.159693835,0.159766936,7.31e-05,0.000556332,-0.000324876,0.000471076,0.41551239,0.687498429,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,signal_changes_per_hour,10,227.3,227.4,0.1,0.316227766,-0.126215716,0.326215716,1.0,0.343436396,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,Smart-study,Smart-T1,jain_fairness,10,0.968060136,0.96795078,-0.000109356,0.001499471,-0.001182013,0.000963301,-0.230624186,0.822763836,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S4,Smart-study,Smart-T1,waiting_mean_s,10,15.643764823,15.63860488,-0.005159943,0.196296105,-0.145581718,0.135261831,-0.083125305,0.935571394,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,15.643764823,15.63860488,-0.005159943,0.196296105,-0.145581718,0.135261831,-0.083125305,0.935571394,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,detector_call_wait_max_s,10,63.6567,63.7236,0.0669,1.437485339,-0.961415065,1.095215065,0.147171153,0.886241049,true,unadjusted for multiple comparisons
+S4,Smart-study,Smart-T1,detector_calls_over_120s,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,FT-A,Smart-T1,delay_mean_s,10,49.68028615,59.534591157,9.854305007,3.562973078,7.30550761,12.403102404,8.746080281,1.0784e-05,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,delay_p95_s,10,128.17939,128.837905,0.658515,14.21677484,-9.511553062,10.828583062,0.146475364,0.886774609,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,delay_max_s,10,367.6446,233.9854,-133.6592,64.151535951,-179.550444271,-87.767955729,-6.588579618,0.00010059,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,queue_mean_per_movement_veh,10,3.633930556,4.378125,0.744194444,0.258192899,0.559494371,0.928894518,9.114694762,7.697e-06,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,queue_max_movement_veh,10,28.7,31.2,2.5,3.171049598,0.231567771,4.768432229,2.493084357,0.034248248,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,queue_total_mean_veh,10,29.071444444,35.025,5.953555556,2.065543194,4.475954967,7.431156144,9.114694762,7.697e-06,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,queue_total_max_veh,10,54.1,65.6,11.5,4.143267632,8.536084886,14.463915114,8.777176935,1.0477e-05,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,throughput_veh_h,10,2118.3,2116.8,-1.5,5.25462759,-5.258934135,2.258934135,-0.902712211,0.390199001,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,pct_served,10,98.528886956,98.207274975,-0.321611981,0.255747412,-0.504562658,-0.138661304,-3.976682994,0.003221913,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,delay_total_veh_h,10,29.259424028,35.048734722,5.789310694,2.05270815,4.320891744,7.257729645,8.918660882,9.196e-06,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,green_utilization_mean,10,0.79951283,0.668416522,-0.131096308,0.006784119,-0.135949375,-0.126243242,-61.107854251,0.0,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,219.0,-89.0,3.559026084,-91.545973888,-86.454026112,-79.078575181,0.0,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,213.5,460.4,246.9,67.91571574,198.316023722,295.483976278,11.496107282,1.109e-06,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,jain_fairness,10,0.829317935,0.986279479,0.156961544,0.051219836,0.12032108,0.193602008,9.690698342,4.645e-06,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,FT-A,Smart-T1,waiting_mean_s,10,49.68028615,59.534591157,9.854305007,3.562973078,7.30550761,12.403102404,8.746080281,1.0784e-05,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,delay_mean_lower_bound_s,10,49.68028615,59.534591157,9.854305007,3.562973078,7.30550761,12.403102404,8.746080281,1.0784e-05,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,143.4771,58.5771,9.34546109,51.89175987,65.26244013,19.821071742,1e-08,true,unadjusted for multiple comparisons
+S5,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,20.0,20.0,5.249338583,16.244849393,23.755150607,12.048289934,7.44e-07,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,delay_mean_s,10,49.68028615,59.534591157,9.854305007,3.562973078,7.30550761,12.403102404,8.746080281,1.0784e-05,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,delay_p95_s,10,128.17939,128.837905,0.658515,14.21677484,-9.511553062,10.828583062,0.146475364,0.886774609,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,delay_max_s,10,367.6446,233.9854,-133.6592,64.151535951,-179.550444271,-87.767955729,-6.588579618,0.00010059,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,queue_mean_per_movement_veh,10,3.633930556,4.378125,0.744194444,0.258192899,0.559494371,0.928894518,9.114694762,7.697e-06,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,queue_max_movement_veh,10,28.7,31.2,2.5,3.171049598,0.231567771,4.768432229,2.493084357,0.034248248,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,queue_total_mean_veh,10,29.071444444,35.025,5.953555556,2.065543194,4.475954967,7.431156144,9.114694762,7.697e-06,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,queue_total_max_veh,10,54.1,65.6,11.5,4.143267632,8.536084886,14.463915114,8.777176935,1.0477e-05,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,throughput_veh_h,10,2118.3,2116.8,-1.5,5.25462759,-5.258934135,2.258934135,-0.902712211,0.390199001,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,pct_served,10,98.528886956,98.207274975,-0.321611981,0.255747412,-0.504562658,-0.138661304,-3.976682994,0.003221913,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,delay_total_veh_h,10,29.259424028,35.048734722,5.789310694,2.05270815,4.320891744,7.257729645,8.918660882,9.196e-06,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,green_utilization_mean,10,0.79951283,0.668416522,-0.131096308,0.006784119,-0.135949375,-0.126243242,-61.107854251,0.0,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,signal_changes_per_hour,10,308.0,219.0,-89.0,3.559026084,-91.545973888,-86.454026112,-79.078575181,0.0,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,213.5,460.4,246.9,67.91571574,198.316023722,295.483976278,11.496107282,1.109e-06,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,jain_fairness,10,0.829317935,0.986279479,0.156961544,0.051219836,0.12032108,0.193602008,9.690698342,4.645e-06,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,FT-B,Smart-T1,waiting_mean_s,10,49.68028615,59.534591157,9.854305007,3.562973078,7.30550761,12.403102404,8.746080281,1.0784e-05,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,delay_mean_lower_bound_s,10,49.68028615,59.534591157,9.854305007,3.562973078,7.30550761,12.403102404,8.746080281,1.0784e-05,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,detector_call_wait_max_s,10,84.9,143.4771,58.5771,9.34546109,51.89175987,65.26244013,19.821071742,1e-08,true,unadjusted for multiple comparisons
+S5,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,20.0,20.0,5.249338583,16.244849393,23.755150607,12.048289934,7.44e-07,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,delay_mean_s,10,62.755341001,59.534591157,-3.220749844,5.199658058,-6.940361145,0.498861456,-1.958764435,0.081806696,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,delay_p95_s,10,140.96811,128.837905,-12.130205,18.801179337,-25.579758479,1.319348479,-2.040248412,0.071736284,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,delay_max_s,10,257.2663,233.9854,-23.2809,54.823989087,-62.499619206,15.937819206,-1.342855039,0.212201471,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,4.598576389,4.378125,-0.220451389,0.38763882,-0.497751496,0.056848718,-1.798397027,0.105658369,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,queue_max_movement_veh,10,34.1,31.2,-2.9,5.66568619,-6.952987743,1.152987743,-1.618622159,0.139981885,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,queue_total_mean_veh,10,36.788611111,35.025,-1.763611111,3.101110564,-3.982011969,0.454789747,-1.798397027,0.105658369,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,queue_total_max_veh,10,69.8,65.6,-4.2,4.341018826,-7.305377796,-1.094622204,-3.059550466,0.01358149,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,throughput_veh_h,10,2109.2,2116.8,7.6,7.167829363,2.472443764,12.727556236,3.352941176,0.008483788,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,pct_served,10,97.847768019,98.207274975,0.359506956,0.336493536,0.118793981,0.600219931,3.37855172,0.008145672,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,delay_total_veh_h,10,36.971439306,35.048734722,-1.922704583,3.07832513,-4.124805724,0.279396557,-1.975140862,0.079680346,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,green_utilization_mean,10,0.663487833,0.668416522,0.004928689,0.003645671,0.002320733,0.007536645,4.275175615,0.002064542,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,signal_changes_per_hour,10,217.0,219.0,2.0,4.807401701,-1.439008006,5.439008006,1.315587029,0.220838013,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,521.7,460.4,-61.3,69.586157627,-111.078938419,-11.521061581,-2.785720999,0.021201586,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,jain_fairness,10,0.978512994,0.986279479,0.007766485,0.010862961,-4.41e-06,0.015537379,2.260873461,0.050105017,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S5,Smart-study,Smart-T1,waiting_mean_s,10,62.755341001,59.534591157,-3.220749844,5.199658058,-6.940361145,0.498861456,-1.958764435,0.081806696,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,62.755341001,59.534591157,-3.220749844,5.199658058,-6.940361145,0.498861456,-1.958764435,0.081806696,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,detector_call_wait_max_s,10,144.5943,143.4771,-1.1172,10.957469302,-8.955701337,6.721301337,-0.322419028,0.754498985,true,unadjusted for multiple comparisons
+S5,Smart-study,Smart-T1,detector_calls_over_120s,10,18.4,20.0,1.6,6.292853089,-2.901635915,6.101635915,0.804030252,0.442098205,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,delay_mean_s,10,175.526869942,48.793100297,-126.733769645,22.808658384,-143.050100936,-110.417438355,-17.570843572,2.8e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,delay_p95_s,10,415.72541,111.88851,-303.8369,40.910021135,-333.102166142,-274.571633858,-23.48609496,2e-09,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,delay_max_s,10,529.2209,180.8162,-348.4047,56.084243018,-388.524950559,-308.284449441,-19.644597845,1.1e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,queue_mean_per_movement_veh,10,10.755072917,3.188517361,-7.566555556,1.38536104,-8.557583143,-6.575527969,-17.271706734,3.3e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,queue_max_movement_veh,10,75.9,29.3,-46.6,7.933053216,-52.274964404,-40.925035596,-18.575715421,1.7e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,queue_total_mean_veh,10,86.040583333,25.508138889,-60.532444444,11.082888317,-68.46066514,-52.604223748,-17.271706734,3.3e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,queue_total_max_veh,10,147.9,54.9,-93.0,19.136933459,-106.689737509,-79.310262491,-15.367761142,9.1e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,throughput_veh_h,10,1808.2,1877.7,69.5,22.192341021,53.624555591,85.375444409,9.903339948,3.879e-06,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,pct_served,10,93.706810483,98.127363887,4.420553404,1.234377298,3.537533079,5.303573728,11.324752408,1.259e-06,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,delay_total_veh_h,10,91.941693778,25.557200417,-66.384493361,12.093466625,-75.035638229,-57.733348494,-17.358645527,3.2e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,green_utilization_mean,10,0.658755373,0.595544232,-0.063211142,0.009601149,-0.07007939,-0.056342893,-20.819506361,6e-09,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,240.1,-67.9,4.653553003,-71.228951278,-64.571048722,-46.140798862,0.0,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,1246.7,247.6,-999.1,134.511007398,-1095.323378071,-902.876621929,-23.48827558,2e-09,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,jain_fairness,10,0.8458651,0.976134211,0.130269111,0.040672085,0.101174054,0.159364168,10.128497181,3.217e-06,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-A,Smart-T1,waiting_mean_s,10,175.526869942,48.793100297,-126.733769645,22.808658384,-143.050100936,-110.417438355,-17.570843572,2.8e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,delay_mean_lower_bound_s,10,175.526869942,48.793100297,-126.733769645,22.808658384,-143.050100936,-110.417438355,-17.570843572,2.8e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,142.0201,57.1201,9.507252442,50.319021309,63.921178691,18.999139582,1.4e-08,true,unadjusted for multiple comparisons
+S6,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,5.8,5.8,2.347575582,4.120645595,7.479354405,7.812830638,2.673e-05,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,delay_mean_s,10,240.063795374,48.793100297,-191.270695077,25.258095995,-209.339248478,-173.202141675,-23.946818724,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,delay_p95_s,10,537.77568,111.88851,-425.88717,44.058821859,-457.404952486,-394.369387514,-30.567623614,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,delay_max_s,10,724.8867,180.8162,-544.0705,85.796138113,-605.445359905,-482.695640095,-20.053373328,9e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,queue_mean_per_movement_veh,10,14.44975,3.188517361,-11.261232639,1.52969656,-12.355511637,-10.16695364,-23.279874797,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,queue_max_movement_veh,10,88.2,29.3,-58.9,7.866242926,-64.527171201,-53.272828799,-23.678159437,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,queue_total_mean_veh,10,115.598,25.508138889,-90.089861111,12.237572482,-98.844093098,-81.335629124,-23.279874797,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,queue_total_max_veh,10,189.3,54.9,-134.4,20.167079886,-148.826659869,-119.973340131,-21.074450041,6e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,throughput_veh_h,10,1764.1,1877.7,113.6,21.716353285,98.065056705,129.134943295,16.542130139,4.8e-08,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,pct_served,10,91.698967794,98.127363887,6.428396093,1.306055441,5.494100314,7.362691872,15.56470937,8.2e-08,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,delay_total_veh_h,10,125.766390778,25.557200417,-100.209190361,13.687626506,-110.000728508,-90.417652214,-23.151514537,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,green_utilization_mean,10,0.703265614,0.595544232,-0.107721382,0.010953686,-0.115557177,-0.099885588,-31.098657631,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,signal_changes_per_hour,10,346.0,240.1,-105.9,4.653553003,-109.228951278,-102.571048722,-71.963337254,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,1392.7,247.6,-1145.1,113.875614403,-1226.561707185,-1063.638292815,-31.7989428,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,jain_fairness,10,0.898536694,0.976134211,0.077597516,0.058866236,0.035487148,0.119707885,4.168516781,0.002416936,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-B,Smart-T1,waiting_mean_s,10,240.063795374,48.793100297,-191.270695077,25.258095995,-209.339248478,-173.202141675,-23.946818724,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,delay_mean_lower_bound_s,10,240.063795374,48.793100297,-191.270695077,25.258095995,-209.339248478,-173.202141675,-23.946818724,2e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,detector_call_wait_max_s,10,76.9,142.0201,65.1201,9.507252442,58.319021309,71.921178691,21.660078842,4e-09,true,unadjusted for multiple comparisons
+S6,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,5.8,5.8,2.347575582,4.120645595,7.479354405,7.812830638,2.673e-05,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,delay_mean_s,10,54.642151038,48.793100297,-5.849050742,9.315629831,-12.513050875,0.814949391,-1.985514971,0.078360661,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,delay_p95_s,10,138.55418,111.88851,-26.66567,45.719730133,-59.37159469,6.04025469,-1.844373365,0.098226226,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,delay_max_s,10,218.0079,180.8162,-37.1917,73.110631589,-89.491895207,15.108495207,-1.608664561,0.142150893,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,3.560541667,3.188517361,-0.372024306,0.602216404,-0.802823969,0.058775358,-1.953523921,0.082498443,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,queue_max_movement_veh,10,39.1,29.3,-9.8,11.222992273,-17.828445028,-1.771554972,-2.761324281,0.02206432,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,queue_total_mean_veh,10,28.484333333,25.508138889,-2.976194444,4.81773123,-6.422591751,0.470202862,-1.953523921,0.082498443,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,queue_total_max_veh,10,64.6,54.9,-9.7,16.193620143,-21.284218002,1.884218002,-1.894208524,0.09072412,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,throughput_veh_h,10,1875.6,1877.7,2.1,9.971626414,-5.033271819,9.233271819,0.665967898,0.522133184,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,pct_served,10,97.954671509,98.127363887,0.172692377,0.500307444,-0.185206007,0.530590762,1.091531326,0.303396577,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,delay_total_veh_h,10,28.653221417,25.557200417,-3.096021,4.969495439,-6.650983881,0.458941881,-1.970115108,0.080327248,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,green_utilization_mean,10,0.593187289,0.595544232,0.002356942,0.004855905,-0.001116763,0.005830647,1.534895383,0.159180866,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,signal_changes_per_hour,10,238.1,240.1,2.0,5.557777334,-1.975794397,5.975794397,1.137964863,0.284521098,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,323.5,247.6,-75.9,114.028700091,-157.471218089,5.671218089,-2.104881264,0.064604425,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,jain_fairness,10,0.938241087,0.976134211,0.037893124,0.061485903,-0.006091242,0.081877489,1.948878894,0.083116223,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,Smart-study,Smart-T1,waiting_mean_s,10,54.642151038,48.793100297,-5.849050742,9.315629831,-12.513050875,0.814949391,-1.985514971,0.078360661,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,54.642151038,48.793100297,-5.849050742,9.315629831,-12.513050875,0.814949391,-1.985514971,0.078360661,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,detector_call_wait_max_s,10,128.2688,142.0201,13.7513,12.29716045,4.954441349,22.548158651,3.536217078,0.006351681,true,unadjusted for multiple comparisons
+S6,Smart-study,Smart-T1,detector_calls_over_120s,10,2.7,5.8,3.1,3.107338983,0.877143599,5.322856401,3.154808922,0.011647075,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,delay_mean_s,10,240.063795374,43.829938694,-196.23385668,23.582609036,-213.103838914,-179.363874446,-26.313710252,1e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,delay_p95_s,10,537.77568,138.596085,-399.179595,35.616658516,-424.658217637,-373.700972363,-35.441750244,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,delay_max_s,10,724.8867,314.3645,-410.5222,64.687404796,-456.79678175,-364.24761825,-20.068592737,9e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,queue_mean_per_movement_veh,10,14.44975,2.838559028,-11.611190972,1.389035224,-12.604846912,-10.617535032,-26.434037948,1e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,queue_max_movement_veh,10,88.2,16.6,-71.6,6.818276094,-76.47750089,-66.72249911,-33.207672637,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,queue_total_mean_veh,10,115.598,22.708472222,-92.889527778,11.112281791,-100.838775298,-84.940280258,-26.434037948,1e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,queue_total_max_veh,10,189.3,43.2,-146.1,14.677647405,-156.599756434,-135.600243566,-31.477031258,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,throughput_veh_h,10,1764.1,1870.1,106.0,17.48014747,93.49545579,118.50454421,19.176121515,1.3e-08,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,pct_served,10,91.698967794,98.174534312,6.475566518,0.949143357,5.796590263,7.154542773,21.574759154,5e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,delay_total_veh_h,10,125.766390778,22.959903417,-102.806487361,12.862351142,-112.007659078,-93.605315644,-25.27552348,1e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,green_utilization_mean,10,0.703265614,0.706744805,0.003479191,0.007974625,-0.002225512,0.009183894,1.379647033,0.201003471,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,signal_changes_per_hour,10,346.0,340.0,-6.0,0.0,-6.0,-6.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-B,FT-TOD,vehicles_control_delay_over_90s,10,1392.7,231.8,-1160.9,93.034581384,-1227.452930287,-1094.347069713,-39.459393282,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,jain_fairness,10,0.898536694,0.817506383,-0.081030311,0.066670427,-0.128723462,-0.033337161,-3.843388363,0.003946017,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-B,FT-TOD,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,FT-B,FT-TOD,waiting_mean_s,10,240.063795374,43.829938694,-196.23385668,23.582609036,-213.103838914,-179.363874446,-26.313710252,1e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,delay_mean_lower_bound_s,10,240.063795374,43.829938694,-196.23385668,23.582609036,-213.103838914,-179.363874446,-26.313710252,1e-09,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,detector_call_wait_max_s,10,76.9,101.7778,24.8778,0.2823244,24.675837291,25.079762709,278.652894533,0.0,true,unadjusted for multiple comparisons
+S6,FT-B,FT-TOD,detector_calls_over_120s,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,Smart-T1,Smart-T1-noAging,delay_mean_s,10,48.793100297,43.175568443,-5.617531854,5.758029102,-9.736577737,-1.498485971,-3.08511735,0.01303181,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,delay_p95_s,10,111.88851,102.673735,-9.214775,17.290348225,-21.583545009,3.153995009,-1.685314648,0.126209526,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,delay_max_s,10,180.8162,180.528,-0.2882,38.039814636,-27.500244101,26.923844101,-0.023958277,0.98140868,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,queue_mean_per_movement_veh,10,3.188517361,2.826618056,-0.361899306,0.384290081,-0.636803869,-0.086994742,-2.978026613,0.015499145,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,queue_max_movement_veh,10,29.3,25.5,-3.8,7.208020224,-8.956307046,1.356307046,-1.667122835,0.129838658,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,queue_total_mean_veh,10,25.508138889,22.612944444,-2.895194444,3.074320651,-5.094430953,-0.695957936,-2.978026613,0.015499145,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,queue_total_max_veh,10,54.9,47.9,-7.0,9.649409884,-13.902771999,-0.097228001,-2.294020452,0.047461463,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,throughput_veh_h,10,1877.7,1880.4,2.7,7.930952024,-2.973461301,8.373461301,1.076560501,0.309686645,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,pct_served,10,98.127363887,98.337727548,0.210363661,0.341339247,-0.033815726,0.454543048,1.94887729,0.083116437,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,delay_total_veh_h,10,25.557200417,22.611990222,-2.945210194,2.997086543,-5.089196751,-0.801223638,-3.10754203,0.012568589,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,green_utilization_mean,10,0.595544232,0.612834246,0.017290014,0.004998418,0.013714362,0.020865667,10.938627097,1.688e-06,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,signal_changes_per_hour,10,240.1,255.7,15.6,5.168279318,11.902835698,19.297164302,9.545059092,5.265e-06,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,vehicles_control_delay_over_90s,10,247.6,178.9,-68.7,101.133629971,-141.046640626,3.646640626,-2.148132874,0.060219308,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,jain_fairness,10,0.976134211,0.96530262,-0.01083159,0.01737484,-0.023260802,0.001597622,-1.971384806,0.080163346,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,Smart-T1,Smart-T1-noAging,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S6,Smart-T1,Smart-T1-noAging,waiting_mean_s,10,48.793100297,43.175568443,-5.617531854,5.758029102,-9.736577737,-1.498485971,-3.08511735,0.01303181,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,delay_mean_lower_bound_s,10,48.793100297,43.175568443,-5.617531854,5.758029102,-9.736577737,-1.498485971,-3.08511735,0.01303181,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,detector_call_wait_max_s,10,142.0201,133.1211,-8.899,11.108916939,-16.84584045,-0.95215955,-2.533200046,0.032066562,true,unadjusted for multiple comparisons
+S6,Smart-T1,Smart-T1-noAging,detector_calls_over_120s,10,5.8,4.4,-1.4,2.170509413,-2.952688898,0.152688898,-2.039700311,0.071799883,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,delay_mean_s,10,232.468832757,151.104141141,-81.364691616,53.179394611,-119.406938806,-43.322444426,-4.838297775,0.000923203,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,delay_p95_s,10,464.288245,393.25973,-71.028515,199.892420559,-214.022938498,71.965908498,-1.123663847,0.290233021,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,delay_max_s,10,650.4736,594.0627,-56.4109,179.228507203,-184.623250374,71.801450374,-0.995304439,0.345593244,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,queue_mean_per_movement_veh,10,20.974784722,14.560739583,-6.414045139,4.803515438,-9.850273081,-2.977817197,-4.222530752,0.002231091,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,queue_max_movement_veh,10,80.2,68.7,-11.5,36.893992284,-37.892372169,14.892372169,-0.98569417,0.350039143,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,queue_total_mean_veh,10,167.798277778,116.485916667,-51.312361111,38.428123505,-78.802184644,-23.822537578,-4.222530752,0.002231091,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,queue_total_max_veh,10,284.3,163.3,-121.0,71.164910205,-171.908309978,-70.091690022,-5.376745306,0.000446396,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,throughput_veh_h,10,2621.1,2776.0,154.9,60.318506465,111.750739842,198.049260158,8.120837837,1.9632e-05,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,pct_served,10,90.28727815,95.302145471,5.014867322,2.013975983,3.574155694,6.455578949,7.87417677,2.5118e-05,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,delay_total_veh_h,10,183.473312611,119.031653333,-64.441659278,42.581367153,-94.902534336,-33.980784219,-4.7857181,0.000993313,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,green_utilization_mean,10,0.982199322,0.886677926,-0.095521396,0.023372967,-0.112241409,-0.078801383,-12.923698713,4.08e-07,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,200.1,-107.9,2.558211181,-109.730034035,-106.069965965,-133.378261389,0.0,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,2477.2,1650.8,-826.4,308.655579355,-1047.198900258,-605.601099742,-8.466739088,1.4032e-05,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,jain_fairness,10,0.906625922,0.747096856,-0.159529065,0.129089727,-0.251874293,-0.067183837,-3.907942254,0.003575929,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7a,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7a,FT-A,Smart-T1,waiting_mean_s,10,232.468832757,151.104141141,-81.364691616,53.179394611,-119.406938806,-43.322444426,-4.838297775,0.000923203,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,delay_mean_lower_bound_s,10,232.468832757,151.104141141,-81.364691616,53.179394611,-119.406938806,-43.322444426,-4.838297775,0.000923203,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,143.2509,58.3509,13.310758802,48.828956767,67.872843233,13.862601695,2.23e-07,true,unadjusted for multiple comparisons
+S7a,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,80.2,80.2,7.254117605,75.010716875,85.389283125,34.961477352,0.0,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,delay_mean_s,10,143.235208476,151.104141141,7.868932665,61.301485258,-35.98350816,51.721373491,0.405924096,0.694279791,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,delay_p95_s,10,497.00418,393.25973,-103.74445,203.175052022,-249.087126585,41.598226585,-1.614709844,0.140830502,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,delay_max_s,10,813.4769,594.0627,-219.4142,191.377614455,-356.317498148,-82.510901852,-3.625547455,0.005523799,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,queue_mean_per_movement_veh,10,13.191527778,14.560739583,1.369211806,5.414091864,-2.503796199,5.24221981,0.799732996,0.444459991,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,queue_max_movement_veh,10,42.3,68.7,26.4,38.63274374,-1.236200031,54.036200031,2.160968188,0.058974443,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,queue_total_mean_veh,10,105.532222222,116.485916667,10.953694444,43.312734911,-20.030369591,41.93775848,0.799732996,0.444459991,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,queue_total_max_veh,10,164.1,163.3,-0.8,73.709339074,-53.528484741,51.928484741,-0.034321596,0.973369855,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,throughput_veh_h,10,2732.0,2776.0,44.0,64.573816503,-2.19332558,90.19332558,2.154746685,0.0595747,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,pct_served,10,94.519387536,95.302145471,0.782757935,2.299553468,-0.86224352,2.427759389,1.076425473,0.309743834,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,delay_total_veh_h,10,113.032198833,119.031653333,5.9994545,48.098138565,-28.407881087,40.406790087,0.394442311,0.702438258,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,green_utilization_mean,10,0.92355771,0.886677926,-0.036879784,0.027411818,-0.056489017,-0.017270551,-4.254519628,0.002128253,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,signal_changes_per_hour,10,236.0,200.1,-35.9,2.558211181,-37.730034035,-34.069965965,-44.377011899,0.0,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,1422.1,1650.8,228.7,353.569119441,-24.22811133,481.62811133,2.045463987,0.071133794,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,jain_fairness,10,0.667321493,0.747096856,0.079775364,0.116480257,-0.003549593,0.16310032,2.165790631,0.058513213,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,unfinished,10,1.1,0.0,-1.1,1.852925615,-2.425503135,0.225503135,-1.877304409,0.093206372,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7a,FT-B,Smart-T1,waiting_mean_s,10,143.235208476,151.104141141,7.868932665,61.301485258,-35.98350816,51.721373491,0.405924096,0.694279791,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,delay_mean_lower_bound_s,10,143.534783144,151.104141141,7.569357997,61.505598689,-36.429096781,51.567812774,0.389174518,0.706194923,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,detector_call_wait_max_s,10,111.9,143.2509,31.3509,13.310758802,21.828956767,40.872843233,7.448129154,3.8998e-05,true,unadjusted for multiple comparisons
+S7a,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,80.2,80.2,7.254117605,75.010716875,85.389283125,34.961477352,0.0,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,delay_mean_s,10,153.857968017,151.104141141,-2.753826877,28.192513002,-22.921535749,17.413881996,-0.308889286,0.764436533,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,delay_p95_s,10,374.487515,393.25973,18.772215,173.034957488,-105.009536813,142.553966813,0.343069152,0.739423698,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,delay_max_s,10,583.0346,594.0627,11.0281,164.017804203,-106.303168938,128.359368938,0.212622736,0.836358978,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,14.81725,14.560739583,-0.256510417,2.496864923,-2.042659983,1.529639149,-0.324870261,0.752703596,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,queue_max_movement_veh,10,65.0,68.7,3.7,29.55240167,-17.440514622,24.840514622,0.39592137,0.701385012,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,queue_total_mean_veh,10,118.538,116.485916667,-2.052083333,19.974919383,-16.341279861,12.237113194,-0.324870261,0.752703596,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,queue_total_max_veh,10,161.5,163.3,1.8,31.779797916,-20.933897909,24.533897909,0.179110635,0.861818168,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,throughput_veh_h,10,2773.5,2776.0,2.5,26.725975712,-16.618611295,21.618611295,0.295805633,0.774089975,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,pct_served,10,95.21317058,95.302145471,0.088974891,0.948648488,-0.589647356,0.767597138,0.296593854,0.773507224,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,delay_total_veh_h,10,121.174873528,119.031653333,-2.143220194,22.054555295,-17.920098633,13.633658244,-0.307304194,0.765603806,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,green_utilization_mean,10,0.884055228,0.886677926,0.002622698,0.009822765,-0.004404085,0.009649481,0.844334505,0.420358937,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,signal_changes_per_hour,10,200.8,200.1,-0.7,1.888562063,-2.050995914,0.650995914,-1.172105702,0.271246112,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,1746.4,1650.8,-95.6,160.007083177,-210.062171955,18.862171955,-1.889377259,0.091427136,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,jain_fairness,10,0.766367871,0.747096856,-0.019271015,0.122746366,-0.107078475,0.068536445,-0.496473357,0.631460097,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7a,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7a,Smart-study,Smart-T1,waiting_mean_s,10,153.857968017,151.104141141,-2.753826877,28.192513002,-22.921535749,17.413881996,-0.308889286,0.764436533,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,153.857968017,151.104141141,-2.753826877,28.192513002,-22.921535749,17.413881996,-0.308889286,0.764436533,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,detector_call_wait_max_s,10,141.8938,143.2509,1.3571,7.238219678,-3.820810433,6.535010433,0.592898144,0.567846442,true,unadjusted for multiple comparisons
+S7a,Smart-study,Smart-T1,detector_calls_over_120s,10,78.4,80.2,1.8,4.07703596,-1.11653583,4.71653583,1.396136763,0.196150838,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,delay_mean_s,10,762.457096557,611.545019491,-150.912077066,54.483561856,-189.887269302,-111.936884831,-8.759080238,1.0654e-05,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,delay_p95_s,10,1338.434995,1156.37927,-182.055725,132.881139163,-277.113165573,-86.998284427,-4.332524207,0.001898085,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,delay_max_s,10,1648.0572,1582.5346,-65.5226,139.56948193,-165.364592762,34.319392762,-1.484569917,0.171815123,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,queue_mean_per_movement_veh,10,78.875815972,64.913295139,-13.962520833,5.983427983,-18.242807362,-9.682234304,-7.3792762,4.1946e-05,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,queue_max_movement_veh,10,241.1,213.5,-27.6,39.280190088,-55.699355247,0.499355247,-2.221956239,0.053393301,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,queue_total_mean_veh,10,631.006527778,519.306361111,-111.700166667,47.867423864,-145.942458899,-77.457874435,-7.3792762,4.1946e-05,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,queue_total_max_veh,10,1165.5,903.0,-262.5,64.831833744,-308.877899996,-216.122100004,-12.803862514,4.42e-07,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,throughput_veh_h,10,2637.9,2904.6,266.7,63.814052789,221.05017664,312.34982336,13.216202625,3.37e-07,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,pct_served,10,68.381222447,75.502156667,7.120934219,1.75692551,5.864105422,8.377763016,12.816918572,4.39e-07,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,delay_total_veh_h,10,672.53266325,597.225283028,-75.307380222,41.934521872,-105.305530042,-45.309230402,-5.67892122,0.00030228,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,green_utilization_mean,10,0.99385525,0.94672706,-0.047128189,0.028701319,-0.067659876,-0.026596502,-5.192528594,0.000569718,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,199.8,-108.2,1.988857852,-109.622743199,-106.777256801,-172.037655925,0.0,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,3163.9,3414.6,250.7,136.277535444,153.212923892,348.187076108,5.817415224,0.000253879,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,jain_fairness,10,0.985818052,0.866958724,-0.118859328,0.074875944,-0.172422352,-0.065296305,-5.019852548,0.000719234,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,unfinished,10,509.7,164.2,-345.5,63.34254319,-390.812525713,-300.187474287,-17.248548551,3.3e-08,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7b,FT-A,Smart-T1,waiting_mean_s,10,762.457096557,611.545019491,-150.912077066,54.483561856,-189.887269302,-111.936884831,-8.759080238,1.0654e-05,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,delay_mean_lower_bound_s,10,815.700885397,631.441664266,-184.25922113,61.211725292,-228.047451544,-140.470990717,-9.519071973,5.385e-06,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,138.4884,53.5884,7.927033103,47.917742126,59.259057874,21.377657688,5e-09,true,unadjusted for multiple comparisons
+S7b,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,91.6,91.6,11.137524161,83.632695176,99.567304824,26.007991496,1e-09,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,delay_mean_s,10,642.422183591,611.545019491,-30.877164099,56.958251183,-71.622642435,9.868314236,-1.714276057,0.12062257,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,delay_p95_s,10,1145.836145,1156.37927,10.543125,141.811630405,-90.902804157,111.989054157,0.23510264,0.819391083,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,delay_max_s,10,1339.4056,1582.5346,243.129,148.606847655,136.822065255,349.435934745,5.173660685,0.00058429,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,queue_mean_per_movement_veh,10,67.1089375,64.913295139,-2.195642361,6.197331255,-6.628946073,2.237661351,-1.120358184,0.291566132,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,queue_max_movement_veh,10,219.5,213.5,-6.0,39.944405811,-34.574506551,22.574506551,-0.475001833,0.646100877,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,queue_total_mean_veh,10,536.8715,519.306361111,-17.565138889,49.578650043,-53.031568586,17.901290808,-1.120358184,0.291566132,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,queue_total_max_veh,10,989.7,903.0,-86.7,66.174936511,-134.038697835,-39.361302165,-4.143101416,0.002510021,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,throughput_veh_h,10,2801.7,2904.6,102.9,63.879139353,57.203616517,148.596383483,5.093969245,0.00065043,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,pct_served,10,73.154920038,75.502156667,2.347236628,1.827863293,1.039661999,3.654811258,4.060814604,0.002838476,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,delay_total_veh_h,10,605.746517944,597.225283028,-8.521234917,43.717147213,-39.794598085,22.752128252,-0.616383102,0.552910876,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,green_utilization_mean,10,0.974453734,0.94672706,-0.027726673,0.028742583,-0.048287879,-0.007165468,-3.050506582,0.013781606,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,signal_changes_per_hour,10,236.0,199.8,-36.2,1.988857852,-37.622743199,-34.777256801,-57.557884884,0.0,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,3368.4,3414.6,46.2,143.840034606,-56.696962111,149.096962111,1.015692386,0.336301543,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,jain_fairness,10,0.979759475,0.866958724,-0.112800751,0.073735533,-0.165547974,-0.060053528,-4.837658011,0.000924023,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,unfinished,10,290.9,164.2,-126.7,70.08574114,-176.836318934,-76.563681066,-5.716720306,0.000288147,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7b,FT-B,Smart-T1,waiting_mean_s,10,642.422183591,611.545019491,-30.877164099,56.958251183,-71.622642435,9.868314236,-1.714276057,0.12062257,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,delay_mean_lower_bound_s,10,674.541754068,631.441664266,-43.100089802,63.922724472,-88.827652202,2.627472598,-2.132175252,0.061802566,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,detector_call_wait_max_s,10,110.9,138.4884,27.5884,7.927033103,21.917742126,33.259057874,11.005653674,1.603e-06,true,unadjusted for multiple comparisons
+S7b,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,91.6,91.6,11.137524161,83.632695176,99.567304824,26.007991496,1e-09,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,delay_mean_s,10,662.190001211,611.545019491,-50.64498172,75.907650211,-104.946043515,3.656080074,-2.109846555,0.06408574,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,delay_p95_s,10,1243.142275,1156.37927,-86.763005,128.540937465,-178.715652315,5.189642315,-2.134485074,0.061570922,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,delay_max_s,10,1578.1867,1582.5346,4.3479,65.197929177,-42.291888892,50.987688892,0.210885027,0.837674464,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,70.444086806,64.913295139,-5.530791667,8.379098804,-11.524837862,0.463254529,-2.087324585,0.066471121,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,queue_max_movement_veh,10,240.5,213.5,-27.0,41.803774418,-56.904618725,2.904618725,-2.042435115,0.071483088,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,queue_total_mean_veh,10,563.552694444,519.306361111,-44.246333333,67.032790435,-92.198702897,3.706036231,-2.087324585,0.066471121,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,queue_total_max_veh,10,957.0,903.0,-54.0,79.944425141,-111.188796618,3.188796618,-2.136021284,0.061417327,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,throughput_veh_h,10,2854.4,2904.6,50.2,72.106094672,-1.381592786,101.781592786,2.201566168,0.055199407,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,pct_served,10,74.032054874,75.502156667,1.470101793,2.165939724,-0.079318147,3.019521732,2.146352461,0.060393987,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,delay_total_veh_h,10,636.252531139,597.225283028,-39.027248111,59.011856115,-81.241786917,3.187290695,-2.091359313,0.066037584,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,green_utilization_mean,10,0.925108531,0.94672706,0.021618529,0.031158076,-0.000670616,0.043907674,2.194095422,0.055875951,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,signal_changes_per_hour,10,201.2,199.8,-1.4,2.67498702,-3.313570438,0.513570438,-1.655031853,0.132302961,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,3321.1,3414.6,93.5,142.449406223,-8.402166493,195.402166493,2.075634915,0.06774273,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,jain_fairness,10,0.850212675,0.866958724,0.016746049,0.036128541,-0.009098752,0.04259085,1.46575688,0.176759678,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,unfinished,10,221.1,164.2,-56.9,83.570927959,-116.683040454,2.883040454,-2.153064508,0.059738014,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S7b,Smart-study,Smart-T1,waiting_mean_s,10,662.190001211,611.545019491,-50.64498172,75.907650211,-104.946043515,3.656080074,-2.109846555,0.06408574,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,687.975352527,631.441664266,-56.53368826,84.805635273,-117.199985118,4.132608597,-2.108058254,0.064272085,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,detector_call_wait_max_s,10,138.6363,138.4884,-0.1479,11.350283408,-8.26740362,7.97160362,-0.041206096,0.968031245,true,unadjusted for multiple comparisons
+S7b,Smart-study,Smart-T1,detector_calls_over_120s,10,85.7,91.6,5.9,8.345990388,-0.070361861,11.870361861,2.235497206,0.052225898,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,delay_mean_s,10,635.251617,71.667139136,-563.584477864,24.514636157,-581.121192136,-546.047763592,-72.699859486,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,delay_p95_s,10,2308.1045,177.89702,-2130.20748,72.258721642,-2181.898255543,-2078.516704457,-93.224836704,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,delay_max_s,10,2675.9899,329.247,-2346.7429,115.35119645,-2429.260174993,-2264.225625007,-64.334422834,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,queue_mean_per_movement_veh,10,53.427045139,5.742923611,-47.684121528,2.775021507,-49.669252327,-45.698990729,-54.338473376,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,queue_max_movement_veh,10,211.5,29.6,-181.9,24.076036957,-199.122959306,-164.677040694,-23.89173548,2e-09,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,queue_total_mean_veh,10,427.416361111,45.943388889,-381.472972222,22.200172053,-397.354018614,-365.591925831,-54.338473376,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,queue_total_max_veh,10,777.8,74.0,-703.8,47.674358354,-737.904181486,-669.695818514,-46.683607165,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,throughput_veh_h,10,1615.6,2308.0,692.4,44.249795982,660.745602857,724.054397143,49.481833832,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,pct_served,10,66.318340287,97.74678057,31.428440283,1.568522134,30.306387143,32.550493424,63.362481454,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,delay_total_veh_h,10,299.939184056,46.057495083,-253.881688972,7.705150218,-259.393621392,-248.369756552,-104.195813276,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,green_utilization_mean,10,0.744183462,0.793178509,0.048995047,0.012997754,0.039697014,0.05829308,11.920209097,8.15e-07,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,225.3,-82.7,2.496664441,-84.48600615,-80.91399385,-104.747902101,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,705.3,680.8,-24.5,88.134051939,-87.547302705,38.547302705,-0.879067749,0.402224742,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,jain_fairness,10,0.51913493,0.921226316,0.402091386,0.083045994,0.34268386,0.461498911,15.311089001,9.4e-08,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,unfinished,10,613.2,0.0,-613.2,41.739403179,-643.058570316,-583.341429684,-46.457508098,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S8,FT-A,Smart-T1,waiting_mean_s,10,635.251617,71.667139136,-563.584477864,24.514636157,-581.121192136,-546.047763592,-72.699859486,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,delay_mean_lower_bound_s,10,925.046288846,71.667139136,-853.37914971,42.636800213,-883.879679191,-822.878620229,-63.293253886,0.0,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,131.2934,46.3934,6.803987217,41.526120756,51.260679244,21.562182251,5e-09,true,unadjusted for multiple comparisons
+S8,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,4.6,4.6,2.633122354,2.71637774,6.48362226,5.524421306,0.000368375,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,delay_mean_s,10,68.528258817,71.667139136,3.13888032,8.682648817,-3.072312474,9.350073113,1.143200804,0.282452261,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,delay_p95_s,10,167.426265,177.89702,10.470755,47.343732085,-23.396910701,44.338420701,0.699383702,0.501986044,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,delay_max_s,10,287.9977,329.247,41.2493,113.053375616,-39.62421299,122.12281299,1.153806679,0.278298322,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,queue_mean_per_movement_veh,10,5.453951389,5.742923611,0.288972222,0.705352078,-0.215606258,0.793550702,1.295537975,0.227375078,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,queue_max_movement_veh,10,23.6,29.6,6.0,7.333333333,0.754049356,11.245950644,2.587318086,0.029342269,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,queue_total_mean_veh,10,43.631611111,45.943388889,2.311777778,5.642816622,-1.724850062,6.348405617,1.295537975,0.227375078,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,queue_total_max_veh,10,68.7,74.0,5.3,11.045863982,-2.601735082,13.201735082,1.517316493,0.16349759,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,throughput_veh_h,10,2296.5,2308.0,11.5,13.193011618,2.062288028,20.937711972,2.756473969,0.022240046,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,pct_served,10,97.580296478,97.74678057,0.166484092,0.416136209,-0.131201819,0.464170003,1.265136062,0.237595525,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,delay_total_veh_h,10,44.051745694,46.057495083,2.005749389,5.504258875,-1.931760209,5.943258987,1.152332517,0.278872766,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,green_utilization_mean,10,0.830629085,0.793178509,-0.037450576,0.0054909,-0.041378529,-0.033522623,-21.568251783,5e-09,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,signal_changes_per_hour,10,264.0,225.3,-38.7,2.496664441,-40.48600615,-36.91399385,-49.01745842,0.0,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,542.0,680.8,138.8,108.965641884,60.850675565,216.749324435,4.02809667,0.0029815,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,jain_fairness,10,0.87235659,0.921226316,0.048869726,0.112947854,-0.031928301,0.129667753,1.368238863,0.204420488,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S8,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S8,FT-B,Smart-T1,waiting_mean_s,10,68.528258817,71.667139136,3.13888032,8.682648817,-3.072312474,9.350073113,1.143200804,0.282452261,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,delay_mean_lower_bound_s,10,68.528258817,71.667139136,3.13888032,8.682648817,-3.072312474,9.350073113,1.143200804,0.282452261,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,detector_call_wait_max_s,10,91.8888,131.2934,39.4046,6.810469737,34.53268344,44.27651656,18.296577342,2e-08,true,unadjusted for multiple comparisons
+S8,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,4.6,4.6,2.633122354,2.71637774,6.48362226,5.524421306,0.000368375,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,delay_mean_s,10,72.595286323,71.667139136,-0.928147186,4.554725554,-4.186401566,2.330107194,-0.644398675,0.535393521,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,delay_p95_s,10,181.91348,177.89702,-4.01646,23.204003806,-20.615604369,12.582684369,-0.547369404,0.597434683,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,delay_max_s,10,348.0707,329.247,-18.8237,43.610860421,-50.021030178,12.373630178,-1.364929869,0.205420835,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,5.8223125,5.742923611,-0.079388889,0.337674588,-0.320946737,0.16216896,-0.743466398,0.476158657,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,queue_max_movement_veh,10,30.5,29.6,-0.9,4.433458645,-4.071505259,2.271505259,-0.641947996,0.536912684,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,queue_total_mean_veh,10,46.5785,45.943388889,-0.635111111,2.701396705,-2.5675739,1.297351677,-0.743466398,0.476158657,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,queue_total_max_veh,10,76.7,74.0,-2.7,4.922736366,-6.221513456,0.821513456,-1.734431635,0.116869091,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,throughput_veh_h,10,2310.4,2308.0,-2.4,9.191783771,-8.975405999,4.175405999,-0.825679386,0.430328371,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,pct_served,10,97.851982709,97.74678057,-0.105202139,0.398838814,-0.390514239,0.180109961,-0.834117347,0.425799227,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,delay_total_veh_h,10,46.668281778,46.057495083,-0.610786694,2.933316575,-2.709154964,1.487581575,-0.658461871,0.526725181,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,green_utilization_mean,10,0.793409416,0.793178509,-0.000230907,0.003944989,-0.003052981,0.002591168,-0.185093224,0.857259867,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,signal_changes_per_hour,10,223.7,225.3,1.6,2.951459149,-0.511346685,3.711346685,1.714285714,0.120620745,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,685.3,680.8,-4.5,89.945971437,-68.843471832,59.843471832,-0.158208859,0.877785158,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,jain_fairness,10,0.905962986,0.921226316,0.01526333,0.02560545,-0.003053705,0.033580366,1.885024024,0.09206498,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S8,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S8,Smart-study,Smart-T1,waiting_mean_s,10,72.595286323,71.667139136,-0.928147186,4.554725554,-4.186401566,2.330107194,-0.644398675,0.535393521,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,72.595286323,71.667139136,-0.928147186,4.554725554,-4.186401566,2.330107194,-0.644398675,0.535393521,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,detector_call_wait_max_s,10,131.8908,131.2934,-0.5974,6.716626273,-5.402184989,4.207384989,-0.281263926,0.784867477,true,unadjusted for multiple comparisons
+S8,Smart-study,Smart-T1,detector_calls_over_120s,10,3.8,4.6,0.8,1.751190072,-0.452725911,2.052725911,1.444630237,0.182460011,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,delay_mean_s,10,265.116930761,149.09440696,-116.022523801,24.98484105,-133.895602391,-98.149445211,-14.684721602,1.36e-07,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,delay_p95_s,10,1448.70286,441.355565,-1007.347295,137.887062796,-1105.985757615,-908.708832385,-23.10232579,3e-09,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,delay_max_s,10,1888.6086,570.0815,-1318.5271,168.538425531,-1439.092226625,-1197.961973375,-24.739454991,1e-09,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,queue_mean_per_movement_veh,10,15.067315972,8.301225694,-6.766090278,1.554360332,-7.878012676,-5.65416788,-13.765312772,2.37e-07,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,queue_max_movement_veh,10,114.1,70.1,-44.0,15.165750888,-54.848924632,-33.151075368,-9.174634219,7.294e-06,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,queue_total_mean_veh,10,120.538527778,66.409805556,-54.128722222,12.434882657,-63.024101406,-45.233343039,-13.765312772,2.37e-07,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,queue_total_max_veh,10,211.6,106.7,-104.9,19.133739833,-118.587452927,-91.212547073,-17.337066849,3.2e-08,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,throughput_veh_h,10,1501.9,1609.9,108.0,18.451136671,94.80085196,121.19914804,18.509753268,1.8e-08,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,pct_served,10,87.446829594,94.127870931,6.681041338,1.230799572,5.800580364,7.561502311,17.16551439,3.5e-08,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,delay_total_veh_h,10,114.557000944,69.345872972,-45.211127972,10.912367981,-53.017365768,-37.404890176,-13.101660449,3.63e-07,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,green_utilization_mean,10,0.603823131,0.550716918,-0.053106212,0.008148071,-0.058934991,-0.047277434,-20.610594969,7e-09,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,222.6,-85.4,4.526465386,-88.638038273,-82.161961727,-59.662118046,0.0,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,388.0,865.1,477.1,83.942374414,417.05124276,537.14875724,17.973314219,2.3e-08,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,jain_fairness,10,0.303603149,0.511232831,0.207629682,0.083102373,0.148181825,0.267077538,7.900889949,2.4449e-05,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,unfinished,10,118.2,0.0,-118.2,19.634436868,-132.245630008,-104.154369992,-19.037022653,1.4e-08,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,FT-A,Smart-T1,waiting_mean_s,10,265.116930761,149.09440696,-116.022523801,24.98484105,-133.895602391,-98.149445211,-14.684721602,1.36e-07,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,delay_mean_lower_bound_s,10,341.35220331,149.09440696,-192.25779635,32.711904975,-215.658483481,-168.857109218,-18.585665826,1.7e-08,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,129.9751,45.0751,10.777316647,37.365472109,52.784727891,13.225925008,3.35e-07,true,unadjusted for multiple comparisons
+S9,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,2.1,2.1,2.330951165,0.432537987,3.767462013,2.848958479,0.019121644,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,delay_mean_s,10,92.903589366,149.09440696,56.190817594,24.177053334,38.895595525,73.486039663,7.349570881,4.3293e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,delay_p95_s,10,235.040145,441.355565,206.31542,96.723109846,137.123875405,275.506964595,6.745302593,8.4095e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,delay_max_s,10,367.0275,570.0815,203.054,95.921392854,134.435969191,271.672030809,6.694159758,8.9128e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,queue_mean_per_movement_veh,10,5.288899306,8.301225694,3.012326389,1.285619837,2.09264936,3.932003418,7.409509538,4.0623e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,queue_max_movement_veh,10,29.6,70.1,40.5,9.466314547,33.728206514,47.271793486,13.52926153,2.75e-07,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,queue_total_mean_veh,10,42.311194444,66.409805556,24.098611111,10.284958696,16.74119488,31.456027342,7.409509538,4.0623e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,queue_total_max_veh,10,70.4,106.7,36.3,15.769520531,25.019164584,47.580835416,7.279275159,4.6671e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,throughput_veh_h,10,1650.1,1609.9,-40.2,14.755789824,-50.755656154,-29.644343846,-8.615164858,1.219e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,pct_served,10,96.792660331,94.127870931,-2.6647894,0.987445823,-3.371165588,-1.958413211,-8.533940589,1.3163e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,delay_total_veh_h,10,43.304203,69.345872972,26.041669972,11.132702361,18.077814456,34.005525488,7.397214846,4.1155e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,green_utilization_mean,10,0.565210732,0.550716918,-0.014493813,0.005860522,-0.018686179,-0.010301448,-7.820712994,2.6517e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,signal_changes_per_hour,10,230.0,222.6,-7.4,4.526465386,-10.638038273,-4.161961727,-5.169785404,0.000587333,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,699.3,865.1,165.8,122.908999761,77.876198215,253.723801785,4.265803457,0.002093194,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,jain_fairness,10,0.736206221,0.511232831,-0.22497339,0.121461174,-0.31186148,-0.138085301,-5.857248894,0.000241567,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,FT-B,Smart-T1,waiting_mean_s,10,92.903589366,149.09440696,56.190817594,24.177053334,38.895595525,73.486039663,7.349570881,4.3293e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,delay_mean_lower_bound_s,10,92.903589366,149.09440696,56.190817594,24.177053334,38.895595525,73.486039663,7.349570881,4.3293e-05,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,detector_call_wait_max_s,10,107.9,129.9751,22.0751,10.777316647,14.365472109,29.784727891,6.477270536,0.00011444,true,unadjusted for multiple comparisons
+S9,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,2.1,2.1,2.330951165,0.432537987,3.767462013,2.848958479,0.019121644,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,delay_mean_s,10,138.916617454,149.09440696,10.177789507,13.2517187,0.698081019,19.657497994,2.428741291,0.03806105,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,delay_p95_s,10,392.35446,441.355565,49.001105,58.662280532,7.036637502,90.965572498,2.641477594,0.026848666,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,delay_max_s,10,517.2268,570.0815,52.8547,70.560451616,2.378793648,103.330606352,2.368766543,0.041993762,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,7.76103125,8.301225694,0.540194444,0.708350005,0.033471377,1.046917512,2.411582991,0.039147271,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,queue_max_movement_veh,10,62.8,70.1,7.3,9.2141196,0.708615912,13.891384088,2.505353514,0.033565687,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,queue_total_mean_veh,10,62.08825,66.409805556,4.321555556,5.66680004,0.267771012,8.375340099,2.411582991,0.039147271,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,queue_total_max_veh,10,99.2,106.7,7.5,10.783217413,-0.213849045,15.213849045,2.199443964,0.055390776,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,throughput_veh_h,10,1616.8,1609.9,-6.9,8.987027688,-13.328932321,-0.471067679,-2.427912388,0.038112829,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,pct_served,10,94.530638849,94.127870931,-0.402767917,0.521621338,-0.775913344,-0.029622491,-2.441740576,0.037258109,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,delay_total_veh_h,10,64.623910111,69.345872972,4.721962861,6.142946366,0.327563755,9.116361967,2.430781058,0.037933929,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,green_utilization_mean,10,0.553575707,0.550716918,-0.002858789,0.004610132,-0.006156679,0.000439101,-1.96095998,0.081518524,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,signal_changes_per_hour,10,221.7,222.6,0.9,4.458450154,-2.289383108,4.089383108,0.638349605,0.539147912,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,875.4,865.1,-10.3,59.740271174,-53.035615549,32.435615549,-0.545217811,0.598853164,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,jain_fairness,10,0.570796315,0.511232831,-0.059563484,0.077007245,-0.114651148,-0.004475819,-2.445955231,0.037001412,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,Smart-study,Smart-T1,waiting_mean_s,10,138.916617454,149.09440696,10.177789507,13.2517187,0.698081019,19.657497994,2.428741291,0.03806105,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,138.916617454,149.09440696,10.177789507,13.2517187,0.698081019,19.657497994,2.428741291,0.03806105,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,detector_call_wait_max_s,10,128.5831,129.9751,1.392,8.280266649,-4.531345931,7.315345931,0.531612168,0.607864251,true,unadjusted for multiple comparisons
+S9,Smart-study,Smart-T1,detector_calls_over_120s,10,1.9,2.1,0.2,1.813529401,-1.097320781,1.497320781,0.348742916,0.73530184,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,delay_mean_s,10,149.09440696,137.179610045,-11.914796915,21.07327479,-26.989709568,3.160115737,-1.787946889,0.107419083,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,delay_p95_s,10,441.355565,392.786645,-48.56892,104.229992905,-123.130565234,25.992725234,-1.473552923,0.17469577,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,delay_max_s,10,570.0815,497.8723,-72.2092,131.924766254,-166.582492608,22.164092608,-1.730876973,0.117523166,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,queue_mean_per_movement_veh,10,8.301225694,7.677982639,-0.623243056,1.114174058,-1.420275163,0.173789051,-1.768904577,0.110697596,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,queue_max_movement_veh,10,70.1,63.0,-7.1,16.373759495,-18.813081931,4.613081931,-1.371228849,0.203520156,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,queue_total_mean_veh,10,66.409805556,61.423861111,-4.985944444,8.913392466,-11.3622013,1.390312411,-1.768904577,0.110697596,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,queue_total_max_veh,10,106.7,98.1,-8.6,15.414279094,-19.626711001,2.426711001,-1.764311371,0.11150215,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,throughput_veh_h,10,1609.9,1618.8,8.9,16.947303948,-3.223370917,21.023370917,1.660693126,0.131143877,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,pct_served,10,94.127870931,94.596128027,0.468257096,1.02379503,-0.264121749,1.200635941,1.446343176,0.181991943,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,delay_total_veh_h,10,69.345872972,63.816995667,-5.528877306,9.79481163,-12.535663448,1.477908836,-1.785010866,0.107918641,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,green_utilization_mean,10,0.550716918,0.554435675,0.003718757,0.00428686,0.000652122,0.006785391,2.743206223,0.022728029,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,signal_changes_per_hour,10,222.6,221.6,-1.0,5.354126135,-4.830111106,2.830111106,-0.590624423,0.569304418,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,vehicles_control_delay_over_90s,10,865.1,889.1,24.0,56.176309756,-16.186111136,64.186111136,1.351008355,0.209675247,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,jain_fairness,10,0.511232831,0.603092445,0.091859614,0.108714679,0.014089817,0.169629411,2.671999829,0.025538633,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,Smart-T1,Smart-T1-noAging,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S9,Smart-T1,Smart-T1-noAging,waiting_mean_s,10,149.09440696,137.179610045,-11.914796915,21.07327479,-26.989709568,3.160115737,-1.787946889,0.107419083,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,delay_mean_lower_bound_s,10,149.09440696,137.179610045,-11.914796915,21.07327479,-26.989709568,3.160115737,-1.787946889,0.107419083,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,detector_call_wait_max_s,10,129.9751,142.3165,12.3414,9.825805188,5.312442402,19.370357598,3.971881466,0.003245392,true,unadjusted for multiple comparisons
+S9,Smart-T1,Smart-T1-noAging,detector_calls_over_120s,10,2.1,6.8,4.7,3.267686916,2.362437598,7.037562402,4.548387097,0.00138914,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,delay_mean_s,10,230.763468743,174.281714618,-56.481754125,46.383039374,-89.662181661,-23.301326589,-3.850782348,0.003901645,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,delay_p95_s,10,462.68056,501.820655,39.140095,105.159230858,-36.086287021,114.366477021,1.176994611,0.269386471,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,delay_max_s,10,647.7204,639.4682,-8.2522,149.963452635,-115.529591486,99.025191486,-0.17401405,0.865705674,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,queue_mean_per_movement_veh,10,19.759232639,15.455302083,-4.303930556,3.836989793,-7.048747702,-1.559113409,-3.54710963,0.006244114,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,queue_max_movement_veh,10,80.2,99.3,19.1,21.057856808,4.036116708,34.163883292,2.868264509,0.018529042,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,queue_total_mean_veh,10,158.073861111,123.642416667,-34.431444444,30.695918347,-56.389981619,-12.47290727,-3.54710963,0.006244114,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,queue_total_max_veh,10,271.6,192.3,-79.3,58.537832022,-121.175442397,-37.424557603,-4.283872665,0.002038328,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,throughput_veh_h,10,2488.3,2575.4,87.1,54.431302269,48.162192021,126.037807979,5.060220364,0.000680837,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,pct_served,10,90.273421871,93.343380248,3.069958377,1.941326471,1.681217079,4.458699675,5.000735806,0.000738226,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,delay_total_veh_h,10,172.975878611,130.381435833,-42.594442778,35.01317225,-67.641357347,-17.547528209,-3.846993751,0.003924314,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,green_utilization_mean,10,0.875789066,0.769473448,-0.106315618,0.022895846,-0.122694319,-0.089936917,-14.68386499,1.36e-07,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,signal_changes_per_hour,10,308.0,205.1,-102.9,5.646040894,-106.938934345,-98.861065655,-57.633017071,0.0,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,vehicles_control_delay_over_90s,10,2338.6,1701.5,-637.1,273.281885402,-832.594083999,-441.605916001,-7.372194078,4.2263e-05,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,jain_fairness,10,0.837658517,0.691511765,-0.146146752,0.05929057,-0.18856067,-0.103732833,-7.794774237,2.7226e-05,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,FT-A,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,FT-A,Smart-T1,waiting_mean_s,10,230.763468743,174.281714618,-56.481754125,46.383039374,-89.662181661,-23.301326589,-3.850782348,0.003901645,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,delay_mean_lower_bound_s,10,230.763468743,174.281714618,-56.481754125,46.383039374,-89.662181661,-23.301326589,-3.850782348,0.003901645,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,detector_call_wait_max_s,10,84.9,156.3246,71.4246,5.275239778,67.650920794,75.198279206,42.815952732,0.0,true,unadjusted for multiple comparisons
+S10,FT-A,Smart-T1,detector_calls_over_120s,10,0.0,47.7,47.7,7.717944459,42.178915132,53.221084868,19.544147434,1.1e-08,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,delay_mean_s,10,130.193410613,174.281714618,44.088304005,30.482061355,22.282750906,65.893857104,4.5738199,0.001339574,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,delay_p95_s,10,455.32102,501.820655,46.499635,111.263178109,-33.093247841,126.092517841,1.321594075,0.218910399,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,delay_max_s,10,788.923,639.4682,-149.4548,172.726752156,-273.016075001,-25.893524999,-2.736215261,0.022989511,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,queue_mean_per_movement_veh,10,11.473930556,15.455302083,3.981371528,2.54004272,2.164334427,5.798408629,4.956689169,0.000784074,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,queue_max_movement_veh,10,42.1,99.3,57.2,20.026648913,42.873798397,71.526201603,9.032079353,8.293e-06,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,queue_total_mean_veh,10,91.791444444,123.642416667,31.850972222,20.320341759,17.314675414,46.387269031,4.956689169,0.000784074,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,queue_total_max_veh,10,143.9,192.3,48.4,34.000653588,24.077397648,72.722602352,4.501508724,0.001485724,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,throughput_veh_h,10,2603.9,2575.4,-28.5,35.846121749,-54.142770745,-2.857229255,-2.514216571,0.033081088,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,pct_served,10,94.96515526,93.343380248,-1.621775011,1.285763206,-2.5415546,-0.701995423,-3.988683815,0.003164014,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,delay_total_veh_h,10,97.556659806,130.381435833,32.824776028,22.405533102,16.796823191,48.852728865,4.632831339,0.001231717,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,green_utilization_mean,10,0.826512255,0.769473448,-0.057038808,0.021837989,-0.072660764,-0.041416852,-8.259576853,1.7135e-05,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,signal_changes_per_hour,10,236.0,205.1,-30.9,5.646040894,-34.938934345,-26.861065655,-17.30670775,3.2e-08,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,vehicles_control_delay_over_90s,10,1274.2,1701.5,427.3,279.37352535,227.448219295,627.151780705,4.836683227,0.000925275,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,jain_fairness,10,0.600761632,0.691511765,0.090750133,0.05719703,0.049833843,0.131666424,5.017343015,0.000721697,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,unfinished,10,1.0,0.0,-1.0,1.763834207,-2.261770981,0.261770981,-1.792842914,0.106590802,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,FT-B,Smart-T1,waiting_mean_s,10,130.193410613,174.281714618,44.088304005,30.482061355,22.282750906,65.893857104,4.5738199,0.001339574,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,delay_mean_lower_bound_s,10,130.488242348,174.281714618,43.79347227,30.66329602,21.858271702,65.728672838,4.516380722,0.001454327,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,detector_call_wait_max_s,10,111.9,156.3246,44.4246,5.275239778,40.650920794,48.198279206,26.630622695,1e-09,true,unadjusted for multiple comparisons
+S10,FT-B,Smart-T1,detector_calls_over_120s,10,0.0,47.7,47.7,7.717944459,42.178915132,53.221084868,19.544147434,1.1e-08,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,delay_mean_s,10,194.584941573,174.281714618,-20.303226955,68.020462515,-68.962134563,28.355680652,-0.943898919,0.369868836,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,delay_p95_s,10,548.81489,501.820655,-46.994235,139.423013323,-146.731450432,52.742980432,-1.065884433,0.314233659,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,delay_max_s,10,677.5805,639.4682,-38.1123,135.674832404,-135.168228326,58.943628326,-0.888312687,0.397491908,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,queue_mean_per_movement_veh,10,17.076100694,15.455302083,-1.620798611,5.364535338,-5.458356012,2.21675879,-0.955425758,0.364319511,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,queue_max_movement_veh,10,104.8,99.3,-5.5,23.176856272,-22.079724193,11.079724193,-0.7504265,0.472160042,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,queue_total_mean_veh,10,136.608805556,123.642416667,-12.966388889,42.916282703,-43.666848099,17.734070321,-0.955425758,0.364319511,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,queue_total_max_veh,10,217.9,192.3,-25.6,79.751280032,-82.650628931,31.450628931,-1.015084749,0.336575721,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,throughput_veh_h,10,2553.1,2575.4,22.3,80.516457945,-35.298004235,79.898004235,0.875830776,0.403891214,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,pct_served,10,92.510991234,93.343380248,0.832389014,3.010977849,-1.321534784,2.986312812,0.874216057,0.404724321,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,delay_total_veh_h,10,145.555072417,130.381435833,-15.173636583,50.462509247,-51.272341065,20.925067899,-0.950869323,0.366505767,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,green_utilization_mean,10,0.765560775,0.769473448,0.003912673,0.024079057,-0.013312447,0.021137793,0.513847282,0.619735947,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,signal_changes_per_hour,10,205.8,205.1,-0.7,6.037843618,-5.019213129,3.619213129,-0.366620022,0.722373513,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,vehicles_control_delay_over_90s,10,1730.7,1701.5,-29.2,370.359225017,-294.139029306,235.739029306,-0.249321473,0.808709092,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,jain_fairness,10,0.683065227,0.691511765,0.008446538,0.07944132,-0.048382359,0.065275435,0.336226757,0.744406245,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,Smart-study,Smart-T1,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,Smart-study,Smart-T1,waiting_mean_s,10,194.584941573,174.281714618,-20.303226955,68.020462515,-68.962134563,28.355680652,-0.943898919,0.369868836,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,delay_mean_lower_bound_s,10,194.584941573,174.281714618,-20.303226955,68.020462515,-68.962134563,28.355680652,-0.943898919,0.369868836,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,detector_call_wait_max_s,10,151.9116,156.3246,4.413,6.412187181,-0.174002382,9.000002382,2.176344969,0.057515968,true,unadjusted for multiple comparisons
+S10,Smart-study,Smart-T1,detector_calls_over_120s,10,45.4,47.7,2.3,8.944893018,-4.098790994,8.698790994,0.813116334,0.437132278,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,delay_mean_s,10,174.281714618,313.833521604,139.551806986,76.145315769,85.080729494,194.022884479,5.795518178,0.000260936,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,delay_p95_s,10,501.820655,827.86968,326.049025,255.707121492,143.127169735,508.970880265,4.032181591,0.002963232,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,delay_max_s,10,639.4682,972.5693,333.1011,282.507751993,131.007228622,535.194971378,3.728599161,0.004707644,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,queue_mean_per_movement_veh,10,15.455302083,26.26034375,10.805041667,6.000434598,6.512589338,15.097493995,5.694344522,0.000296425,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,queue_max_movement_veh,10,99.3,148.5,49.2,42.689577182,18.66171615,79.73828385,3.644544433,0.005362836,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,queue_total_mean_veh,10,123.642416667,210.08275,86.440333333,48.003476781,52.100714708,120.779951959,5.694344522,0.000296425,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,queue_total_max_veh,10,192.3,358.4,166.1,87.903292822,103.217772422,228.982227578,5.975365683,0.000208719,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,throughput_veh_h,10,2575.4,2407.1,-168.3,84.290568867,-228.597840548,-108.002159452,-6.314008048,0.000138659,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,pct_served,10,93.343380248,87.222559519,-6.12082073,3.170127427,-8.388593277,-3.853048182,-6.105664552,0.000178017,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,delay_total_veh_h,10,130.381435833,235.400077,105.018641167,58.067811213,63.479431401,146.557850932,5.719142773,0.000287266,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,green_utilization_mean,10,0.769473448,0.677650475,-0.091822973,0.02932262,-0.112799112,-0.070846834,-9.902584886,3.882e-06,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,signal_changes_per_hour,10,205.1,150.7,-54.4,7.229568913,-59.571722049,-49.228277951,-23.795043216,2e-09,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,vehicles_control_delay_over_90s,10,1701.5,2195.9,494.4,201.3682089,350.349861121,638.450138879,7.764036258,2.8094e-05,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,jain_fairness,10,0.691511765,0.608143267,-0.083368498,0.109515939,-0.161711482,-0.005025515,-2.407269126,0.039425172,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,unfinished,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,Smart-T1,Smart-T1-noWMAX,safety_violations,10,0.0,0.0,0.0,0.0,0.0,0.0,,,false,zero variance of the differences: t-test undefined
+S10,Smart-T1,Smart-T1-noWMAX,waiting_mean_s,10,174.281714618,313.833521604,139.551806986,76.145315769,85.080729494,194.022884479,5.795518178,0.000260936,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,delay_mean_lower_bound_s,10,174.281714618,313.833521604,139.551806986,76.145315769,85.080729494,194.022884479,5.795518178,0.000260936,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,detector_call_wait_max_s,10,156.3246,218.6701,62.3455,7.202395578,57.193216584,67.497783416,27.373362063,1e-09,true,unadjusted for multiple comparisons
+S10,Smart-T1,Smart-T1-noWMAX,detector_calls_over_120s,10,47.7,110.5,62.8,8.216514535,56.922259584,68.677740416,24.169742073,2e-09,true,unadjusted for multiple comparisons

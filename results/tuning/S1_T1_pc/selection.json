@@ -1,0 +1,103 @@
+{
+  "arrivals_sha256": {
+    "101": "16e7daf6ba46ab01a323ef8bb31df0bfa9aa55f14ad75df775709e223169925b",
+    "102": "26c3557e07f13f5e11d7e51e09a4e46328456571b1983a3a35bdaeb603d079e9",
+    "103": "8758750e22cad5c43e177d7615ec1c12107b560978b02e64247a09d1a4e152cc",
+    "104": "7a86eb3e45822963a5c892425945e3ab2dffce1168c5d5c70826bbc885076738",
+    "105": "a309b6cd10b296be40a3bc4826ff7addcbc9a77795d268c340a647da3271a493"
+  },
+  "delay_max_worst_s": 218.835,
+  "delay_mean_s": 54.973315362395034,
+  "delay_p95_mean_s": 115.88576,
+  "determinism": {
+    "Smart-study seed 101": true,
+    "Smart-study seed 102": true,
+    "Smart-study seed 103": true,
+    "Smart-study seed 104": true,
+    "Smart-study seed 105": true,
+    "tau15_wmax90 seed 101": true,
+    "tau15_wmax90 seed 102": true,
+    "tau15_wmax90 seed 103": true,
+    "tau15_wmax90 seed 104": true,
+    "tau15_wmax90 seed 105": true
+  },
+  "feasible": 4,
+  "note": "tuning seeds 101-105 only; unadjusted paired t-tests (no multiple-comparison correction)",
+  "paired_vs_FT-A": {
+    "half_width": 3.1965087239865655,
+    "high": 15.30528740051578,
+    "low": 8.912269952542651,
+    "mean_diff": 12.108778676529216,
+    "n": 5,
+    "note": "",
+    "p": 0.00046213238832248026,
+    "sd_diff": 2.5743749747200133,
+    "t": 10.517524646215934,
+    "test_valid": true
+  },
+  "paired_vs_FT-B": {
+    "half_width": 3.1965087239865655,
+    "high": 15.30528740051578,
+    "low": 8.912269952542651,
+    "mean_diff": 12.108778676529216,
+    "n": 5,
+    "note": "",
+    "p": 0.00046213238832248026,
+    "sd_diff": 2.5743749747200133,
+    "t": 10.517524646215934,
+    "test_valid": true
+  },
+  "paired_vs_study": {
+    "half_width": 3.422068856283262,
+    "high": -0.14972210706569067,
+    "low": -6.993859819632215,
+    "mean_diff": -3.5717909633489526,
+    "n": 5,
+    "note": "",
+    "p": 0.044210076830120404,
+    "sd_diff": 2.7560345320744988,
+    "t": -2.897919928984339,
+    "test_valid": true
+  },
+  "references": {
+    "FT-A": {
+      "delay_max_worst_s": 288.743,
+      "delay_mean_s": 42.864536685865815,
+      "delay_p95_mean_s": 96.18410000000002
+    },
+    "FT-B": {
+      "delay_max_worst_s": 288.743,
+      "delay_mean_s": 42.864536685865815,
+      "delay_p95_mean_s": 96.18410000000002
+    }
+  },
+  "rejected": {
+    "tau10_wmax105": "P95 guardrail: 150.883 s > study 127.618 s | max-delay guardrail: 383.9 s > 293.3 s (study 266.6 s + 10 %)",
+    "tau10_wmax120": "P95 guardrail: 131.643 s > study 127.618 s",
+    "tau10_wmax150": "P95 guardrail: 157.002 s > study 127.618 s | max-delay guardrail: 358.7 s > 293.3 s (study 266.6 s + 10 %)",
+    "tau15_wmax105": "P95 guardrail: 138.052 s > study 127.618 s",
+    "tau15_wmax120": "P95 guardrail: 134.836 s > study 127.618 s",
+    "tau15_wmax150": "P95 guardrail: 131.934 s > study 127.618 s",
+    "tau20_wmax105": "P95 guardrail: 129.618 s > study 127.618 s | max-delay guardrail: 346.0 s > 293.3 s (study 266.6 s + 10 %)",
+    "tau20_wmax120": "P95 guardrail: 128.575 s > study 127.618 s",
+    "tau20_wmax150": "P95 guardrail: 135.573 s > study 127.618 s",
+    "tau30_wmax105": "P95 guardrail: 131.474 s > study 127.618 s | max-delay guardrail: 346.0 s > 293.3 s (study 266.6 s + 10 %)",
+    "tau30_wmax120": "P95 guardrail: 129.533 s > study 127.618 s",
+    "tau30_wmax150": "P95 guardrail: 140.864 s > study 127.618 s",
+    "tau5_wmax105": "P95 guardrail: 174.305 s > study 127.618 s | max-delay guardrail: 358.0 s > 293.3 s (study 266.6 s + 10 %)",
+    "tau5_wmax120": "P95 guardrail: 132.329 s > study 127.618 s | max-delay guardrail: 297.2 s > 293.3 s (study 266.6 s + 10 %)",
+    "tau5_wmax150": "P95 guardrail: 134.984 s > study 127.618 s",
+    "tau5_wmax90": "P95 guardrail: 170.477 s > study 127.618 s | max-delay guardrail: 502.9 s > 293.3 s (study 266.6 s + 10 %)"
+  },
+  "selected_label": "tau15_wmax90",
+  "study_delay_max_worst_s": 266.619,
+  "study_delay_mean_s": 58.54510632574399,
+  "study_delay_p95_mean_s": 127.61845000000001,
+  "tau_s": 15.0,
+  "tie_band_labels": [
+    "tau30_wmax90",
+    "tau20_wmax90",
+    "tau15_wmax90"
+  ],
+  "w_max_s": 90.0
+}

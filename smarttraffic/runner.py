@@ -22,6 +22,15 @@ command time are step boundaries (at dt = 100 ms nothing is ever shortened).
 
 The run ends at the first step >= measurement end at which every measured vehicle has
 crossed the stop line, and never later than measurement end + flush.
+
+Modes (Stage 14b). mode="official" (default) is the study: a scenario from
+config/scenarios.json, the study's vehicle behaviour (VehicleOptions() = permissive first
+2.0 s of yellow, study start-up lost time) and no custom demand; anything else is refused.
+Official runs are unchanged, including their metadata. mode="custom" (Custom/Demo) takes
+the 8 demands from `demand` (custom.CustomDemand, scenario "CUSTOM"), FT-A or Smart only,
+and may change VehicleOptions; its metadata is tagged "CUSTOM / DEMO" and records the
+demand and the vehicle options. Custom arrivals are generated in memory and never written
+to the shared arrival directory.
 """
 from dataclasses import asdict, dataclass, field, replace
 import hashlib
@@ -30,16 +39,19 @@ from typing import Callable, Dict, Iterable, List, NamedTuple, Optional, Sequenc
 
 from smarttraffic.controller_fixed import load_fixed_plans
 from smarttraffic.controller_smart import SmartController, SmartParams
+from smarttraffic.custom import (CUSTOM_CONTROLLERS, CUSTOM_SCENARIO, CUSTOM_TAG, CustomDemand,
+                                 yellow_policy_name)
 from smarttraffic.sensors import SensorBank, VirtualDetectors
 from smarttraffic.signals import SignalBank
 from smarttraffic.stats import SAMPLE_MS, RunResult, StatsCollector, Window
-from smarttraffic.traffic_gen import ArrivalSchedule, get_or_create_arrivals
-from smarttraffic.vehicles import VehicleModel
+from smarttraffic.traffic_gen import ArrivalSchedule, generate_arrivals, get_or_create_arrivals
+from smarttraffic.vehicles import YELLOW_EXTENSION, VehicleModel
 
-__all__ = ["CONTROLLERS", "RunConfig", "StepView", "Simulation", "arrivals_sha256",
-           "build_controller", "simulate", "run", "run_pair", "STEP_ORDER"]
+__all__ = ["CONTROLLERS", "MODES", "RunConfig", "VehicleOptions", "StepView", "Simulation",
+           "arrivals_sha256", "build_controller", "simulate", "run", "run_pair", "STEP_ORDER"]
 
 CONTROLLERS = ("FT-A", "FT-B", "FT-TOD", "Smart")
+MODES = ("official", "custom")
 STEP_ORDER = "vehicles>sensors>signals>controller>stats>observers"
 
 
@@ -48,6 +60,26 @@ def _whole_ms(seconds: float, what: str) -> int:
     if isinstance(seconds, bool) or abs(seconds * 1000 - ms) > 1e-6:
         raise ValueError(f"{what} must be a whole number of milliseconds")
     return ms
+
+
+@dataclass(frozen=True)
+class VehicleOptions:
+    """Vehicle-model behaviour. The defaults are the study's and the only values official
+    runs accept: yellow_extension_s 2.0 (permissive first 2.0 s of yellow, inclusive) and the
+    study start-up (first car at t_g + l1 + h)."""
+    yellow_extension_s: float = YELLOW_EXTENSION
+    immediate_first_vehicle: bool = False
+
+    def __post_init__(self):
+        if isinstance(self.yellow_extension_s, bool) or not isinstance(self.yellow_extension_s, (int, float)):
+            raise ValueError("yellow_extension_s must be a number of seconds")
+        yellow_policy_name(self.yellow_extension_s)          # only the named policies exist
+        if not isinstance(self.immediate_first_vehicle, bool):
+            raise ValueError("immediate_first_vehicle must be a bool")
+
+    @property
+    def is_default(self) -> bool:
+        return self == VehicleOptions()
 
 
 @dataclass(frozen=True)
@@ -60,12 +92,33 @@ class RunConfig:
     measure_s: float = 3600.0
     flush_s: float = 900.0
     smart_params: SmartParams = field(default_factory=SmartParams)
+    mode: str = "official"
+    demand: Optional[CustomDemand] = None
+    vehicle: VehicleOptions = field(default_factory=VehicleOptions)
 
     def __post_init__(self):
         if self.controller not in CONTROLLERS:
             raise ValueError(f"controller must be one of {CONTROLLERS}, got {self.controller!r}")
         if isinstance(self.dt_ms, bool) or not isinstance(self.dt_ms, int) or self.dt_ms <= 0:
             raise ValueError("dt_ms must be a positive int")
+        if self.mode not in MODES:
+            raise ValueError(f"mode must be one of {MODES}, got {self.mode!r}")
+        if not isinstance(self.vehicle, VehicleOptions):
+            raise TypeError("vehicle must be a VehicleOptions")
+        if self.mode == "official":
+            if self.demand is not None:
+                raise ValueError("official mode refuses custom demand; use mode='custom' (Custom/Demo)")
+            if not self.vehicle.is_default:
+                raise ValueError("official mode requires the study vehicle behaviour "
+                                 "(yellow_extension_s = 2.0, study start-up); Stop on Yellow and "
+                                 "immediate first vehicle are Custom/Demo options only")
+        else:
+            if not isinstance(self.demand, CustomDemand):
+                raise ValueError("custom mode needs demand = custom.CustomDemand(...)")
+            if self.scenario != CUSTOM_SCENARIO:
+                raise ValueError(f"custom mode runs scenario {CUSTOM_SCENARIO!r}, got {self.scenario!r}")
+            if self.controller not in CUSTOM_CONTROLLERS:
+                raise ValueError(f"custom mode supports {CUSTOM_CONTROLLERS} only, got {self.controller!r}")
         self.window()                                   # validates the windows
 
     def window(self) -> Window:
@@ -125,6 +178,10 @@ def _controller_params(config: RunConfig, ctrl) -> Dict[str, object]:
 
 def _load_arrivals(config: RunConfig, arrivals, arrivals_dir):
     w = config.window()
+    if arrivals is None and config.mode == "custom":
+        # in memory only: custom arrivals never enter the shared arrival directory
+        arrivals = generate_arrivals(config.demand.scenario(), config.seed, w.start_ms / 1000,
+                                     w.measure_ms / 1000)
     if arrivals is None:
         kw = {} if arrivals_dir is None else {"directory": arrivals_dir}
         arrivals, _ = get_or_create_arrivals(config.scenario, config.seed, w.start_ms / 1000,
@@ -145,7 +202,9 @@ def simulate(config: RunConfig, *, arrivals=None, arrivals_dir: Optional[Union[s
     w = config.window()
     items = _load_arrivals(config, arrivals, arrivals_dir)
     start = w.start_ms
-    vm = VehicleModel(list(items), start=start / 1000)
+    vm = VehicleModel(list(items), start=start / 1000,
+                      yellow_extension_s=config.vehicle.yellow_extension_s,
+                      immediate_first_vehicle=config.vehicle.immediate_first_vehicle)
     src = source_factory(vm) if source_factory is not None else VirtualDetectors(vm)
     sb = SensorBank(src)
     bank = SignalBank(start_time=start / 1000)
@@ -208,6 +267,14 @@ def run(config: RunConfig, **kw) -> RunResult:
         "detector_source": "custom" if kw.get("source_factory") else "virtual",
         "steps": sim.steps,
     }
+    if config.mode == "custom":            # official metadata is left exactly as before
+        meta.update({
+            "mode": "custom", "tag": CUSTOM_TAG,
+            "demand_veh_h": config.demand.as_dict(),
+            "yellow_policy": yellow_policy_name(config.vehicle.yellow_extension_s),
+            "yellow_extension_s": config.vehicle.yellow_extension_s,
+            "immediate_first_vehicle": config.vehicle.immediate_first_vehicle,
+        })
     return sim.collector.finalize(sim.end_ms, meta, sim.ended_early)
 
 

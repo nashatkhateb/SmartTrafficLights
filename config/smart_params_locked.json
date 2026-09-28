@@ -1,0 +1,35 @@
+{
+  "candidates_csv_sha256": "7f9580ac19de01b44e528239c64f93af230ed8ddc5247abc5ba0d449e04121cf",
+  "controller": "Smart",
+  "lock_sha256": "3b3da0427f7f965f23a1c586a782fbeb3be8445608dc2eaf4135f5512e3ca84c",
+  "name": "Smart-T1",
+  "params": {
+    "extended_initial_s": 12.0,
+    "fault_qhat": 2,
+    "green_bonus_qhat": 2,
+    "max_green_left_s": 30.0,
+    "max_green_straight_s": 45.0,
+    "min_green_left_s": 5.0,
+    "min_green_straight_s": 7.0,
+    "tau_s": 15.0,
+    "use_aging": true,
+    "use_max_green": true,
+    "use_w_max": true,
+    "w_max_s": 90.0
+  },
+  "selection": {
+    "label": "tau15_wmax90",
+    "tau_s": 15.0,
+    "tuning_campaign": "S1_T1",
+    "w_max_s": 90.0
+  },
+  "study_defaults": {
+    "tau_s": 10.0,
+    "w_max_s": 90.0
+  },
+  "tuned_parameters": [
+    "tau_s",
+    "w_max_s"
+  ],
+  "tuning_plan_sha256": "f636a74f6577fe4802b0b4f46a253d588de830c44069f679770ff84253c1b178"
+}

@@ -41,6 +41,23 @@ def _load_scenarios() -> List[Tuple[str, str]]:
 
 
 SCENARIOS: List[Tuple[str, str]] = _load_scenarios()
+CUSTOM_ID, CUSTOM_BADGE = "CUSTOM", "CUSTOM / DEMO"
+
+
+def smart_label(params) -> str:
+    """'Smart-T1' for the locked parameters, otherwise 'custom parameters'."""
+    try:
+        from smarttraffic.viz import smart_t1_params
+        return "Smart-T1" if params == smart_t1_params() else "custom parameters"
+    except Exception:
+        return "Smart"
+
+
+def scenario_title(config) -> Tuple[str, str]:
+    """(badge, description) of the running configuration, official or Custom / Demo."""
+    if getattr(config, "mode", "official") == "custom":
+        return "CUSTOM", "Custom / Demo demand"
+    return config.scenario, dict(SCENARIOS).get(config.scenario, "")
 
 
 @functools.lru_cache(maxsize=None)
@@ -108,6 +125,7 @@ class Theme:
     real = _hex("ff78c4")
     fault = _hex("ff4a4d")
     glass = _hex("1a2530")
+    custom = _hex("c08cff")               # CUSTOM / DEMO badge (Stage 14b)
 
 
 T = Theme
@@ -682,6 +700,8 @@ class Renderer:
         self._topbar(surf, top, st, a, t)
         self._sidebar(surf, side, st, a, t)
         self._overlays(surf, canvas, st, a, t)
+        if getattr(st, "custom_draft", None) is not None:
+            self._custom_panel(surf, st)
 
     # ================================================================ dynamic scene
     def _scene(self, surf, view: View, a: Snapshot, b: Optional[Snapshot], t: float):
@@ -1055,7 +1075,10 @@ class Renderer:
             state = ("PAUSED", T.amber)
         else:
             state = ("RUNNING", T.green)
-        for label, col, dot in ((state[0], state[1], True), (phase, T.text2, False)):
+        custom = getattr(st.config, "mode", "official") == "custom"
+        pills = [(state[0], state[1], True), (phase, T.text2, False)]
+        pills.append((CUSTOM_BADGE, T.custom, False) if custom else ("OFFICIAL · LOCKED", T.muted, False))
+        for label, col, dot in pills:
             ts = f.render(label, z(11), col, True, spacing=1)
             w = ts.get_width() + z(24) + (z(12) if dot else 0)
             pill = pygame.Rect(0, 0, w, z(28))
@@ -1071,10 +1094,12 @@ class Renderer:
         rx -= z(10)
         pygame.draw.line(surf, T.border, (rx, cy - z(16)), (rx, cy + z(16)))
         rx -= z(14)
-        ctrl = "Smart actuated" if st.config.controller == "Smart" else f"Fixed-time · {st.config.controller}"
-        sc = dict(SCENARIOS).get(st.config.scenario, "")
+        ctrl = f"Fixed-time · {st.config.controller}"
+        if st.config.controller == "Smart":
+            ctrl = f"Smart actuated · {smart_label(st.config.smart_params)}"
+        sid, sc = scenario_title(st.config)
         text(surf, f, ctrl, (rx, cy + z(1)), z(14), T.text, True, "bottomright")
-        text(surf, f, f"{st.config.scenario} · {sc} · seed {st.config.seed}", (rx, cy + z(3)), z(12), T.muted,
+        text(surf, f, f"{sid} · {sc} · seed {st.config.seed}", (rx, cy + z(3)), z(12), T.muted,
              anchor="topright")
 
     # ================================================================ widgets
@@ -1170,8 +1195,11 @@ class Renderer:
         self.icon_button(surf, pygame.Rect(sel.right - z(3) - aw, y + z(3), aw, bh - z(6)), _icon_chev_right,
                          st.next_scenario, "scenario+")
         mid = pygame.Rect(sel.x + aw + z(10), y, sel.w - 2 * aw - z(20), bh)
-        badge = f.render(st.config.scenario, z(12), T.accent, True)
-        desc = dict(SCENARIOS).get(st.config.scenario, "")
+        custom = getattr(st.config, "mode", "official") == "custom"
+        sid, desc = scenario_title(st.config)
+        badge = f.render(sid, z(12), T.custom if custom else T.accent, True)
+        if custom:
+            desc = "Custom… (edit)"
         size = z(13)
         while f.render(desc, size, T.text).get_width() > mid.w - badge.get_width() - z(26) and size > z(10):
             size -= 1
@@ -1179,9 +1207,11 @@ class Renderer:
         total = badge.get_width() + z(18) + dsurf.get_width()
         bx = mid.centerx - total / 2
         br = badge.get_rect(midleft=(round(bx + z(6)), mid.centery))
-        rrect(surf, br.inflate(z(12), z(4)), T.accent_soft, z(6))
+        rrect(surf, br.inflate(z(12), z(4)), _mix(T.custom, T.inset, 0.8) if custom else T.accent_soft, z(6))
         surf.blit(badge, br)
         surf.blit(dsurf, dsurf.get_rect(midleft=(round(br.right + z(12)), mid.centery)))
+        if custom and hasattr(st, "open_custom"):
+            self._register(mid, st.open_custom, "custom:edit")
         y += bh + gap
         # seed stepper + hardware switch
         step = pygame.Rect(x0, y, z(150), bh)
@@ -1503,9 +1533,21 @@ class Renderer:
                      if ir.delay_mean_s is not None else "No measured vehicles",
                      f"Throughput {ir.throughput_veh_h:.0f} veh/h  ·  {ir.crossed} crossed  ·  "
                      f"mean queue {ir.queue_mean_per_movement_veh:.2f} veh/movement"]
-            self._banner(surf, (bx, by), "Run complete · Stage 12 statistics", "\n".join(lines), T.accent)
+            if getattr(st.config, "mode", "official") == "custom":
+                self._banner(surf, (bx, by), f"Run complete · {CUSTOM_BADGE} (not an official result)",
+                             "\n".join(lines), T.custom)
+            else:
+                self._banner(surf, (bx, by), "Run complete · Stage 12 statistics", "\n".join(lines), T.accent)
         elif a is not None and not st.running and a.step <= 1:
-            self._banner(surf, (bx, by), "Ready", "Press Run (Space) to start. All 8 signals start red.", T.accent)
+            if getattr(st.config, "mode", "official") == "custom":
+                v = st.config.vehicle
+                self._banner(surf, (bx, by), f"{CUSTOM_BADGE} ready",
+                             "Custom demand · not an official result. Press Run (Space) to start.\n"
+                             f"Yellow: {'Stop on Yellow' if v.yellow_extension_s == 0 else 'study default (2.0 s)'}"
+                             f"  ·  start-up: {'immediate first vehicle' if v.immediate_first_vehicle else 'study'}",
+                             T.custom)
+            else:
+                self._banner(surf, (bx, by), "Ready", "Press Run (Space) to start. All 8 signals start red.", T.accent)
         if st.message:
             self._banner(surf, (bx, by + z(96)), "Hardware", st.message, T.amber)
 
@@ -1581,6 +1623,163 @@ class Renderer:
         self._chip(surf, "IR", (x + z(10), y + z(6)), T.real)
         text(surf, f, "Real IR detector (in its own D1 slot)", (x + z(28), y + z(6)), z(11), T.text2, anchor="midleft")
 
+    # ================================================================ Custom / Demo panel (Stage 14b)
+    def text_button(self, surf, rect, label, action, name, enabled=True, primary=False, size=None):
+        z, f = self._z, self.fonts
+        hot = enabled and self._hot(rect)
+        if primary:
+            bg = T.accent if enabled else T.raised
+            rrect(surf, rect, _mix(bg, (255, 255, 255), 0.12) if hot else bg, z(10))
+            fg = _hex("06101c") if enabled else T.muted
+        else:
+            rrect(surf, rect, _mix(T.raised, (255, 255, 255), 0.05) if hot else T.raised, z(10), T.border_hi)
+            fg = T.text if enabled else T.faint
+        text(surf, f, label, rect.center, size or z(13), fg, True, "center")
+        self._register(rect, action, name, enabled)
+
+    def _stepper(self, surf, rect, value, focused, on_minus, on_plus, on_focus, name, enabled=True):
+        z, f = self._z, self.fonts
+        rrect(surf, rect, T.inset, z(8), T.accent if focused else T.border)
+        bw = rect.h - z(8)
+        minus = pygame.Rect(rect.x + z(4), rect.y + z(4), bw, rect.h - z(8))
+        plus = pygame.Rect(rect.right - z(4) - bw, rect.y + z(4), bw, rect.h - z(8))
+        self.icon_button(surf, minus, _icon_minus, on_minus, f"{name}-", enabled)
+        self.icon_button(surf, plus, _icon_plus, on_plus, f"{name}+", enabled)
+        mid = pygame.Rect(minus.right + z(4), rect.y, plus.x - minus.right - z(8), rect.h)
+        col = T.text if enabled else T.faint
+        r = text(surf, f, value, mid.center, z(14), col, True, "center", tabular=True)
+        if focused:
+            pygame.draw.line(surf, T.accent, (r.right + z(2), r.y + z(3)), (r.right + z(2), r.bottom - z(3)), 2)
+        self._register(mid, on_focus, f"{name}:edit", enabled)
+
+    def custom_panel_height(self, d) -> int:
+        z = self._z
+        bh, gap, lab = z(34), z(8), z(20)
+        h = z(20) + z(58) + z(26) + 4 * (bh + gap) + (bh + gap) + (lab + bh + gap) + z(32) + z(36)
+        if d.advanced_open:
+            h += 3 * (lab + bh + gap) + z(24)
+            if d.controller == "Smart" and d.param_set == "custom":
+                h += lab + bh + gap
+        return h + z(26) + bh + z(22)
+
+    def _custom_panel(self, surf, st):
+        """Modal Custom / Demo editor. Only its own controls are clickable while it is open."""
+        from smarttraffic.conflicts import MOVES
+        from smarttraffic.custom import CUSTOM_CONTROLLERS, UI_LIMIT_VEH_H
+        from smarttraffic.viz_custom import (MEASURE_CHOICES, MOVEMENT_NAMES, PRESETS, SMART_FIELD_LABELS)
+        d = st.custom_draft
+        z, f = self._z, self.fonts
+        W, H = surf.get_size()
+        dim = pygame.Surface((W, H), pygame.SRCALPHA)
+        dim.fill((3, 5, 8, 185))
+        surf.blit(dim, (0, 0))
+        self.buttons = []
+        bh, gap, lab = z(34), z(8), z(20)
+        pw = min(z(780), W - z(40))
+        ph = min(self.custom_panel_height(d), H - z(16))
+        r = pygame.Rect((W - pw) // 2, max(z(8), (H - ph) // 2), pw, ph)
+        rrect(surf, r, T.panel, z(16), _mix(T.custom, T.panel, 0.55))
+        x0, w = r.x + z(24), r.w - z(48)
+        y = r.y + z(20)
+        # ---- header
+        badge = f.render(CUSTOM_BADGE, z(13), _hex("14081f"), True, spacing=1)
+        br = badge.get_rect(topleft=(x0 + z(10), y + z(6)))
+        rrect(surf, br.inflate(z(20), z(10)), T.custom, z(8))
+        surf.blit(badge, br)
+        text(surf, f, "Custom demand", (br.right + z(24), y), z(19), T.text, True)
+        text(surf, f, "Not an official result · FT-A or Smart · results are tagged CUSTOM / DEMO",
+             (br.right + z(24), y + z(26)), z(12), T.muted)
+        y += z(58)
+        # ---- demand grid
+        text(surf, f, f"DEMAND (veh/h, max {UI_LIMIT_VEH_H})", (x0, y), z(11), T.text2, True, spacing=1)
+        y += z(26)
+        colw = (w - z(24)) // 2
+        sw = min(z(190), colw - z(150))
+        for ci, group in enumerate((("NS", "SS", "ES", "WS"), ("NL", "SL", "EL", "WL"))):
+            cx = x0 + ci * (colw + z(24))
+            for ri, m in enumerate(group):
+                ry = y + ri * (bh + gap)
+                text(surf, f, m, (cx, ry + bh / 2), z(14), T.text, True, "midleft")
+                text(surf, f, MOVEMENT_NAMES[m], (cx + z(40), ry + bh / 2), z(12), T.muted, anchor="midleft")
+                self._stepper(surf, pygame.Rect(cx + colw - sw, ry, sw, bh), d.display(m), d.focus == m,
+                              (lambda m=m: d.step_demand(m, -1)), (lambda m=m: d.step_demand(m, +1)),
+                              (lambda m=m: d.focus_field(m)), f"demand:{m}")
+        y += 4 * (bh + gap)
+        # ---- presets
+        text(surf, f, "Presets", (x0, y + bh / 2), z(12), T.muted, anchor="midleft")
+        px = x0 + z(70)
+        pbw = (w - z(70) - 3 * gap) // len(PRESETS)
+        for pid, plabel in PRESETS:
+            self.text_button(surf, pygame.Rect(px, y, pbw, bh), plabel, (lambda p=pid: d.load_preset(p)),
+                             f"preset:{pid}", size=z(12))
+            px += pbw + gap
+        y += bh + gap
+        # ---- seed / controller / measurement
+        seedw, ctlw = z(150), z(170)
+        text(surf, f, "Seed", (x0, y), z(11), T.text2, True, spacing=1)
+        text(surf, f, "Controller", (x0 + seedw + z(16), y), z(11), T.text2, True, spacing=1)
+        text(surf, f, "Measurement", (x0 + seedw + ctlw + z(32), y), z(11), T.text2, True, spacing=1)
+        y += lab
+        self._stepper(surf, pygame.Rect(x0, y, seedw, bh), str(d.seed), False,
+                      (lambda: d.set_seed(d.seed - 1)), (lambda: d.set_seed(d.seed + 1)), (lambda: None), "seed")
+        self.segmented(surf, pygame.Rect(x0 + seedw + z(16), y, ctlw, bh), [(c, c) for c in CUSTOM_CONTROLLERS],
+                       d.controller, d.set_controller, names=lambda v, l: f"controller:{v}")
+        mx = x0 + seedw + ctlw + z(32)
+        self.segmented(surf, pygame.Rect(mx, y, x0 + w - mx, bh),
+                       [(s_, f"{s_ // 60} min") for s_ in MEASURE_CHOICES], d.measure_s, d.set_measure,
+                       names=lambda v, l: f"measure:{v}", size=z(12))
+        y += bh + gap
+        # ---- saturation check
+        sat = d.saturation()
+        if sat is not None:
+            col = {"ok": T.green, "near": T.amber, "over": T.red}[sat.level]
+            msg = (f"Load X = {sat.degree:.2f} · within capacity" if sat.level == "ok"
+                   else sat.messages[-1] if sat.messages else "")
+            aa_circle(surf, (x0 + z(6), y + z(12)), z(5), col)
+            self._wrap(surf, msg, x0 + z(20), y + z(3), w - z(20), z(12), col if sat.level != "ok" else T.text2)
+        y += z(32)
+        # ---- advanced (collapsed by default)
+        self.icon_button(surf, pygame.Rect(x0, y, z(230), z(30)), _icon_chev_down if d.advanced_open else _icon_chev_right,
+                         d.toggle_advanced, "advanced", label="Advanced settings")
+        y += z(36)
+        if d.advanced_open:
+            rows = (("Yellow policy", [("study", "Study default · first 2.0 s"), ("stop", "Stop on Yellow")],
+                     d.yellow_policy, d.set_yellow, "yellow", None),
+                    ("Green start-up", [(False, "Study · first car at 3.9 s"), (True, "Immediate first vehicle")],
+                     d.immediate_first_vehicle, (lambda v: setattr(d, "immediate_first_vehicle", v)), "startup", None),
+                    ("Smart parameters", [("T1", "Smart-T1 (locked)"), ("custom", "Custom τ / W_MAX / max green")],
+                     d.param_set, d.set_param_set, "params", (lambda v: d.controller == "Smart")))
+            for title, items, cur, pick, nm, en in rows:
+                text(surf, f, title.upper(), (x0, y), z(11), T.text2, True, spacing=1)
+                y += lab
+                self.segmented(surf, pygame.Rect(x0, y, w, bh), items, cur, pick,
+                               names=(lambda v, l, nm=nm: f"{nm}:{v}"), enabled=en, size=z(12))
+                y += bh + gap
+            if d.controller == "Smart" and d.param_set == "custom":
+                fw = (w - 3 * gap) // 4
+                for i, name in enumerate(("tau_s", "w_max_s", "max_green_straight_s", "max_green_left_s")):
+                    fx = x0 + i * (fw + gap)
+                    text(surf, f, SMART_FIELD_LABELS[name], (fx, y), z(11), T.text2, True)
+                    self._stepper(surf, pygame.Rect(fx, y + lab, fw, bh), d.display(name), d.focus == name,
+                                  (lambda n=name: d.step_smart(n, -1)), (lambda n=name: d.step_smart(n, +1)),
+                                  (lambda n=name: d.focus_field(n)), f"smart:{name}")
+                y += lab + bh + gap
+            text(surf, f, "Official scenarios S1–S10 keep the locked settings (yellow 2.0 s, study start-up); "
+                          "these apply to Custom / Demo only.", (x0, y + z(2)), z(11), T.muted)
+            y += z(24)
+        # ---- message + footer
+        fy = r.bottom - z(22) - bh
+        msg = d.error or d.note
+        if msg:
+            self._wrap(surf, msg, x0, fy - z(24), w, z(12), T.red if d.error else T.amber)
+        bw2 = z(120)
+        self.text_button(surf, pygame.Rect(x0 + w - bw2, fy, bw2, bh), "Apply", st.apply_custom, "custom:apply",
+                         primary=True)
+        self.text_button(surf, pygame.Rect(x0 + w - 2 * bw2 - gap, fy, bw2, bh), "Cancel", st.cancel_custom,
+                         "custom:cancel")
+        text(surf, f, "Tab next field · type digits · Enter apply · Esc cancel", (x0, fy + bh / 2), z(11),
+             T.muted, anchor="midleft")
+
     def _hardware(self, surf, r, st, hw):
         z, f = self._z, self.fonts
         glass(surf, r, z(12))
@@ -1644,6 +1843,15 @@ def _icon_reset(s, c, w, col):
 def _icon_chev_left(s, c, w, col):
     thick_polyline(s, [(c[0] + w * 0.18, c[1] - w * 0.38), (c[0] - w * 0.2, c[1]), (c[0] + w * 0.18, c[1] + w * 0.38)],
                    max(2, w * 0.17), col)
+
+
+def _icon_chev_down(s, c, w, col):
+    thick_polyline(s, [(c[0] - w * 0.38, c[1] - w * 0.18), (c[0], c[1] + w * 0.2), (c[0] + w * 0.38, c[1] - w * 0.18)],
+                   max(2, w * 0.17), col)
+
+
+def _icon_none(s, c, w, col):
+    pass
 
 
 def _icon_chev_right(s, c, w, col):

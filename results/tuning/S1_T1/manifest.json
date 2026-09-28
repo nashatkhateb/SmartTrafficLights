@@ -1,0 +1,25 @@
+{
+  "campaign": "S1_T1",
+  "candidates_csv_sha256": "7f9580ac19de01b44e528239c64f93af230ed8ddc5247abc5ba0d449e04121cf",
+  "created_utc": "2026-09-27T22:37:26Z",
+  "distinct_runs": 110,
+  "elapsed_s": 586.0,
+  "engine": "stage14-1",
+  "environment": {
+    "numpy": "2.4.6",
+    "platform": "Linux-6.18.44-fc-v42-x86_64-with-glibc2.39",
+    "python": "3.11.15"
+  },
+  "git": {
+    "commit": null,
+    "dirty": null
+  },
+  "kind": "tuning",
+  "lock_sha256": "3b3da0427f7f965f23a1c586a782fbeb3be8445608dc2eaf4135f5512e3ca84c",
+  "mode": "official-tuning",
+  "runs": 115,
+  "runs_csv_sha256": "00561723f595f350aff5388a7ca5289a10637422db6de3669541dde676100184",
+  "source_sha256": "45c7fd2548662f3d7734fcc37f1e62c339a545f8e061a06f83e30e66d2467d70",
+  "tuning_plan_sha256": "f636a74f6577fe4802b0b4f46a253d588de830c44069f679770ff84253c1b178",
+  "workers": 2
+}

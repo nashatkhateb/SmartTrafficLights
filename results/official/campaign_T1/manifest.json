@@ -1,0 +1,56 @@
+{
+  "aggregates_csv_sha256": "8f5a1bd114419325e8bbb71266c575fdb2b333225bb1722c27af75d123011c29",
+  "campaign": "campaign_T1",
+  "created_utc": "2026-09-28T00:36:32Z",
+  "distinct_runs": 490,
+  "elapsed_s": 2655.5,
+  "engine": "stage14-1",
+  "environment": {
+    "numpy": "2.5.3",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.14"
+  },
+  "git": {
+    "commit": "6d2ca41cae4271b2501152282fa70abd484dc38e",
+    "dirty": true
+  },
+  "kind": "official",
+  "lock_sha256": "3b3da0427f7f965f23a1c586a782fbeb3be8445608dc2eaf4135f5512e3ca84c",
+  "mode": "official",
+  "movements_csv_sha256": "4067ca418b0b1274a9a677b25a76fac1dc7497cd17b159ae76462f41fb170d10",
+  "multiple_comparisons": "none (unadjusted p-values, as the study specifies no correction)",
+  "paired_csv_sha256": "99cbca1fed849e93fac47c8f87e4e71a2c75a9f1bd4b204f6f518d2f2ac7f0b1",
+  "runs": 490,
+  "runs_csv_sha256": "f4e6b6a0eea0f8a37e4ddf6a985f81755ea09785d5335540c2273431b17b97e4",
+  "safety_violations_total": 0,
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "signal_log_problems_total": 0,
+  "smart_t1_params": {
+    "extended_initial_s": 12.0,
+    "fault_qhat": 2,
+    "green_bonus_qhat": 2,
+    "max_green_left_s": 30.0,
+    "max_green_straight_s": 45.0,
+    "min_green_left_s": 5.0,
+    "min_green_straight_s": 7.0,
+    "tau_s": 15.0,
+    "use_aging": true,
+    "use_max_green": true,
+    "use_w_max": true,
+    "w_max_s": 90.0
+  },
+  "source_sha256": "8771698a97d9ce9ef727938c092b58bb55c7d97d82100579b8611c326d722c86",
+  "tuning_plan_sha256": "f636a74f6577fe4802b0b4f46a253d588de830c44069f679770ff84253c1b178",
+  "workers": 4
+}

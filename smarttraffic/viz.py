@@ -15,13 +15,29 @@ SignalBank state passed through signals.lamps_for().
 
 Keys: Space run/pause, R reset, 1-6 speed, C cycle controller, Left/Right scenario,
 Up/Down seed, H hardware on/off, F11 fullscreen, Esc quit.
+
+Custom / Demo (Stage 14b): "Custom..." after S10 in the scenario selector (or the
+Custom... entry itself) opens the Custom / Demo panel: 8 demands (veh/h, capped at 1800),
+seed, FT-A or Smart, measurement duration, and collapsed Advanced settings (yellow policy,
+green start-up, Smart parameter set T1 / study / custom). Apply loads it; a CUSTOM / DEMO
+badge is shown while it is active. Official scenarios S1-S10 keep the locked settings.
+In the panel: Tab next field, digits type, Enter apply, Esc cancel.
+
+Smart in the UI is always the approved Smart-T1 (config/smart_params_locked.json: tau 15 s,
+W_MAX 90 s, all other parameters locked): every official configuration the UI runs gets the
+locked parameters (ui_config), and the Custom panel offers Smart-T1 or custom values only.
+Smart-study remains an internal/historical comparison (official campaign), not a UI option.
 """
 import argparse
 import os
 import sys
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
+from dataclasses import replace as _replace
+
+from smarttraffic.custom import CUSTOM_CONTROLLERS, CUSTOM_SCENARIO
 from smarttraffic.runner import CONTROLLERS, RunConfig
+from smarttraffic.viz_custom import CustomDraft
 from smarttraffic.viz_session import HARDWARE_SPEED, SPEEDS, Snapshot, VizSession
 
 __all__ = ["main", "App", "Renderer", "Theme", "capture", "render_to_file", "SCENARIOS",
@@ -34,6 +50,31 @@ try:                                    # the drawing lives in viz_render (needs
 except ImportError:                     # pragma: no cover - reported by main()
     pygame = None
 
+
+
+# ================================================================ Smart-T1 in the UI
+_T1_CACHE: Dict[str, object] = {}
+
+
+def smart_t1_params():
+    """The locked Smart-T1 parameters (verified lock; loaded once)."""
+    if "p" not in _T1_CACHE:
+        from smarttraffic import tuning as tu
+        _T1_CACHE["p"] = tu.load_lock(tu.LOCK_FILE)["smart_params"]
+    return _T1_CACHE["p"]
+
+
+def ui_config(config: RunConfig) -> RunConfig:
+    """What the UI actually runs: official configurations always use Smart-T1 (for FT
+    controllers the Smart parameters are unused, so switching back to Smart stays on T1).
+    Custom / Demo configurations keep their own validated parameters."""
+    if config.mode != "official" or config.smart_params == smart_t1_params():
+        return config
+    return _replace(config, smart_params=smart_t1_params())
+
+
+def official_config(scenario: str, seed: int, controller: str) -> RunConfig:
+    return ui_config(RunConfig(scenario, seed, controller))
 
 
 # ================================================================ application state
@@ -52,6 +93,8 @@ class UIState:
         self.session_factory = session_factory or VizSession
         self.message: Optional[str] = None
         self.session: Optional[VizSession] = None
+        self.custom_spec = None                          # last applied custom.CustomSpec
+        self.custom_draft: Optional[CustomDraft] = None  # not None while the panel is open
         self._start(running=False)
 
     # ---------------------------------------------------- session
@@ -66,6 +109,7 @@ class UIState:
     def _start(self, running: bool) -> None:
         if self.session is not None:
             self.session.stop()
+        self.config = ui_config(self.config)             # official Smart = Smart-T1, always
         hw = None
         if self.hardware:
             try:
@@ -118,7 +162,10 @@ class UIState:
 
     def set_controller(self, c: str) -> None:
         if c != self.config.controller and c in controllers_for(self.config.scenario):
-            self._reconfigure(controller=c)
+            if self.is_custom:
+                self._load_custom(_replace(self.custom_spec, controller=c), running=self.running)
+            else:
+                self._reconfigure(controller=c)
 
     def cycle_controller(self) -> None:
         cs = controllers_for(self.config.scenario)
@@ -126,11 +173,22 @@ class UIState:
         self.set_controller(cs[(i + 1) % len(cs)])
 
     def _set_scenario(self, step: int) -> None:
-        ids = [s for s, _ in SCENARIOS]
+        ids = [s for s, _ in SCENARIOS] + [CUSTOM_SCENARIO]
         i = ids.index(self.config.scenario) if self.config.scenario in ids else 0
         sc = ids[(i + step) % len(ids)]
+        if sc == CUSTOM_SCENARIO:
+            if self.custom_spec is None:
+                self.open_custom()                   # nothing to show yet: ask for demands
+            else:
+                self._load_custom(self.custom_spec, running=self.running)
+            return
         ctrl = self.config.controller if self.config.controller in controllers_for(sc) else "FT-A"
-        self._reconfigure(scenario=sc, controller=ctrl)
+        if self.is_custom:                           # back to the study: a clean official config
+            was = self.running
+            self.config = official_config(sc, self.config.seed, ctrl)
+            self._start(running=was)
+        else:
+            self._reconfigure(scenario=sc, controller=ctrl)
 
     def next_scenario(self) -> None:
         self._set_scenario(1)
@@ -139,11 +197,52 @@ class UIState:
         self._set_scenario(-1)
 
     def next_seed(self) -> None:
-        self._reconfigure(seed=self.config.seed + 1)
+        self._set_seed(self.config.seed + 1)
 
     def prev_seed(self) -> None:
         if self.config.seed > 0:
-            self._reconfigure(seed=self.config.seed - 1)
+            self._set_seed(self.config.seed - 1)
+
+    def _set_seed(self, seed: int) -> None:
+        if self.is_custom:
+            self._load_custom(_replace(self.custom_spec, seed=seed), running=self.running)
+        else:
+            self._reconfigure(seed=seed)
+
+    # ---------------------------------------------------- Custom / Demo
+    @property
+    def is_custom(self) -> bool:
+        return self.config.mode == "custom"
+
+    @property
+    def custom_open(self) -> bool:
+        return self.custom_draft is not None
+
+    def open_custom(self) -> None:
+        if self.custom_spec is not None:
+            self.custom_draft = CustomDraft.from_spec(self.custom_spec)
+        else:
+            ctrl = self.config.controller if self.config.controller in CUSTOM_CONTROLLERS else "Smart"
+            self.custom_draft = CustomDraft(seed=self.config.seed, controller=ctrl)
+
+    def cancel_custom(self) -> None:
+        self.custom_draft = None
+
+    def apply_custom(self) -> bool:
+        """Validate the panel; on success load it (paused) and close the panel."""
+        if self.custom_draft is None:
+            return False
+        spec, err = self.custom_draft.to_spec()
+        if err is not None:
+            return False
+        self.custom_draft = None
+        self._load_custom(spec, running=False)
+        return True
+
+    def _load_custom(self, spec, running: bool) -> None:
+        self.custom_spec = spec
+        self.config = spec.config()
+        self._start(running=running)
 
     def toggle_hardware(self) -> None:
         self.hardware = not self.hardware
@@ -203,6 +302,27 @@ class App:
                 self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         return True
 
+    def custom_key(self, key, char: str = "") -> bool:
+        """Keys while the Custom / Demo panel is open. Always True (Esc closes the panel only)."""
+        d = self.st.custom_draft
+        if key == pygame.K_ESCAPE:
+            self.st.cancel_custom()
+        elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            if d.focus is not None:
+                d.focus_field(None)
+            else:
+                self.st.apply_custom()
+        elif key == pygame.K_BACKSPACE:
+            d.backspace()
+        elif key == pygame.K_TAB:
+            from smarttraffic.viz_custom import TAB_ORDER
+            order = list(TAB_ORDER)
+            nxt = order[(order.index(d.focus) + 1) % len(order)] if d.focus in order else order[0]
+            d.focus_field(nxt)
+        else:
+            d.type_char(char)
+        return True
+
     def click(self, pos) -> bool:
         """Run the action of the button under pos (buttons of the last drawn frame)."""
         for rect, action, _ in self.r.buttons:
@@ -218,7 +338,10 @@ class App:
             if ev.type == pygame.QUIT:
                 alive = False
             elif ev.type == pygame.KEYDOWN:
-                alive = self.handle_key(ev.key) and alive
+                if self.st.custom_open:
+                    self.custom_key(ev.key, getattr(ev, "unicode", ""))
+                else:
+                    alive = self.handle_key(ev.key) and alive
             elif ev.type == pygame.MOUSEMOTION:
                 self.r.hover = ev.pos
             elif ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1:
@@ -316,16 +439,21 @@ def capture(config: RunConfig, times_ms: Sequence[int], *, hw_config=None, trans
 class _StillState:
     """UIState stand-in for still frames."""
 
-    def __init__(self, config, running=True, speed=1.0, hardware=False, finished=False, result=None):
+    def __init__(self, config, running=True, speed=1.0, hardware=False, finished=False, result=None,
+                 custom_draft=None):
         self.config, self.running, self.speed, self.hardware = config, running, speed, hardware
         self.finished, self.result, self.error, self.message = finished, result, None, None
+        self.custom_draft = custom_draft
+        self.custom_open = custom_draft is not None
+        self.is_custom = config.mode == "custom"
 
     def __getattr__(self, name):                 # button actions do nothing in a still
         return lambda *a, **k: None
 
 
 def render_to_file(path: str, config: RunConfig, t_s: float, size=(1600, 900), *, frac: float = 0.0,
-                   hw_config=None, transport_factory=None, running=True, arrivals=None) -> Snapshot:
+                   hw_config=None, transport_factory=None, running=True, arrivals=None,
+                   custom_draft=None) -> Snapshot:
     """Render one frame at simulation time t_s (+ frac of a step, for interpolation)."""
     os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     pygame.display.init()
@@ -336,7 +464,7 @@ def render_to_file(path: str, config: RunConfig, t_s: float, size=(1600, 900), *
     a, b = snaps[t]
     r = Renderer(Fonts())
     r.real_ids_hint = _real_ids_hint()
-    st = _StillState(config, running=running, hardware=hw_config is not None)
+    st = _StillState(config, running=running, hardware=hw_config is not None, custom_draft=custom_draft)
     disp = a.t_ms + frac * ((b.t_ms - a.t_ms) if b is not None else 0)
     r.draw(screen, st, a, b, disp)
     pygame.image.save(screen, path)
@@ -367,7 +495,7 @@ def main(argv=None) -> int:
     if speed not in SPEEDS:
         ap.error(f"--speed must be one of 0.5, 1, 2, 5, 10, max")
     size = tuple(int(v) for v in args.size.lower().split("x")) if args.size else None
-    config = RunConfig(args.scenario, args.seed, args.controller)
+    config = official_config(args.scenario, args.seed, args.controller)
     if args.screenshot:
         hw = None
         if args.hardware:

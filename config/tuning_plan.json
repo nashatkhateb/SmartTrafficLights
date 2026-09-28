@@ -1,0 +1,29 @@
+{
+  "name": "S1_T1",
+  "_about": "Pre-registered Stage 14 tuning plan (approved 2026-09-28). Frozen before any tuning run; its SHA-256 is recorded in the tuning manifest and in the lock. Study §10: tune only on S1 with seeds 101-105, then freeze. Only tau_s and w_max_s are varied; every other SmartParams value stays at the study default (max green 45/30 s, min greens, extended initial, green bonus, fault recall).",
+  "scenario": "S1",
+  "seeds": [101, 102, 103, 104, 105],
+  "windows": {"warmup_s": 300.0, "measure_s": 3600.0, "flush_s": 900.0, "dt_ms": 100},
+  "grid": {
+    "tau_s": [5, 10, 15, 20, 30],
+    "w_max_s": [90, 105, 120, 150]
+  },
+  "defaults": {"tau_s": 10, "w_max_s": 90},
+  "references": ["FT-A", "FT-B"],
+  "objective": "min mean control delay (delay_mean_s) over the tuning seeds",
+  "hard_constraints": [
+    "safety_violations == 0 in every run",
+    "no simulation error (e.g. SignalBank refusal)",
+    "signal log: legal transitions, exact RY/FG/Y/AR durations, GREEN+FLASHING_GREEN >= standard minimum green",
+    "unfinished == 0 in every run",
+    "deterministic result (selected candidate and Smart-study re-run and compared)",
+    "one arrival checksum per seed across all candidates and references"
+  ],
+  "guardrails": {"p95_mean_max_increase": 0.0, "max_delay_worst_max_increase": 0.10},
+  "guardrail_definitions": {
+    "p95": "mean over the 5 seeds of the run's P95 control delay must not exceed Smart-study's",
+    "max": "the largest per-run maximum control delay over the 5 seeds may exceed Smart-study's by at most 10 %"
+  },
+  "tie_band": 0.01,
+  "tie_rule": "candidates whose mean delay is within 1 % of the best feasible candidate are equal; prefer fewer changed parameters, then the smallest sum of relative distances |x - default| / default, then the fixed grid order (tau ascending, W_MAX ascending)"
+}

@@ -55,6 +55,10 @@ token*.json
 data/arrivals/*.csv
 results/runs/*
 !results/runs/.gitkeep
+# Stage 14: bulk per-run records stay local; manifests, CSV summaries and selections are committed
+results/tuning/*/runs/
+results/official/*/runs/
+results/custom/
 media/frames/*
 !media/frames/.gitkeep
 

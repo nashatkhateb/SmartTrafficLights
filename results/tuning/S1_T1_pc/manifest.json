@@ -1,0 +1,27 @@
+{
+  "campaign": "S1_T1",
+  "candidates_csv_sha256": "7f9580ac19de01b44e528239c64f93af230ed8ddc5247abc5ba0d449e04121cf",
+  "created_utc": "2026-09-27T23:52:11Z",
+  "distinct_runs": 110,
+  "elapsed_s": 4.2,
+  "engine": "stage14-1",
+  "environment": {
+    "numpy": "2.5.3",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.14"
+  },
+  "fingerprints_csv_sha256": "dd179e3a8d1ab04a4c7b36401b2dc75ae618e17186dd94cd4f365a12d0090815",
+  "git": {
+    "commit": "6d2ca41cae4271b2501152282fa70abd484dc38e",
+    "dirty": true
+  },
+  "kind": "tuning",
+  "lock_mode": "verified (not written)",
+  "lock_sha256": "3b3da0427f7f965f23a1c586a782fbeb3be8445608dc2eaf4135f5512e3ca84c",
+  "mode": "official-tuning",
+  "runs": 115,
+  "runs_csv_sha256": "a6e887439acc748edde5ba0c206e6a73a615cc67a57307dcb0fbd5e7caa6ee45",
+  "source_sha256": "8771698a97d9ce9ef727938c092b58bb55c7d97d82100579b8611c326d722c86",
+  "tuning_plan_sha256": "f636a74f6577fe4802b0b4f46a253d588de830c44069f679770ff84253c1b178",
+  "workers": 4
+}

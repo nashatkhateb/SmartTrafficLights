@@ -396,7 +396,7 @@ the study algorithm does not bound the wait when several holds arise together (t
 one after another) or when the hold's best group needs a green that is compatible with the
 hold but conflicts with its partner (step 7 needs all blockers releasable at once; that green
 must gap out or max out). Measured maximum waits at RED (study policy, FT-A comparison below,
-seeds 1–3): S1 133–149 s, S3 122–138 s, S7a 139–149 s, S10 149–158 s. Every wait above 120 s
+seeds 1–3): S1 133–149 s, S3 122–138 s, S7a 139–149 s, S10 149–158 s. (Official campaign, seeds 1–10: see "W_MAX interpretation" in the Stage 14 section.) Every wait above 120 s
 in those runs was classified: committed transition in progress, partner interaction, or
 another hold first — none unexplained.
 
@@ -515,6 +515,153 @@ Presentation layer only; no core module was changed.
   vehicles that have crossed so far (equals the final `delay_mean_s` at the end of the run),
   longest current call. Final Stage 12 statistics are shown when the run completes.
 
+## Experiments and tuning (Stage 14, approved design 2026-09-28)
+
+**Rules (study §10, §15, §16 step 9).** Smart-controller parameters are tuned only on S1 with
+seeds 101–105 and then frozen; all scenarios are evaluated on seeds 1–10. Only `tau_s` and
+`w_max_s` are tuned (study Assumptions: "τ, Q̂ and W_MAX are our choices"); every other
+`SmartParams` value stays at the study default (max green 45/30 s, min greens, extended initial,
+green bonus, fault recall). Max green 60/40 s is a later sensitivity run, not a tuning option.
+The study states no objective; the approved rule is pre-registered in `config/tuning_plan.json`
+(frozen before any tuning run, SHA-256 recorded):
+
+* primary: minimum mean control delay over the 5 tuning seeds;
+* hard: safety violations 0, no simulation error (SignalBank refusal), signal log clean (legal
+  transitions, exact RY / FG / Y / AR durations, GREEN + FLASHING_GREEN ≥ the standard minimum
+  green), unfinished 0, one arrival checksum per seed for every run, determinism (the winner
+  and Smart-study are re-run and must reproduce their result hashes);
+* guardrails vs Smart-study (study defaults): mean P95 delay must not increase; the worst
+  per-run maximum delay may increase by at most 10 %;
+* ties: within 1 % of the best feasible mean delay prefer fewer changed parameters, then the
+  smallest Σ|x − default| / default, then the grid order (τ, then W_MAX ascending).
+
+Grid: τ ∈ {5, 10, 15, 20, 30} s × W_MAX ∈ {90, 105, 120, 150} s (20 candidates, the study
+default (10, 90) included); references FT-A and FT-B (identical plans in S1).
+
+**Disclosure.** Before tuning, exploratory Stage 11 work (the table above) looked at some
+evaluation seeds (1–3 of S1, S3, S4, S7a, S10) with the untuned study controller. Those results
+were not used for the grid, the rule or the selection; tuning used only S1 seeds 101–105.
+
+**Infrastructure.** `experiments.py`: `RunSpec` (scenario, seed, controller, label, SmartParams,
+study windows) → run key = SHA-256 of everything the simulation depends on (not the label; FT
+runs ignore Smart parameters); the parent creates every arrival file serially, workers (spawn
+process pool, Windows-safe, default min(4, CPUs)) only read them and verify the checksum, run the
+unchanged Stage 12 runner and write `runs/<key>.json.gz` via temp file + atomic rename; resume
+skips valid files and re-runs missing, corrupt or partial ones; summaries are rebuilt in a fixed
+order, so sequential, parallel and resumed campaigns are byte-identical. A failed simulation is
+recorded with its error, never dropped. `tuning.py`: plan validation, candidates, the selection
+rule (pure, order-independent), the lock and the guarded official matrix.
+`python -m smarttraffic.run_experiments tune [--workers N]` runs everything above.
+
+**Lock.** `config/smart_params_locked.json` = "Smart-T1": full `SmartParams`, the tuned
+parameters, the plan hash, the candidate-table hash and its own `lock_sha256`. `load_lock()`
+refuses a missing or edited lock and any lock that changes an untuned parameter; the official
+matrix (`official_specs`, `check_official`) uses only Smart-T1 = the lock and Smart-study =
+`SmartParams()` (which stays the study default), the study windows, seeds 1–10 and the official
+scenarios — no per-scenario or custom parameters.
+
+**Selected and approved (2026-09-28): Smart-T1 = τ 15 s, W_MAX 90 s**, every other parameter at
+the study default; lock_sha256 `3b3da0427f7f965f23a1c586a782fbeb3be8445608dc2eaf4135f5512e3ca84c`.
+It is not retuned after seeing its S1 result (still worse than FT-A on the tuning seeds, where the
+study expects fixed time to do well).
+
+**Official campaign (`campaign.py`, `run_experiments official --lock-sha …`).** S1–S10 ×
+{FT-A, FT-B, Smart-T1, Smart-study} × seeds 1–10, FT-TOD on S6, then the study extras Smart-T1
+without W_MAX on S10 (G7) and Smart-T1 without aging on S1, S6, S9 (G12): 490 runs. The lock hash
+must be stated; `check_official` refuses any other scenario, seed, window, label or parameter
+set. Outputs in `results/official/campaign_T1/`: `runs.csv`, `movements.csv`, `aggregates.csv`
+(per scenario × label × metric: n, mean, sd, 95 % t-interval), `paired.csv` (same-seed B − A with
+95 % CI and paired t-test for Smart-T1 vs FT-A / FT-B / Smart-study, FT-TOD vs FT-B on S6, and
+the extras vs Smart-T1; p-values unadjusted for multiple comparisons, as the study specifies no
+correction), `manifest.json`. Green utilization of a run = mean over movements with green time.
+
+**W_MAX interpretation (official results, accepted 2026-09-28).** W_MAX = 90 s is a
+starvation-HOLD threshold, not a proven hard upper bound on detector-call waiting time. In the
+official campaign (seeds 1-10) Smart-T1's maximum detector-call wait exceeded 90 s in every
+scenario except S4 (131-156 s), and calls waiting more than 120 s occurred in 10 of 11
+scenarios (up to about 92 per run in S7b). Waits can exceed 90 s because several movements can
+become overdue together (holds are served one after another, longest wait first), the held
+movement may wait behind another overdue movement, and minimum greens and the mandatory
+clearance transitions (flashing green, yellow, all-red, red+yellow) are never skipped. In S10
+the low-demand WL car waited 97.7 s on average and 157 s at worst under Smart-T1 (FT-A
+44.8 / 82.7 s, FT-B 52.3 / 109.7 s). W_MAX is still useful: removing it (Smart-T1-noWMAX, S10)
+made performance substantially worse (mean delay +140 s, max delay +333 s, throughput
+-168 veh/h, worst WL wait about 209 s, all significant). The parameter and the controller were
+not changed after these results.
+
+**Outputs.** `results/tuning/S1_T1/`: `manifest.json` (plan hash, code fingerprint, commit if
+available, environment, CSV hashes, lock hash), `runs.csv`, `candidates.csv` (ranked, with reject
+reasons), `selection.json` (winner, guardrails, paired comparisons, determinism); `runs/` holds
+the compressed full records and is not committed (.gitignore).
+
+**Reproduction (verify-only).** The lock is written once and never overwritten. A reproduction
+(for example on another PC) runs `tune --out <dir> --verify-lock <lock_sha256>`: it checks the
+approved lock and the plan hash before any run, reuses completed runs in `<dir>/runs/`, and at the
+end requires the same winner and a byte-identical `candidates.csv`; it never writes the lock
+(`manifest.json` records `lock_mode: "verified (not written)"`). Without `--verify-lock`, `tune`
+refuses to start when a lock already exists. `fingerprints.csv` holds per run a SHA-256 of the
+simulated trajectory (vehicles, signal log, queue samples, metadata); `verify-tuning --ref
+results/tuning/S1_T1 --new <dir> --lock-sha <sha>` requires identical candidates, fingerprints and
+metric columns. Full-record hashes may differ between operating systems only in the last bit of
+derived floating-point statistics (e.g. Jain's index via `pow`); the simulation itself is exact.
+
+## Custom / Demo mode, yellow policy, immediate first vehicle (Stage 14b)
+
+**Separation.** `runner.RunConfig` has `mode` ("official" default, "custom"), `demand`
+(`custom.CustomDemand`, custom only) and `vehicle` (`VehicleOptions`). Official mode refuses
+custom demand and any non-default `VehicleOptions`; official metadata is byte-for-byte what it
+was (custom keys are added only in custom mode). The official experiment path cannot express a
+custom run (`experiments.RunSpec` has no mode/demand/vehicle fields, run keys unchanged) and
+`run_campaign` refuses `results/custom/`. Custom output (`custom.save_custom`) refuses
+`results/official`, `results/tuning`, `data/arrivals` and `config`, and requires the result's
+`CUSTOM / DEMO` tag. Custom arrivals are generated in memory with the same per-movement streams
+(seed, movement), so S1 demands + seed reproduce S1's arrivals exactly.
+
+**Custom inputs.** 8 constant demands (number, finite, >= 0, < 2400 veh/h; UI cap 1800), seed
+(int >= 0), FT-A or Smart (no FT-B custom planning), measurement 60–7200 s (UI: 5/10/30/60 min),
+study warm-up 300 s, flush <= 900 s, dt 100 ms. Smart parameter set: Smart-T1 (the lock,
+default) or custom (T1 with only tau, W_MAX and the two max greens changed,
+within UI ranges; SmartParams' own checks apply). Load check: dual-ring critical flow ratio
+Y = max(y_NL + y_SS, y_SL + y_NS) + max(y_EL + y_WS, y_WL + y_ES), y = q / (1895 veh/h
+straight, 1800 left); X = Y / (1 - 23/120); X >= 0.85 near capacity, X >= 1 or any y >= 1
+oversaturated (S1 0.69; S2, S7a, S10 0.88–0.94; S7b 1.22).
+
+**Yellow policy.** `VehicleModel(yellow_extension_s=...)`, e in D <= t_y + e (inclusive):
+2.0 = study default (permissive first 2.0 s of yellow; the only value official runs accept),
+0.0 = Stop on Yellow (a car due exactly at yellow onset still crosses; nothing later). The
+window end is known from flashing-green onset, so cars beyond it stop in time. Before the
+change the official baseline was recorded (`tests/golden/official_T1_baseline.csv`: the
+simulation fingerprint of each of the 490 approved runs, taken from the PC records); the
+default mode reproduces it exactly (tests re-run S4 seed 1; the whole campaign was re-run once
+for the Stage 14b review).
+
+**Start-up (inspection).** Discharge rule D = max(own arrival at the line, previous
+departure + h, t_g + l1 + h). Start-up lost time = `START_UP_LOST_TIME` l1 = 2.0 s; first-car
+reaction is not modelled separately (it is inside l1, and car 1 also takes one h, crossing at
+t_g + 3.9 s straight / 4.0 s left); following headway h = 1.9 / 2.0 s between every pair of
+cars. Cars move at 0 or 50 km/h (no acceleration) and a stopped car starts at the last moment
+that still reaches the line at D: car 1 waits about 3.86 s after green, then cars start about
+1.36 s apart. `immediate_first_vehicle=True` (Custom only) replaces the floor t_g + l1 + h by
+t_g: car 1 starts at green onset (crosses 36 ms later from slot 1); every following car still
+needs previous + h, so the saturation headway is unchanged and cars still start one after
+another. Effect: l1 + h (3.9 / 4.0 s) of lost time per green disappears (about 2 more
+departures per green; capacity rises; `green_utilization` can exceed 1 because it assumes the
+study start-up). Exact only when GREEN begins on a step boundary (true at dt = 100 ms); a step
+containing a GREEN onset is refused.
+
+**Visualization.** "Custom…" after S10 in the scenario selector; the modal panel edits a
+`viz_custom.CustomDraft` (no pygame) and Apply loads the validated spec paused. While the panel
+is open only its own controls are clickable. Advanced settings are collapsed by default. Badge:
+CUSTOM / DEMO (top bar pill, selector, ready/complete banners); official scenarios show
+"OFFICIAL · LOCKED" and keep the locked settings.
+
+**Smart in the UI = Smart-T1 (approved 2026-09-28).** Every official configuration the
+visualization runs uses the locked Smart-T1 parameters (`viz.ui_config`: tau 15 s, W_MAX 90 s,
+max greens 45 / 30 s and all other locked values); the top bar says "Smart actuated ·
+Smart-T1". The Custom panel offers Smart-T1 (default) or custom tau / W_MAX / max greens only.
+Smart-study is not a user-facing option; it remains internal (official campaign comparison,
+historical tests, `custom.smart_params_for("study")`). No official result changed.
+
 ## Module status
 
 | Module | Status |
@@ -528,5 +675,7 @@ Presentation layer only; no core module was changed.
 | `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented, tested, verified (commit 7e4ae52) |
 | `controller_smart.py` | Stage 11: study §7 policy implemented, tested, verified (commit d98c4dd) |
 | `stats.py`, `runner.py` | Stage 12: implemented, tested, verified (commit fde1505) |
-| `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` | Stage 13: implemented and tested; awaiting review |
+| `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` | Stage 13: implemented, tested, verified (commit 6d2ca41) |
+| `experiments.py`, `tuning.py`, `campaign.py`, `run_experiments.py`, `config/tuning_plan.json`, `config/smart_params_locked.json` | Stage 14: Smart-T1 approved and locked; official campaign run and accepted (490 runs) |
+| `custom.py`, `viz_custom.py`, `tests/golden/official_T1_baseline.csv` | Stage 14b: Custom / Demo mode, yellow policy, immediate first vehicle (awaiting review) |
 | everything else | Placeholder |

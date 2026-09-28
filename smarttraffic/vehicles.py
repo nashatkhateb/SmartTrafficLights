@@ -47,6 +47,21 @@ states supplied from outside.
   Exact for any dt up to 3.9 s (no car can cross earlier than t_g + 3.9 s).
   As soon as the window end is known (at FLASHING_GREEN or YELLOW), cars whose
   D is beyond it lose their crossing time and stop.
+* OPTIONS (Stage 14b). Both default to the study behaviour above, which official
+  experiments must use (runner.RunConfig enforces it):
+    yellow_extension_s       e in the rule above: 2.0 (study default, permissive first
+                             2.0 s of yellow) or 0.0 ("stop on yellow": only D <= t_y,
+                             still inclusive, may cross; no new crossing after yellow
+                             onset). Any whole-ms value in [0, 2.0] is accepted here.
+    immediate_first_vehicle  Custom/Demo only. The floor t_g + l1 + h is replaced by t_g,
+                             so the first queued car starts moving at green onset (it
+                             crosses after its own travel time, 36 ms from slot 1). Every
+                             following car still needs previous departure + h, so the
+                             saturation headway is unchanged; only the start-up lost time
+                             l1 and the first headway h disappear (about 2 more departures
+                             per green). Exact only when GREEN begins on a step boundary
+                             (always true at the runner's dt = 100 ms); a step that would
+                             contain a GREEN onset is rejected.
 * ENTRY (R3): a car appears with its front bumper 150 m upstream, but only if
   the car ahead has its front at <= 142.5 m (7.5 m spacing). Otherwise it
   waits outside the modelled road, first come first served, and enters at
@@ -71,6 +86,7 @@ __all__ = [
     "FREE_SPEED", "VEHICLE_LENGTH", "STANDSTILL_GAP", "QUEUE_SPACING",
     "ENTRY_POSITION", "SLOT1_POSITION", "START_UP_LOST_TIME", "SATURATION_HEADWAY",
     "YELLOW_EXTENSION", "BOX_LENGTH", "BOX_SPEED", "FREE_TRAVEL_TIME", "slot_position",
+    "YELLOW_POLICIES",
 ]
 
 # ------------------------------------------------------------ study values
@@ -85,6 +101,7 @@ SATURATION_HEADWAY = {"straight": 1.9, "left": 2.0}  # h, s
 YELLOW_EXTENSION = 2.0                   # e, s: crossing allowed up to and including t_y + 2.0 s
 BOX_LENGTH = {"straight": 20.0, "left": 25.0}         # m, path through the junction (§1)
 BOX_SPEED = 9.0                          # m/s, visual only (study: "about 8-10 m/s")
+YELLOW_POLICIES = {"study": 2.0, "stop": 0.0}         # named yellow policies (Stage 14b)
 
 MS = 1000
 _EPS = 1e-9
@@ -191,10 +208,14 @@ class Vehicle:
 
 # ------------------------------------------------------------------ lane
 class _Lane:
-    def __init__(self, m: str, arrivals: List[Arrival]):
+    def __init__(self, m: str, arrivals: List[Arrival], yext_ms: int = _YEXT_MS,
+                 immediate_first: bool = False):
         self.m = m
         self.kind = movement_type(m)
         self.h_ms = _H_MS[self.kind]
+        self.yext_ms = yext_ms
+        # floor of the discharge rule relative to t_g: l1 + h (study) or 0 (immediate first car)
+        self.first_ms = 0 if immediate_first else _L1_MS + self.h_ms
         self.box_ms = _BOX_MS[self.kind]
         self.box_len = BOX_LENGTH[self.kind]
         self.pending: Deque[Vehicle] = deque(Vehicle(a) for a in arrivals)
@@ -217,9 +238,9 @@ class _Lane:
             self.perm = (since_ms, math.inf)
         elif state is SignalState.FLASHING_GREEN:
             # permissive; yellow starts when the flashing timer ends, then the 2.0 s rule
-            self.perm = (self.green_start_ms, now + remaining_ms + _YEXT_MS)
+            self.perm = (self.green_start_ms, now + remaining_ms + self.yext_ms)
         elif state is SignalState.YELLOW:
-            self.perm = (self.green_start_ms, since_ms + _YEXT_MS)
+            self.perm = (self.green_start_ms, since_ms + self.yext_ms)
         elif state is SignalState.RED_YELLOW:
             # not permissive; remember when GREEN will begin (t_g of the discharge rule)
             self.green_start_ms = now + remaining_ms
@@ -249,7 +270,7 @@ class _Lane:
         if prev_ms is not None:
             d = max(d, prev_ms + self.h_ms)                  # previous departure + h
         if t_g is not None:
-            d = max(d, t_g + _L1_MS + self.h_ms)            # t_g + l1 + h
+            d = max(d, t_g + self.first_ms)                 # t_g + l1 + h (or t_g)
         # physical guard: cannot reach the line faster than at v (never binding in
         # the study's cases; only matters if the model starts in mid-yellow)
         d = max(d, now + math.ceil(v._x / _V_PER_MS - 1e-6))
@@ -452,7 +473,15 @@ class VehicleModel:
     """
 
     def __init__(self, arrivals: Union[ArrivalSchedule, Iterable[Arrival]],
-                 start: Optional[float] = None):
+                 start: Optional[float] = None, *, yellow_extension_s: float = YELLOW_EXTENSION,
+                 immediate_first_vehicle: bool = False):
+        yext_ms = _to_ms(yellow_extension_s, "yellow_extension_s")
+        if not 0 <= yext_ms <= _YEXT_MS:
+            raise ValueError(f"yellow_extension_s must be in [0, {YELLOW_EXTENSION}], got {yellow_extension_s!r}")
+        if not isinstance(immediate_first_vehicle, bool):
+            raise TypeError("immediate_first_vehicle must be a bool")
+        self._yext_ms = yext_ms
+        self._immediate_first = immediate_first_vehicle
         if isinstance(arrivals, ArrivalSchedule):
             items = list(arrivals.arrivals)
             start_ms = arrivals.meta.start_ms if start is None else _to_ms(start, "start")
@@ -474,7 +503,8 @@ class VehicleModel:
             ids.add(a.id)
             per[a.movement].append(a)
         self._now = start_ms
-        self._lanes = {m: _Lane(m, sorted(per[m], key=lambda a: (a.time_ms, a.seq, a.id)))
+        self._lanes = {m: _Lane(m, sorted(per[m], key=lambda a: (a.time_ms, a.seq, a.id)),
+                                yext_ms, immediate_first_vehicle)
                        for m in MOVES}
         self._by_id = {v.id: v for lane in self._lanes.values() for v in lane.pending}
         self._passage_log: List[Tuple[int, int, str, float]] = []
@@ -519,6 +549,15 @@ class VehicleModel:
             raise ValueError(f"bad passage index {index!r}")
         return list(self._passage_log[index:]), len(self._passage_log)
 
+    # ------------------------------------------------------------- options
+    @property
+    def yellow_extension_s(self) -> float:
+        return self._yext_ms / MS
+
+    @property
+    def immediate_first_vehicle(self) -> bool:
+        return self._immediate_first
+
     # ---------------------------------------------------------------- time
     @property
     def now(self) -> float:
@@ -550,6 +589,9 @@ class VehicleModel:
                 if not callable(getattr(signals, "remaining", None)):
                     raise TypeError(f"signals must provide remaining(m) for {st.name}")
                 rem = _to_ms(signals.remaining(m), "remaining")
+                if self._immediate_first and st is SignalState.RED_YELLOW and t0 + rem < t1:
+                    raise ValueError(f"immediate_first_vehicle: GREEN of {m} would begin inside the "
+                                     f"step [{t0}, {t1}) ms; use steps that end at GREEN onsets")
             lane.set_permission(st, _to_ms(signals.since(m), "since"), t0, rem)
             lane.advance(t0, t1)
         self._now = t1
