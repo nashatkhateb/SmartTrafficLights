@@ -22,6 +22,7 @@ import pygame
 import pygame.gfxdraw as gfx
 
 from smarttraffic.conflicts import MOVES
+from smarttraffic.custom import VEHICLE_POLICY_LABEL
 from smarttraffic.runner import CONTROLLERS
 from smarttraffic.signals import SignalState, movement_type
 from smarttraffic.vehicles import VEHICLE_LENGTH
@@ -1540,14 +1541,12 @@ class Renderer:
                 self._banner(surf, (bx, by), "Run complete · Stage 12 statistics", "\n".join(lines), T.accent)
         elif a is not None and not st.running and a.step <= 1:
             if getattr(st.config, "mode", "official") == "custom":
-                v = st.config.vehicle
                 self._banner(surf, (bx, by), f"{CUSTOM_BADGE} ready",
                              "Custom demand · not an official result. Press Run (Space) to start.\n"
-                             f"Yellow: {'Stop on Yellow' if v.yellow_extension_s == 0 else 'study default (2.0 s)'}"
-                             f"  ·  start-up: {'immediate first vehicle' if v.immediate_first_vehicle else 'study'}",
-                             T.custom)
+                             f"Traffic rules: {VEHICLE_POLICY_LABEL}", T.custom)
             else:
-                self._banner(surf, (bx, by), "Ready", "Press Run (Space) to start. All 8 signals start red.", T.accent)
+                self._banner(surf, (bx, by), "Ready", "Press Run (Space) to start. All 8 signals start red.\n"
+                             f"Traffic rules: {VEHICLE_POLICY_LABEL}", T.accent)
         if st.message:
             self._banner(surf, (bx, by + z(96)), "Hardware", st.message, T.amber)
 
@@ -1743,12 +1742,8 @@ class Renderer:
                          d.toggle_advanced, "advanced", label="Advanced settings")
         y += z(36)
         if d.advanced_open:
-            rows = (("Yellow policy", [("study", "Study default · first 2.0 s"), ("stop", "Stop on Yellow")],
-                     d.yellow_policy, d.set_yellow, "yellow", None),
-                    ("Green start-up", [(False, "Study · first car at 3.9 s"), (True, "Immediate first vehicle")],
-                     d.immediate_first_vehicle, (lambda v: setattr(d, "immediate_first_vehicle", v)), "startup", None),
-                    ("Smart parameters", [("T1", "Smart-T1 (locked)"), ("custom", "Custom τ / W_MAX / max green")],
-                     d.param_set, d.set_param_set, "params", (lambda v: d.controller == "Smart")))
+            rows = (("Smart parameters", [("T1", "Smart-T1 (locked)"), ("custom", "Custom τ / W_MAX / max green")],
+                     d.param_set, d.set_param_set, "params", (lambda v: d.controller == "Smart")),)
             for title, items, cur, pick, nm, en in rows:
                 text(surf, f, title.upper(), (x0, y), z(11), T.text2, True, spacing=1)
                 y += lab
@@ -1764,8 +1759,7 @@ class Renderer:
                                   (lambda n=name: d.step_smart(n, -1)), (lambda n=name: d.step_smart(n, +1)),
                                   (lambda n=name: d.focus_field(n)), f"smart:{name}")
                 y += lab + bh + gap
-            text(surf, f, "Official scenarios S1–S10 keep the locked settings (yellow 2.0 s, study start-up); "
-                          "these apply to Custom / Demo only.", (x0, y + z(2)), z(11), T.muted)
+            text(surf, f, f"Traffic rules (all runs): {VEHICLE_POLICY_LABEL}.", (x0, y + z(2)), z(11), T.muted)
             y += z(24)
         # ---- message + footer
         fy = r.bottom - z(22) - bh

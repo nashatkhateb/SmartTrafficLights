@@ -557,17 +557,24 @@ def test_pc_reproduction_with_an_existing_approved_lock_verifies_it_and_never_ov
 def test_reproduction_that_selects_other_parameters_stops_and_keeps_the_lock(tmp_path, monkeypatch):
     from smarttraffic import run_experiments as rx
     _tiny_plan(monkeypatch)
+    L = dict(vehicle_policy="legacy-study")
     first = rx.tune(tmp_path / "ref", workers=1, lock_path=tmp_path / "ref_lock.json",
-                    arrivals_dir=tmp_path / "arr", log=lambda *a: None)
+                    arrivals_dir=tmp_path / "arr", log=lambda *a: None, **L)
     lock = tmp_path / "lock.json"
     # an "approved" lock from the same candidate table but with parameters that were not selected
+    # (a selection without "vehicle_policy" is a Stage 14 lock: legacy-study)
     sha = tu.write_lock(lock, replace(SmartParams(), tau_s=30.0), tu.plan_sha256(),
                         first["manifest"]["candidates_csv_sha256"], {"label": "tau30_wmax90"})
     original = lock.read_bytes()
     with pytest.raises(SystemExit, match="REPRODUCTION MISMATCH: selected"):
         rx.tune(tmp_path / "rep", workers=1, lock_path=lock, arrivals_dir=tmp_path / "arr", verify_lock_sha=sha,
-                log=lambda *a: None)
+                log=lambda *a: None, **L)
     assert lock.read_bytes() == original
+    # the standard policy never "reproduces" (retunes) a lock selected under legacy-study
+    with pytest.raises(tu.LockError, match="requires --policy legacy-study"):
+        rx.tune(tmp_path / "rep2", workers=1, lock_path=lock, arrivals_dir=tmp_path / "arr", verify_lock_sha=sha,
+                log=lambda *a: None)
+    assert lock.read_bytes() == original and not (tmp_path / "rep2").exists()
 
 
 def test_sim_fingerprint_ignores_last_bit_float_differences():
@@ -628,3 +635,57 @@ def test_verify_tuning_accepts_platform_float_noise_and_rejects_real_differences
     man["lock_mode"] = "written"
     (tmp_path / "new3" / "manifest.json").write_text(json.dumps(man))
     assert not rx.verify_tuning(ref, tmp_path / "new3", sha, log=lambda *a: None)
+
+
+# ================================================================ vehicle policy (standard default, legacy explicit)
+def test_run_key_includes_the_policy_only_for_standard():
+    std = ex.RunSpec("S1", 101, "FT-A", "FT-A")
+    leg = ex.RunSpec("S1", 101, "FT-A", "FT-A", vehicle_policy="legacy-study")
+    assert std.vehicle_policy == "standard" and std.identity()["vehicle_policy"] == "standard"
+    assert "vehicle_policy" not in leg.identity()                  # exactly the Stage 14 identity
+    assert ex.run_key(std, "x") != ex.run_key(leg, "x")
+    assert ex.spec_policy(leg.identity()) == "legacy-study" and ex.spec_policy(std.identity()) == "standard"
+
+
+def test_spec_builders_default_to_standard_and_accept_explicit_legacy():
+    from smarttraffic import campaign as cp
+    lock = tu.load_lock()
+    assert {s.vehicle_policy for s in cp.campaign_specs(lock)} == {"standard"}
+    assert {s.vehicle_policy for s in cp.campaign_specs(lock, "legacy-study")} == {"legacy-study"}
+    assert {s.vehicle_policy for s in tu.tuning_specs(tu.load_plan())} == {"standard"}
+    assert tu.lock_policy(lock) == "legacy-study"                  # Smart-T1 was selected under legacy-study
+
+
+def test_campaign_folders_hold_one_policy_and_history_is_never_mixed(tmp_path):
+    a = tmp_path / "arr"
+    std = [short("S4", 1, "FT-A", "FT-A")]
+    leg = [replace(std[0], vehicle_policy="legacy-study")]
+    with pytest.raises(ValueError, match="one vehicle policy"):
+        ex.run_campaign(std + [replace(leg[0], label="FT-A-legacy")], tmp_path / "mix", workers=1, arrivals_dir=a,
+                        log=lambda *x: None)
+    ex.run_campaign(std, tmp_path / "new", workers=1, arrivals_dir=a, log=lambda *x: None)
+    assert ex.folder_policy(tmp_path / "new") == "standard"
+    with pytest.raises(ValueError, match="separate folder"):
+        ex.run_campaign(leg, tmp_path / "new", workers=1, arrivals_dir=a, log=lambda *x: None)
+    # a Stage 14 folder (records / manifest, no marker) is legacy-study and refuses standard runs
+    old = tmp_path / "campaign_T1"
+    (old / "runs").mkdir(parents=True)
+    (old / "manifest.json").write_text("{}")
+    before = sorted(p.name for p in old.rglob("*"))
+    assert ex.folder_policy(old) == "legacy-study"
+    with pytest.raises(ValueError, match="legacy-study results"):
+        ex.run_campaign(std, old, workers=1, arrivals_dir=a, log=lambda *x: None)
+    assert sorted(p.name for p in old.rglob("*")) == before        # nothing written
+    assert ex.folder_policy(ROOT / "results" / "official" / "campaign_T1") in ("legacy-study", None)
+
+
+def test_command_line_defaults_to_standard_and_separate_folders():
+    from smarttraffic import run_experiments as rx
+    assert rx.default_out("official", "standard").name == "campaign_T1_standard"
+    assert rx.default_out("tune", "standard").name == "S1_T1_standard"
+    assert rx.default_out("official", "legacy-study").name == "campaign_T1"
+    assert rx.default_out("tune", "legacy-study").name == "S1_T1"
+    import inspect
+    assert inspect.signature(rx.tune).parameters["vehicle_policy"].default == "standard"
+    from smarttraffic import campaign as cp
+    assert inspect.signature(cp.run_official).parameters["vehicle_policy"].default == "standard"

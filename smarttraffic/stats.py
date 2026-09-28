@@ -31,9 +31,11 @@ Official metrics (study §11), per movement and intersection-wide
 * throughput = crossings (of ANY vehicle, warm-up arrivals included) with cross_ms in
   [0, measure_ms), expressed in veh/h. served_in_hour / pct_served = V crossing before
   measure_ms.
-* green utilization_m = n_m * h_m / G_m: n_m = crossings of m in [0, measure_ms) (including
-  crossings during the first 2 s of YELLOW), h_m = 1.9 / 2.0 s, G_m = displayed
-  GREEN + FLASHING_GREEN seconds of m inside [0, measure_ms).
+* green utilization_m = n_m * h_m / G_m: n_m = crossings of m in [0, measure_ms) (under the
+  legacy-study vehicle policy including crossings during the first 2 s of YELLOW), h_m =
+  1.9 / 2.0 s, G_m = displayed GREEN + FLASHING_GREEN seconds of m inside [0, measure_ms).
+  Under the standard policy a saturated green serves about G/h + 1 cars (the first car leaves
+  at green onset), so the value can slightly exceed 1.
 * signal changes = GREEN onsets (RED_YELLOW -> GREEN) of the 8 signals in [0, measure_ms), per hour.
 * Jain's fairness index over the movement mean delays of movements with >= 1 crossed
   measured vehicle; 1.0 if all those means are 0; None if no movement qualifies.

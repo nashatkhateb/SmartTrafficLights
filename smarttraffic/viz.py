@@ -18,9 +18,14 @@ Up/Down seed, H hardware on/off, F11 fullscreen, Esc quit.
 
 Custom / Demo (Stage 14b): "Custom..." after S10 in the scenario selector (or the
 Custom... entry itself) opens the Custom / Demo panel: 8 demands (veh/h, capped at 1800),
-seed, FT-A or Smart, measurement duration, and collapsed Advanced settings (yellow policy,
-green start-up, Smart parameter set T1 / study / custom). Apply loads it; a CUSTOM / DEMO
-badge is shown while it is active. Official scenarios S1-S10 keep the locked settings.
+seed, FT-A or Smart, measurement duration, and collapsed Advanced settings (Smart parameter
+set T1 / custom). Apply loads it; a CUSTOM / DEMO badge is shown while it is active.
+Official scenarios S1-S10 keep the locked Smart-T1 settings.
+
+Traffic rules: every run the UI starts (official scenarios, Custom / Demo, screenshots,
+resets, scenario / controller / seed switching) uses the standard vehicle policy -- Stop
+on Yellow and the first queued car starting at green onset (vehicles.STANDARD). ui_config
+enforces it; the legacy-study policy is never shown in the UI.
 In the panel: Tab next field, digits type, Enter apply, Esc cancel.
 
 Smart in the UI is always the approved Smart-T1 (config/smart_params_locked.json: tau 15 s,
@@ -36,7 +41,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple
 from dataclasses import replace as _replace
 
 from smarttraffic.custom import CUSTOM_CONTROLLERS, CUSTOM_SCENARIO
-from smarttraffic.runner import CONTROLLERS, RunConfig
+from smarttraffic.runner import CONTROLLERS, DEFAULT_VEHICLE_POLICY, RunConfig
 from smarttraffic.viz_custom import CustomDraft
 from smarttraffic.viz_session import HARDWARE_SPEED, SPEEDS, Snapshot, VizSession
 
@@ -65,9 +70,11 @@ def smart_t1_params():
 
 
 def ui_config(config: RunConfig) -> RunConfig:
-    """What the UI actually runs: official configurations always use Smart-T1 (for FT
-    controllers the Smart parameters are unused, so switching back to Smart stays on T1).
-    Custom / Demo configurations keep their own validated parameters."""
+    """What the UI actually runs: always the standard vehicle policy; official configurations
+    always use Smart-T1 (for FT controllers the Smart parameters are unused, so switching back
+    to Smart stays on T1). Custom / Demo configurations keep their own validated parameters."""
+    if config.vehicle_policy != DEFAULT_VEHICLE_POLICY:
+        config = _replace(config, vehicle_policy=DEFAULT_VEHICLE_POLICY)
     if config.mode != "official" or config.smart_params == smart_t1_params():
         return config
     return _replace(config, smart_params=smart_t1_params())

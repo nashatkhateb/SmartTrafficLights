@@ -2,7 +2,7 @@
 
 Spec: study §10, §16 steps 9-10; docs/ARCHITECTURE.md ("Experiments and tuning (Stage 14)").
 
-    python -m smarttraffic.run_experiments tune [--workers N] [--out results/tuning/S1_T1]
+    python -m smarttraffic.run_experiments tune [--policy P] [--workers N] [--out DIR]
 
 `tune` runs the pre-registered plan (config/tuning_plan.json: S1, seeds 101-105, tau_s x w_max_s
 grid, FT-A / FT-B references), resuming completed runs, applies the pre-registered selection
@@ -16,11 +16,18 @@ writes:
     config/smart_params_locked.json   the Smart-T1 lock (written once)
 
     python -m smarttraffic.run_experiments verify-tuning --new <dir> --lock-sha <sha>
-    python -m smarttraffic.run_experiments official --lock-sha <sha> [--workers N]
+    python -m smarttraffic.run_experiments official --lock-sha <sha> [--policy P] [--workers N]
 
 `official` runs the locked campaign (campaign.py): S1-S10 x {FT-A, FT-B, Smart-T1, Smart-study},
 FT-TOD on S6, and the approved extras, on seeds 1-10, and writes runs.csv, movements.csv,
-aggregates.csv, paired.csv and manifest.json under results/official/campaign_T1/.
+aggregates.csv, paired.csv and manifest.json.
+
+Vehicle policy (--policy, default "standard"): the standard policy writes to
+results/tuning/S1_T1_standard and results/official/campaign_T1_standard. The historical Stage 14
+results (results/tuning/S1_T1, results/official/campaign_T1) were produced with the
+"legacy-study" policy; reproducing them requires --policy legacy-study explicitly (their folders
+refuse standard runs). The approved Smart-T1 lock was selected under legacy-study, so
+`tune --verify-lock` (reproduction) requires --policy legacy-study; Smart-T1 is not retuned.
 """
 import argparse
 from dataclasses import asdict
@@ -34,7 +41,20 @@ from smarttraffic import experiments as ex
 from smarttraffic import tuning as tu
 from smarttraffic.stats import paired_comparison
 
-DEFAULT_TUNING_OUT = tu.ROOT / "results" / "tuning" / "S1_T1"
+from smarttraffic.runner import DEFAULT_VEHICLE_POLICY
+from smarttraffic.vehicles import LEGACY_STUDY, POLICIES
+
+LEGACY_TUNING_OUT = tu.ROOT / "results" / "tuning" / "S1_T1"                  # Stage 14 (historical)
+LEGACY_OFFICIAL_OUT = tu.ROOT / "results" / "official" / "campaign_T1"        # Stage 14 (historical)
+DEFAULT_TUNING_OUT = tu.ROOT / "results" / "tuning" / "S1_T1_standard"
+DEFAULT_OFFICIAL_OUT = tu.ROOT / "results" / "official" / "campaign_T1_standard"
+
+
+def default_out(kind: str, policy: str) -> Path:
+    legacy = policy == LEGACY_STUDY.name
+    if kind == "tune":
+        return LEGACY_TUNING_OUT if legacy else DEFAULT_TUNING_OUT
+    return LEGACY_OFFICIAL_OUT if legacy else DEFAULT_OFFICIAL_OUT
 
 
 def _now() -> str:
@@ -51,7 +71,8 @@ def _paired(result, label_a, label_b, records):
 
 
 def tune(out_dir: Path, workers, plan_path=tu.PLAN_FILE, lock_path=tu.LOCK_FILE,
-         arrivals_dir=None, verify=True, write_lock=True, verify_lock_sha=None, log=print) -> dict:
+         arrivals_dir=None, verify=True, write_lock=True, verify_lock_sha=None, log=print,
+         vehicle_policy: str = DEFAULT_VEHICLE_POLICY) -> dict:
     """Run (or resume) the tuning campaign.
 
     Lock handling -- the approved lock is immutable:
@@ -69,10 +90,14 @@ def tune(out_dir: Path, workers, plan_path=tu.PLAN_FILE, lock_path=tu.LOCK_FILE,
         approved = tu.load_lock(lock_path, expected_sha=verify_lock_sha)
         if approved["tuning_plan_sha256"] != plan_sha:
             raise tu.LockError("the approved lock was made from a different tuning plan")
+        if tu.lock_policy(approved) != vehicle_policy:
+            raise tu.LockError(f"the approved lock was selected under the {tu.lock_policy(approved)} vehicle "
+                               f"policy; reproducing it requires --policy {tu.lock_policy(approved)} "
+                               f"(Smart-T1 is not retuned under {vehicle_policy})")
     elif write_lock and lock_path.exists():
         raise tu.LockError(f"{lock_path} already exists and is never overwritten: to reproduce the "
                            f"tuning and verify it, pass the approved lock SHA (--verify-lock <sha>)")
-    specs = tu.tuning_specs(plan)
+    specs = tu.tuning_specs(plan, vehicle_policy)
     t0 = time.time()
     kw = {} if arrivals_dir is None else {"arrivals_dir": arrivals_dir}
     records = ex.run_campaign(specs, out_dir, workers=workers, log=log, **kw)
@@ -128,10 +153,11 @@ def tune(out_dir: Path, workers, plan_path=tu.PLAN_FILE, lock_path=tu.LOCK_FILE,
     elif write_lock:
         lock_sha = tu.write_lock(lock_path, sel["params"], plan_sha, cand_sha,
                                  {"label": sel["label"], "tau_s": sel["tau_s"], "w_max_s": sel["w_max_s"],
-                                  "tuning_campaign": out_dir.name})
+                                  "tuning_campaign": out_dir.name, "vehicle_policy": vehicle_policy})
         tu.load_lock(lock_path, expected_sha=lock_sha)
         lock_mode = "written"
     manifest = {"campaign": plan["name"], "kind": "tuning", "mode": "official-tuning",
+                "vehicle_policy": vehicle_policy,
                 "created_utc": _now(), "elapsed_s": round(elapsed, 1), "workers": workers,
                 "tuning_plan_sha256": plan_sha, "source_sha256": ex.source_fingerprint(),
                 "git": ex.git_commit(), "environment": ex.environment(), "engine": ex.ENGINE_VERSION,
@@ -179,6 +205,10 @@ def verify_tuning(ref_dir: Path, new_dir: Path, lock_sha: str, lock_path=tu.LOCK
     check("reproduction verified the lock without writing it",
           new_man.get("lock_sha256") == lock_sha and new_man.get("lock_mode") == "verified (not written)")
     check("same tuning plan", new_man.get("tuning_plan_sha256") == lock["tuning_plan_sha256"])
+    # a manifest without "vehicle_policy" was written before the field existed (Stage 14: legacy-study)
+    new_policy = new_man.get("vehicle_policy", LEGACY_STUDY.name)
+    check("reproduction used the vehicle policy the lock was selected under",
+          new_policy == tu.lock_policy(lock), new_policy)
     ref_sel = json.loads((ref_dir / "selection.json").read_text(encoding="utf-8"))
     new_sel = json.loads((new_dir / "selection.json").read_text(encoding="utf-8"))
     check("selected candidate tau 15 / W_MAX 90", (new_sel["tau_s"], new_sel["w_max_s"]) == (15.0, 90.0) ==
@@ -218,34 +248,39 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     t = sub.add_parser("tune", help="run the pre-registered S1 tuning campaign and lock Smart-T1")
     t.add_argument("--workers", type=int, default=None, help=f"default {ex.default_workers()} on this machine")
-    t.add_argument("--out", default=str(DEFAULT_TUNING_OUT))
+    pol = dict(choices=sorted(POLICIES), default=DEFAULT_VEHICLE_POLICY,
+               help="vehicle policy (default standard; legacy-study reproduces Stage 14)")
+    t.add_argument("--policy", **pol)
+    t.add_argument("--out", default=None, help="default depends on --policy")
     t.add_argument("--no-verify", action="store_true", help="skip the determinism re-runs")
     t.add_argument("--lock", default=str(tu.LOCK_FILE), help="lock file (written only if it does not exist)")
     t.add_argument("--verify-lock", default=None, metavar="SHA",
                    help="reproduction: verify the existing approved lock (never written) instead of creating one")
     v = sub.add_parser("verify-tuning", help="compare a re-run tuning campaign with the reference")
-    v.add_argument("--ref", default=str(DEFAULT_TUNING_OUT))
+    v.add_argument("--ref", default=str(LEGACY_TUNING_OUT))
     v.add_argument("--new", required=True)
     v.add_argument("--lock-sha", required=True)
     o = sub.add_parser("official", help="run the locked official campaign (seeds 1-10)")
     o.add_argument("--lock-sha", required=True, help="the approved Smart-T1 lock_sha256")
     o.add_argument("--workers", type=int, default=None)
-    o.add_argument("--out", default=str(tu.ROOT / "results" / "official" / "campaign_T1"))
+    o.add_argument("--policy", **pol)
+    o.add_argument("--out", default=None, help="default depends on --policy")
     args = ap.parse_args(argv)
     if args.cmd == "verify-tuning":
         return 0 if verify_tuning(Path(args.ref), Path(args.new), args.lock_sha) else 1
     if args.cmd == "official":
         from smarttraffic.campaign import run_official
         w = args.workers if args.workers is not None else ex.default_workers()
-        out = run_official(Path(args.out), args.lock_sha, workers=w)
+        out = run_official(Path(args.out or default_out("official", args.policy)), args.lock_sha, workers=w,
+                           vehicle_policy=args.policy)
         m = out["manifest"]
         print(f"official campaign: {m['runs']} runs ({m['distinct_runs']} distinct), {m['elapsed_s']} s, "
               f"safety violations {m['safety_violations_total']}, signal-log problems {m['signal_log_problems_total']}")
         return 0
     if args.cmd == "tune":
         w = args.workers if args.workers is not None else ex.default_workers()
-        out = tune(Path(args.out), w, verify=not args.no_verify, lock_path=Path(args.lock),
-                   verify_lock_sha=args.verify_lock)
+        out = tune(Path(args.out or default_out("tune", args.policy)), w, verify=not args.no_verify,
+                   lock_path=Path(args.lock), verify_lock_sha=args.verify_lock, vehicle_policy=args.policy)
         s = out["selection"]
         print(f"selected {s['selected_label']}: tau = {s['tau_s']:g} s, W_MAX = {s['w_max_s']:g} s, "
               f"mean delay {s['delay_mean_s']:.2f} s (Smart-study {s['study_delay_mean_s']:.2f} s)")

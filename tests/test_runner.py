@@ -2,7 +2,9 @@
 
 Short windows (10 s warm-up, 60 s measurement, 60 s flush) with scripted arrivals give
 exactly known timings under FT-A (first cycle at -10 s: NS+SS RED_YELLOW 5.0, GREEN 6.0,
-FLASHING_GREEN 28.0, YELLOW 31.0; next NS GREEN 99.0 s).
+FLASHING_GREEN 28.0, YELLOW 31.0; next NS GREEN 99.0 s). The default vehicle policy is
+standard (Stop on Yellow, first queued car leaves at green onset: slot 1 -> line in 36 ms);
+study-rule timings use the explicit legacy-study policy.
 """
 import hashlib
 import json
@@ -83,33 +85,41 @@ def test_one_vehicle_on_green_has_zero_delay():
 def test_one_vehicle_on_red_known_delay_stops_and_queue():
     r = run(short(), arrivals=arrivals([("NS", 30_000)]))
     v = r.vehicles[0]
-    # line at 40.8 s after YELLOW (31.0 + 2.0 s window ended); next NS GREEN 99.0 -> 99.0 + 3.9
-    assert v.cross_ms == 102_900 and v.control_delay_ms == 62_100
-    assert v.stopped_on_road_ms == 62_100
+    # line at 40.8 s, after YELLOW (31.0): stops; next NS GREEN 99.0 -> leaves at once, 99.036
+    assert v.cross_ms == 99_036 and v.control_delay_ms == 58_236
+    assert v.stopped_on_road_ms == 58_236
     q = {t: road[0] for t, road, _ in r.queue_samples}
     assert [t for t in q if q[t]] == list(range(41_000, 60_000, 1000))      # stopped from 40.764 s
     ms = r.movement("NS")
     assert ms.queue_mean_veh == 19 / 60 and ms.queue_max_veh == 1
     assert ms.throughput_veh_h == 0.0 and ms.crossed == 1 and ms.served_in_hour == 0
-    assert r.end_ms == 102_900 and r.ended_early
+    assert r.end_ms == 99_100 and r.ended_early
+
+
+def test_legacy_one_vehicle_on_red_uses_the_study_rules():
+    r = run(short(vehicle_policy="legacy-study"), arrivals=arrivals([("NS", 30_000)]))
+    v = r.vehicles[0]
+    # line at 40.8 s after YELLOW (31.0 + 2.0 s window ended); next NS GREEN 99.0 -> 99.0 + 3.9
+    assert v.cross_ms == 102_900 and v.control_delay_ms == 62_100
+    assert "vehicle_policy" not in r.metadata                     # Stage 14 metadata, unchanged
 
 
 def test_warmup_vehicle_affects_queue_and_throughput_but_not_measured_set():
     r = run(short(), arrivals=arrivals([("NS", -5_000)]))
     v = r.vehicles[0]
-    assert not v.measured and v.cross_ms == 9_900            # waits for GREEN at 6.0 s
+    assert not v.measured and v.cross_ms == 6_036            # waits for GREEN at 6.0 s
     assert r.intersection.arrivals == 0 and r.intersection.delay_mean_s is None
     assert r.movement("NS").throughput_veh_h == 60.0         # 1 crossing in 60 s
-    assert [t for t, road, _ in r.queue_samples if road[0]] == [6_000, 7_000, 8_000, 9_000]
+    assert [t for t, road, _ in r.queue_samples if road[0]] == [6_000]      # stopped 5.764-6.0 s
 
 
 def test_measured_vehicle_in_flush_contributes_delay_not_throughput():
     r = run(short(), arrivals=arrivals([("NS", 10_000), ("NS", 30_000), ("NS", -5_000)]))
     ns = r.movement("NS")
     assert (ns.arrivals, ns.crossed, ns.served_in_hour) == (2, 2, 1)
-    assert ns.delay_mean_s == (0 + 62_100) / 2 / 1000
+    assert ns.delay_mean_s == (0 + 58_236) / 2 / 1000
     assert ns.throughput_veh_h == 2 * 60.0                   # warm-up car + 20.8 s crossing only
-    assert ns.delay_p95_s == pytest.approx(0.95 * 62.1)
+    assert ns.delay_p95_s == pytest.approx(0.95 * 58.236)
     assert ns.green_s == 25.0 and ns.green_utilization == pytest.approx(2 * 1.9 / 25.0)
 
 
@@ -123,9 +133,20 @@ def test_unfinished_vehicle_at_hard_end():
     assert r.vehicles[0].control_delay_ms is None
 
 
-def test_ten_car_queue_discharges_like_the_study():
+def test_ten_car_queue_discharges_at_the_saturation_headway():
     spec = [("SS", 32_000 + 2_000 * k) for k in range(10)]
     r = run(short(), arrivals=arrivals(spec))
+    crosses = [v.cross_ms for v in r.vehicles]
+    assert crosses == [99_036 + 1_900 * n for n in range(10)]                 # first at green onset
+    assert r.metadata["vehicle_policy"] == "standard" and r.metadata["stop_on_yellow"] is True
+    assert r.metadata["immediate_first_vehicle"] is True
+    ss = r.movement("SS")
+    assert ss.queue_max_veh == 10
+
+
+def test_legacy_ten_car_queue_discharges_like_the_study():
+    spec = [("SS", 32_000 + 2_000 * k) for k in range(10)]
+    r = run(short(vehicle_policy="legacy-study"), arrivals=arrivals(spec))
     crosses = [v.cross_ms for v in r.vehicles]
     assert crosses == [99_000 + 2_000 + 1_900 * n for n in range(1, 11)]      # last at 99 + 21.0 s
     assert [v.control_delay_ms for v in r.vehicles] == \
@@ -274,9 +295,34 @@ def test_runner_step_order_is_vehicles_sensors_signals_controller():
 
 
 # ================================================================ long runs
-def test_stage10_fta_s1_validation_reproduced():
+def test_default_vehicle_policy_is_standard():
+    assert R.DEFAULT_VEHICLE_POLICY == "standard" and RunConfig("S1", 1, "FT-A").vehicle_policy == "standard"
+    assert RunConfig("S1", 1, "FT-A").policy.stop_on_yellow and RunConfig("S1", 1, "FT-A").policy.immediate_first_vehicle
+    assert RunConfig("S1", 1, "FT-A", vehicle_policy="legacy-study").is_legacy
+    for bad in ("study", "stop", None, ""):
+        with pytest.raises(ValueError, match="vehicle_policy"):
+            RunConfig("S1", 1, "FT-A", vehicle_policy=bad)
+    sim = simulate(short(), arrivals=[])
+    assert sim.vehicles.policy.name == "standard"
+
+
+def test_fta_s1_seed1_standard_policy_regression():
+    """Standard-policy reference values (independent of the historical Stage 10 validation)."""
     arr = generate_arrivals("S1", 1, -300, 3600)
     r = run(RunConfig("S1", 1, "FT-A"), arrivals=arr)
+    st = [v.control_delay_ms for v in r.vehicles if v.measured and v.control_delay_ms is not None and v.movement[1] == "S"]
+    lf = [v.control_delay_ms for v in r.vehicles if v.measured and v.control_delay_ms is not None and v.movement[1] == "L"]
+    assert sum(st) / len(st) / 1000 == pytest.approx(31.8595, abs=1e-9)
+    assert sum(lf) / len(lf) / 1000 == pytest.approx(60.78054914529915, abs=1e-9)
+    i = r.intersection
+    assert i.unfinished == 0 and r.ended_early and i.safety_violations == 0
+    assert i.signal_changes_per_hour == 308.0
+
+
+def test_stage10_fta_s1_validation_reproduced():
+    """Historical Stage 10 validation, produced with the study rules (legacy-study policy)."""
+    arr = generate_arrivals("S1", 1, -300, 3600)
+    r = run(RunConfig("S1", 1, "FT-A", vehicle_policy="legacy-study"), arrivals=arr)
     st = [v.control_delay_ms for v in r.vehicles if v.measured and v.control_delay_ms is not None and v.movement[1] == "S"]
     lf = [v.control_delay_ms for v in r.vehicles if v.measured and v.control_delay_ms is not None and v.movement[1] == "L"]
     # the independent Stage 10 validation loop gives exactly these for seed 1

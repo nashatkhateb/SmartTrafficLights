@@ -755,21 +755,36 @@ def test_step_order_run_equals_controller_only_run(fta):
 
 
 # ================================================== capacity with the vehicle model
-def test_fta_left_phase_discharges_four_queued_cars_per_8s_green(fta):
-    """Study §8: FT-A left capacity 162 veh/h = 4 cars per 8 s green (effective green =
-    displayed green, l1 = e = 2.0 s). Car 4 is due exactly at yellow onset + 2.0 s and must
-    cross (inclusive yellow window, vehicles.py)."""
+def _fta_left_crossings(fta, policy):
     from smarttraffic.traffic_gen import Arrival
     from smarttraffic.vehicles import VehicleModel
     arrivals = [Arrival(i, -100000 + 2000 * i, "NL", i, "random") for i in range(10)]
-    vm = VehicleModel(arrivals, start=-120.0)
+    vm = VehicleModel(arrivals, start=-120.0, policy=policy)
     bank = SignalBank(start_time=-120)
     ctrl = FixedTimeController(fta, start_time=0)
     for _ in range(round((120 + 2 * 93) * 10)):
         vm.advance(0.1, bank)
         ctrl.update(bank)
         bank.advance(0.1)
-    crossings = sorted(v.cross_ms for v in vm.crossed("NL"))
+    return sorted(v.cross_ms for v in vm.crossed("NL"))
+
+
+def test_fta_left_phase_discharges_four_queued_cars_per_8s_green(fta):
+    """Study §8: FT-A left capacity 162 veh/h = 4 cars per 8 s green. Standard policy: the
+    first car leaves at green onset (crosses 36 ms later), then one car per h = 2.0 s; the 5th
+    would be due at yellow onset + 36 ms and stops (Stop on Yellow)."""
+    crossings = _fta_left_crossings(fta, None)
+    # phase A: GREEN at 1.0 s, YELLOW at 9.0 s -> 1.036, 3.036, 5.036, 7.036 (9.036 >= 9.0 stops)
+    assert crossings[:4] == [1036, 3036, 5036, 7036]
+    # next cycle: GREEN at 94.0 s
+    assert crossings[4:8] == [94036, 96036, 98036, 100036]
+    assert len(crossings) == 8
+
+
+def test_legacy_fta_left_phase_discharges_four_queued_cars_per_8s_green(fta):
+    """legacy-study policy (effective green = displayed green, l1 = e = 2.0 s). Car 4 is due
+    exactly at yellow onset + 2.0 s and must cross (inclusive yellow window)."""
+    crossings = _fta_left_crossings(fta, "legacy-study")
     # phase A: GREEN at 1.0 s, YELLOW at 9.0 s -> window ends at 11.0 s (inclusive)
     assert crossings[:4] == [5000, 7000, 9000, 11000]
     # next cycle: GREEN at 94.0 s -> 98, 100, 102, 104 s

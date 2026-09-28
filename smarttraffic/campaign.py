@@ -13,6 +13,11 @@ Outputs (<out>/): runs.csv (one row per run), movements.csv (one row per run and
 aggregates.csv (per scenario x label x metric: n, mean, sd, 95 % t-interval), paired.csv
 (same-seed differences B - A with 95 % CI and paired t-test; UNADJUSTED for multiple
 comparisons), manifest.json. Full records stay in <out>/runs/ (not committed).
+
+Vehicle policy: campaign_specs / run_official take vehicle_policy (default "standard"). The
+historical Stage 14 campaign (results/official/campaign_T1) was produced with "legacy-study";
+reproduce it only with that explicit policy. Standard campaigns go to their own folder
+(run_experiments default: results/official/campaign_T1_standard).
 """
 from dataclasses import asdict
 import datetime as _dt
@@ -24,6 +29,7 @@ from typing import Dict, List, Mapping, Optional, Sequence, Union
 from smarttraffic import experiments as ex
 from smarttraffic import tuning as tu
 from smarttraffic.conflicts import MOVES
+from smarttraffic.runner import DEFAULT_VEHICLE_POLICY
 from smarttraffic.stats import mean_ci95, paired_comparison
 
 __all__ = ["METRICS", "PAIRS", "campaign_specs", "aggregate_rows", "paired_rows", "movement_rows",
@@ -68,8 +74,9 @@ MOVEMENT_FIELDS = ["scenario", "label", "seed", "movement"] + [
     "queue_outside_mean_veh", "green_s", "green_onsets", "green_utilization"]
 
 
-def campaign_specs(lock: Mapping) -> List[ex.RunSpec]:
-    specs = tu.official_specs(lock) + tu.extra_specs(lock)
+def campaign_specs(lock: Mapping, vehicle_policy: str = DEFAULT_VEHICLE_POLICY) -> List[ex.RunSpec]:
+    specs = (tu.official_specs(lock, vehicle_policy=vehicle_policy)
+             + tu.extra_specs(lock, vehicle_policy=vehicle_policy))
     tu.check_official(specs, lock)
     return specs
 
@@ -177,9 +184,10 @@ def check_pairing(records) -> None:
 
 # ================================================================ run
 def run_official(out_dir: Union[str, Path], lock_sha: str, *, workers: int, lock_path=tu.LOCK_FILE,
-                 arrivals_dir=None, specs: Optional[Sequence[ex.RunSpec]] = None, log=print) -> Dict:
+                 arrivals_dir=None, specs: Optional[Sequence[ex.RunSpec]] = None, log=print,
+                 vehicle_policy: str = DEFAULT_VEHICLE_POLICY) -> Dict:
     lock = tu.load_lock(lock_path, expected_sha=lock_sha)
-    all_specs = campaign_specs(lock) if specs is None else list(specs)
+    all_specs = campaign_specs(lock, vehicle_policy) if specs is None else list(specs)
     tu.check_official(all_specs, lock)
     out_dir = Path(out_dir)
     t0 = time.time()
@@ -197,7 +205,10 @@ def run_official(out_dir: Union[str, Path], lock_sha: str, *, workers: int, lock
         "paired_csv_sha256": ex.write_csv(out_dir / "paired.csv", paired_rows(records), PAIR_FIELDS),
     }
     problems = sum(len(r.get("signal_check") or []) for r in records)
+    policies = sorted({s.vehicle_policy for s in all_specs})
     manifest = {"campaign": out_dir.name, "kind": "official", "mode": "official",
+                "vehicle_policy": policies[0] if len(policies) == 1 else policies,
+                "smart_t1_selected_under": tu.lock_policy(lock),
                 "created_utc": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "elapsed_s": round(elapsed, 1), "workers": workers, "lock_sha256": lock["lock_sha256"],
                 "smart_t1_params": asdict(lock["smart_params"]),

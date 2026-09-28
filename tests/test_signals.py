@@ -618,7 +618,7 @@ def test_permissive_only_in_green_and_flashing_green():
     b.end_green("NS")
     assert b.is_permissive("NS")                    # FLASHING_GREEN: still serving
     run(b, FG)
-    assert not b.is_permissive("NS")                # YELLOW: vehicle model's 2.0 s rule
+    assert not b.is_permissive("NS")                # YELLOW: no new entry (vehicle policy)
     run(b, 3.5)
     assert not b.is_permissive("NS")
 

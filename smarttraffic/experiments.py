@@ -4,11 +4,19 @@ Spec: study §10 (paired runs, seeds, frozen parameters), §11 (metrics), §16 s
 docs/ARCHITECTURE.md ("Experiments and tuning (Stage 14)").
 
 A run is a RunSpec: scenario, seed, controller (FT-A / FT-B / FT-TOD / Smart), the Smart
-parameters, a presentation label (e.g. "Smart-study", "Smart-T1", a tuning candidate) and the
-official study windows. Everything the simulation depends on goes into the run KEY:
+parameters, a presentation label (e.g. "Smart-study", "Smart-T1", a tuning candidate), the
+official study windows and the vehicle policy. Everything the simulation depends on goes into
+the run KEY:
 
     key = sha256(scenario, seed, controller, SmartParams (Smart only), dt, windows,
-                 arrival checksum, ENGINE_VERSION)
+                 vehicle policy (omitted for legacy-study), arrival checksum, ENGINE_VERSION)
+
+Vehicle policy: "standard" (default; Stop on Yellow + immediate first vehicle) or the explicit
+compatibility mode "legacy-study" (the study's permissive yellow and start-up lost time), which
+produced the historical Stage 14 results. Legacy-study identities and keys are exactly the
+Stage 14 ones (no policy field), so those records are still found and reproduced; standard runs
+always have different keys. A campaign folder holds one policy only: run_campaign refuses to mix
+them, and a folder with Stage 14 records but no policy marker is legacy-study.
 
 The label is NOT part of the key: two labels with the same parameters (e.g. Smart-study and
 the tuning candidate tau=10, W_MAX=90) are the same simulation and share one run file.
@@ -44,7 +52,8 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Uni
 
 from smarttraffic.conflicts import MOVES
 from smarttraffic.controller_smart import SmartParams
-from smarttraffic.runner import CONTROLLERS, RunConfig, arrivals_sha256, run
+from smarttraffic.runner import CONTROLLERS, DEFAULT_VEHICLE_POLICY, RunConfig, arrivals_sha256, run
+from smarttraffic.vehicles import LEGACY_STUDY, POLICIES
 from smarttraffic.signals import (ALL_RED_MS, FLASHING_GREEN_MS, RED_YELLOW_MS, YELLOW_MS,
                                   movement_type)
 from smarttraffic.traffic_gen import (ARRIVALS_DIR, FINAL_SEEDS, TUNING_SEEDS, get_or_create_arrivals,
@@ -54,7 +63,9 @@ __all__ = ["ENGINE_VERSION", "RunSpec", "run_key", "prepare_arrivals", "execute_
            "run_campaign", "load_record", "summary_rows", "write_csv", "default_workers",
            "source_fingerprint", "git_commit", "check_signal_log", "SUMMARY_FIELDS",
            "FINGERPRINT_FIELDS", "sim_fingerprint", "fingerprint_rows",
-           "TUNING_SEEDS", "FINAL_SEEDS"]
+           "TUNING_SEEDS", "FINAL_SEEDS", "POLICY_MARKER", "folder_policy", "spec_policy"]
+
+POLICY_MARKER = "vehicle_policy.json"     # written into every NEW campaign folder
 
 ENGINE_VERSION = "stage14-1"            # bump if the run record format changes
 _STUDY_WINDOW = (300.0, 3600.0, 900.0, 100)   # warm-up s, measure s, flush s, dt ms
@@ -72,8 +83,11 @@ class RunSpec:
     measure_s: float = 3600.0
     flush_s: float = 900.0
     dt_ms: int = 100
+    vehicle_policy: str = DEFAULT_VEHICLE_POLICY
 
     def __post_init__(self):
+        if self.vehicle_policy not in POLICIES:
+            raise ValueError(f"vehicle_policy must be one of {sorted(POLICIES)}, got {self.vehicle_policy!r}")
         if self.controller not in CONTROLLERS:
             raise ValueError(f"unknown controller {self.controller!r}")
         if isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0:
@@ -87,17 +101,39 @@ class RunSpec:
     def config(self) -> RunConfig:
         return RunConfig(self.scenario, self.seed, self.controller, dt_ms=self.dt_ms,
                          warmup_s=self.warmup_s, measure_s=self.measure_s, flush_s=self.flush_s,
-                         smart_params=self.smart_params)
+                         smart_params=self.smart_params, vehicle_policy=self.vehicle_policy)
 
     def identity(self) -> Dict[str, object]:
-        """Everything the simulation depends on (except the arrival checksum)."""
-        return {"scenario": self.scenario, "seed": self.seed, "controller": self.controller,
-                "smart_params": asdict(self.smart_params) if self.controller == "Smart" else None,
-                "warmup_s": self.warmup_s, "measure_s": self.measure_s, "flush_s": self.flush_s,
-                "dt_ms": self.dt_ms}
+        """Everything the simulation depends on (except the arrival checksum). legacy-study
+        identities are exactly Stage 14's (no policy field), so their run keys are unchanged."""
+        d = {"scenario": self.scenario, "seed": self.seed, "controller": self.controller,
+             "smart_params": asdict(self.smart_params) if self.controller == "Smart" else None,
+             "warmup_s": self.warmup_s, "measure_s": self.measure_s, "flush_s": self.flush_s,
+             "dt_ms": self.dt_ms}
+        if self.vehicle_policy != LEGACY_STUDY.name:
+            d["vehicle_policy"] = self.vehicle_policy
+        return d
 
     def is_study_window(self) -> bool:
         return (self.warmup_s, self.measure_s, self.flush_s, self.dt_ms) == _STUDY_WINDOW
+
+
+def spec_policy(identity: Mapping[str, object]) -> str:
+    """The vehicle policy of a stored spec identity (no field = legacy-study, Stage 14)."""
+    return identity.get("vehicle_policy", LEGACY_STUDY.name)
+
+
+def folder_policy(out_dir: Union[str, Path]) -> Optional[str]:
+    """The vehicle policy a campaign folder holds: its marker, or legacy-study for a Stage 14
+    folder (records or manifest but no marker), or None for a new/empty folder."""
+    out_dir = Path(out_dir)
+    marker = out_dir / POLICY_MARKER
+    if marker.exists():
+        return json.loads(marker.read_text(encoding="utf-8"))["vehicle_policy"]
+    runs = out_dir / "runs"
+    if (out_dir / "manifest.json").exists() or (runs.is_dir() and any(runs.iterdir())):
+        return LEGACY_STUDY.name
+    return None
 
 
 def _canonical(obj) -> str:
@@ -291,6 +327,20 @@ def run_campaign(specs: Sequence[RunSpec], out_dir: Union[str, Path], *, workers
         if k in labels:
             raise ValueError(f"duplicate spec {k}")
         labels[k] = s
+    policies = {s.vehicle_policy for s in specs}
+    if len(policies) > 1:
+        raise ValueError(f"one campaign runs one vehicle policy, got {sorted(policies)}")
+    if specs:
+        (policy,) = policies
+        have = folder_policy(out_dir)
+        if have is not None and have != policy:
+            raise ValueError(f"{out_dir} holds {have} results; {policy} runs must go to a separate folder "
+                             f"(historical results are never mixed or overwritten)")
+        if have is None:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            (out_dir / POLICY_MARKER).write_text(
+                json.dumps({"vehicle_policy": policy, **POLICIES[policy].describe()}, sort_keys=True) + "\n",
+                encoding="utf-8")
     arrivals = prepare_arrivals(specs, arrivals_dir)
     todo, keys, seen = [], {}, set()
     for s in specs:

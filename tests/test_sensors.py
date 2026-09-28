@@ -194,7 +194,7 @@ def test_queue_discharge_edges_are_ordered():
     w = World(arrs(queue_spec("NS", 6))).at(100, "NS", "G").run(130)
     d1 = w.edges("NS", D1)
     assert all(a[0] < b[0] for a, b in zip(d1, d1[1:]))
-    assert d1[-1] == (100000 + 2000 + 6 * 1900 + 278, D1, False)          # last car's rear leaves
+    assert d1[-1] == (100000 + 36 + 5 * 1900 + 278, D1, False)            # last car's rear leaves
     assert [x[2] for x in d1[:3]] == [True, False, True]
 
 

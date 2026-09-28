@@ -12,14 +12,24 @@ A queue-server model with spatial positions (study §5). Each movement is one
 lane, and the lanes are independent: they are coupled only through the signal
 states supplied from outside.
 
-* STOP-LINE CROSSING TIMES come only from the study's discharge rule:
-      D = max(own arrival at stop line,  previous departure + h,  t_g + l1 + h)
-  with l1 = 2.0 s and h = 1.9 s (straight) / 2.0 s (left). For a queue that is
-  waiting at green onset t_g, this gives the n-th car (n = 1, 2, ...)
-  t_g + 2.0 + n*h: 3.9 / 11.5 / 21.0 s for cars 1 / 5 / 10 (straight).
-  "Own arrival at stop line" = actual road-entry time + 150 m / 50 km/h
-  (= entry + 10.8 s). No travel time is added on top of D for a queued car:
-  D already includes it.
+* VEHICLE POLICY. Two named policies (VehiclePolicy); STANDARD is the default
+  everywhere (project decision 2026-09-28):
+    STANDARD      Stop on Yellow + immediate first vehicle on green.
+    LEGACY_STUDY  The study's original rules, used for the Stage 14 official results;
+                  kept only as an explicitly named compatibility mode (never a default)
+                  so those results remain exactly reproducible.
+* STOP-LINE CROSSING TIMES come from the discharge rule
+      D = max(own arrival at stop line,  previous departure + h,  t_g + F)
+  with h = 1.9 s (straight) / 2.0 s (left) between successive departures and
+      STANDARD:      F = 0: the first queued car starts moving at green onset t_g
+                     (from slot 1 it crosses 36 ms later, its own travel time);
+                     cars 1 / 2 / 5 cross at t_g + 0.036 / 1.936 / 7.636 s (straight)
+      LEGACY_STUDY:  F = l1 + h with l1 = 2.0 s (study start-up lost time):
+                     cars 1 / 5 / 10 cross at t_g + 3.9 / 11.5 / 21.0 s (straight)
+  Following cars always need previous departure + h, so the saturation headway is the
+  same in both policies and a queue never leaves all at once. "Own arrival at stop
+  line" = actual road-entry time + 150 m / 50 km/h (= entry + 10.8 s). No travel time is
+  added on top of D for a queued car: D already includes it.
 * POSITIONS exist only so that sensors can be evaluated and cars drawn. A car
   is either stopped or moving at the free speed v = 50 km/h; no acceleration
   is modelled (study §5: statistics do not depend on it). It must never:
@@ -30,38 +40,25 @@ states supplied from outside.
   A car that has a crossing time drives at v until it has to halt (behind a
   halted car, or at slot 1 if it is early). Once halted it stays where it is
   and starts at the last moment that still lets it reach the stop line at
-  exactly D (so a queue starts from the front, one car at a time). A car
-  WITHOUT a crossing time always closes up toward the stop line.
+  exactly D (so a queue starts from the front, one car at a time: about 1.36 s
+  apart for straight cars). A car WITHOUT a crossing time always closes up toward
+  the stop line.
 * PERMISSION to cross is read from the signal state at the start of each
   advance() step (commands only happen at step boundaries; timed changes are
   known in advance from signals.remaining()):
       RED_YELLOW        -> may not cross; GREEN (t_g) will begin at now + remaining
       GREEN since t_g   -> may cross at any time
-      FLASHING_GREEN    -> may cross only if D <= (yellow onset = now + remaining) + 2.0 s
-      YELLOW since t_y  -> may cross only if D <= t_y + 2.0 s (study §5, HCM e)
-  The window end is INCLUSIVE: a car due exactly at t_y + 2.0 s still crosses. This
-  matches the study's effective green = displayed green (l1 = e = 2.0 s), i.e.
-  G / h headway slots per green (4 left cars in an 8 s green; §8 capacity 162 veh/h).
+      FLASHING_GREEN    -> may cross only up to the yellow window end (below), with
+                           yellow onset t_y = now + remaining
+      YELLOW since t_y  -> STANDARD (Stop on Yellow): no crossing at or after t_y; a
+                           car must cross strictly before yellow onset (D <= t_y - 1 ms)
+                           LEGACY_STUDY: D <= t_y + 2.0 s (inclusive; study §5, HCM e)
       ALL_RED, RED      -> may not cross
-  t_g in the discharge rule is always the instant GREEN itself begins.
-  Exact for any dt up to 3.9 s (no car can cross earlier than t_g + 3.9 s).
-  As soon as the window end is known (at FLASHING_GREEN or YELLOW), cars whose
-  D is beyond it lose their crossing time and stop.
-* OPTIONS (Stage 14b). Both default to the study behaviour above, which official
-  experiments must use (runner.RunConfig enforces it):
-    yellow_extension_s       e in the rule above: 2.0 (study default, permissive first
-                             2.0 s of yellow) or 0.0 ("stop on yellow": only D <= t_y,
-                             still inclusive, may cross; no new crossing after yellow
-                             onset). Any whole-ms value in [0, 2.0] is accepted here.
-    immediate_first_vehicle  Custom/Demo only. The floor t_g + l1 + h is replaced by t_g,
-                             so the first queued car starts moving at green onset (it
-                             crosses after its own travel time, 36 ms from slot 1). Every
-                             following car still needs previous departure + h, so the
-                             saturation headway is unchanged; only the start-up lost time
-                             l1 and the first headway h disappear (about 2 more departures
-                             per green). Exact only when GREEN begins on a step boundary
-                             (always true at the runner's dt = 100 ms); a step that would
-                             contain a GREEN onset is rejected.
+  t_g in the discharge rule is always the instant GREEN itself begins. As soon as the
+  window end is known (at FLASHING_GREEN, 3 s before yellow), cars whose D is beyond it
+  lose their crossing time and stop in time. STANDARD splits a step internally at a
+  GREEN onset that falls inside it, so the immediate start is exact for any dt;
+  LEGACY_STUDY is exact for any dt up to 3.9 s (no car can cross before t_g + 3.9 s).
 * ENTRY (R3): a car appears with its front bumper 150 m upstream, but only if
   the car ahead has its front at <= 142.5 m (7.5 m spacing). Otherwise it
   waits outside the modelled road, first come first served, and enters at
@@ -85,8 +82,8 @@ __all__ = [
     "VehicleModel", "Vehicle", "VehicleState", "ModelInvariantError",
     "FREE_SPEED", "VEHICLE_LENGTH", "STANDSTILL_GAP", "QUEUE_SPACING",
     "ENTRY_POSITION", "SLOT1_POSITION", "START_UP_LOST_TIME", "SATURATION_HEADWAY",
-    "YELLOW_EXTENSION", "BOX_LENGTH", "BOX_SPEED", "FREE_TRAVEL_TIME", "slot_position",
-    "YELLOW_POLICIES",
+    "LEGACY_YELLOW_EXTENSION", "BOX_LENGTH", "BOX_SPEED", "FREE_TRAVEL_TIME", "slot_position",
+    "VehiclePolicy", "STANDARD", "LEGACY_STUDY", "POLICIES", "vehicle_policy",
 ]
 
 # ------------------------------------------------------------ study values
@@ -96,24 +93,57 @@ STANDSTILL_GAP = 3.0                     # m
 QUEUE_SPACING = VEHICLE_LENGTH + STANDSTILL_GAP     # 7.5 m, front to front
 ENTRY_POSITION = 150.0                   # m upstream of the stop line
 SLOT1_POSITION = 0.5                     # front bumper of queued car #1 (§4: occupies 0.5-5.0 m)
-START_UP_LOST_TIME = 2.0                 # l1, s
-SATURATION_HEADWAY = {"straight": 1.9, "left": 2.0}  # h, s
-YELLOW_EXTENSION = 2.0                   # e, s: crossing allowed up to and including t_y + 2.0 s
+START_UP_LOST_TIME = 2.0                 # l1, s: study start-up lost time (LEGACY_STUDY only)
+SATURATION_HEADWAY = {"straight": 1.9, "left": 2.0}  # h, s (both policies)
+LEGACY_YELLOW_EXTENSION = 2.0            # e, s: LEGACY_STUDY crosses up to and including t_y + 2.0 s
 BOX_LENGTH = {"straight": 20.0, "left": 25.0}         # m, path through the junction (§1)
 BOX_SPEED = 9.0                          # m/s, visual only (study: "about 8-10 m/s")
-YELLOW_POLICIES = {"study": 2.0, "stop": 0.0}         # named yellow policies (Stage 14b)
 
 MS = 1000
 _EPS = 1e-9
 _L1_MS = 2000
 _H_MS = {"straight": 1900, "left": 2000}
-_YEXT_MS = 2000
+_YEXT_MS = 2000                          # LEGACY_STUDY yellow window, inclusive
+_STOP_END_MS = -1                        # STANDARD: last permitted crossing = t_y - 1 ms
 FREE_TRAVEL_TIME = ENTRY_POSITION / FREE_SPEED       # 10.8 s
 _FREE_TRAVEL_MS = round(FREE_TRAVEL_TIME * MS)
 assert abs(FREE_TRAVEL_TIME * MS - _FREE_TRAVEL_MS) < 1e-6
 _BOX_MS = {t: round(BOX_LENGTH[t] / BOX_SPEED * MS) for t in BOX_LENGTH}
 _V_PER_MS = FREE_SPEED / MS                          # m per ms
 _ENTRY_ROOM = ENTRY_POSITION - QUEUE_SPACING         # 142.5 m
+
+
+class VehiclePolicy:
+    """How drivers treat yellow and green onset. Only the named policies exist."""
+    __slots__ = ("name", "stop_on_yellow", "immediate_first_vehicle")
+
+    def __init__(self, name: str, stop_on_yellow: bool, immediate_first_vehicle: bool):
+        self.name, self.stop_on_yellow, self.immediate_first_vehicle = name, stop_on_yellow, immediate_first_vehicle
+
+    def __repr__(self):
+        return f"VehiclePolicy({self.name!r})"
+
+    def describe(self) -> Dict[str, object]:
+        return {"vehicle_policy": self.name, "stop_on_yellow": self.stop_on_yellow,
+                "immediate_first_vehicle": self.immediate_first_vehicle}
+
+
+STANDARD = VehiclePolicy("standard", True, True)
+LEGACY_STUDY = VehiclePolicy("legacy-study", False, False)
+POLICIES: Dict[str, VehiclePolicy] = {p.name: p for p in (STANDARD, LEGACY_STUDY)}
+
+
+def vehicle_policy(policy: Union[str, VehiclePolicy, None] = None) -> VehiclePolicy:
+    """The named policy (default STANDARD); anything else is refused."""
+    if policy is None:
+        return STANDARD
+    if isinstance(policy, VehiclePolicy):
+        if POLICIES.get(policy.name) is not policy:
+            raise ValueError(f"unknown vehicle policy {policy!r}")
+        return policy
+    if isinstance(policy, str) and policy in POLICIES:
+        return POLICIES[policy]
+    raise ValueError(f"vehicle policy must be one of {sorted(POLICIES)}, got {policy!r}")
 
 
 def slot_position(k: int) -> float:
@@ -208,14 +238,15 @@ class Vehicle:
 
 # ------------------------------------------------------------------ lane
 class _Lane:
-    def __init__(self, m: str, arrivals: List[Arrival], yext_ms: int = _YEXT_MS,
-                 immediate_first: bool = False):
+    def __init__(self, m: str, arrivals: List[Arrival], policy: "VehiclePolicy" = None):
+        policy = policy or STANDARD
         self.m = m
         self.kind = movement_type(m)
         self.h_ms = _H_MS[self.kind]
-        self.yext_ms = yext_ms
-        # floor of the discharge rule relative to t_g: l1 + h (study) or 0 (immediate first car)
-        self.first_ms = 0 if immediate_first else _L1_MS + self.h_ms
+        # yellow window end relative to yellow onset: strictly before it, or + 2.0 s inclusive
+        self.yext_ms = _STOP_END_MS if policy.stop_on_yellow else _YEXT_MS
+        # floor of the discharge rule relative to t_g: 0 (immediate first car) or l1 + h
+        self.first_ms = 0 if policy.immediate_first_vehicle else _L1_MS + self.h_ms
         self.box_ms = _BOX_MS[self.kind]
         self.box_len = BOX_LENGTH[self.kind]
         self.pending: Deque[Vehicle] = deque(Vehicle(a) for a in arrivals)
@@ -473,15 +504,8 @@ class VehicleModel:
     """
 
     def __init__(self, arrivals: Union[ArrivalSchedule, Iterable[Arrival]],
-                 start: Optional[float] = None, *, yellow_extension_s: float = YELLOW_EXTENSION,
-                 immediate_first_vehicle: bool = False):
-        yext_ms = _to_ms(yellow_extension_s, "yellow_extension_s")
-        if not 0 <= yext_ms <= _YEXT_MS:
-            raise ValueError(f"yellow_extension_s must be in [0, {YELLOW_EXTENSION}], got {yellow_extension_s!r}")
-        if not isinstance(immediate_first_vehicle, bool):
-            raise TypeError("immediate_first_vehicle must be a bool")
-        self._yext_ms = yext_ms
-        self._immediate_first = immediate_first_vehicle
+                 start: Optional[float] = None, *, policy: Union[str, VehiclePolicy, None] = None):
+        self._policy = vehicle_policy(policy)
         if isinstance(arrivals, ArrivalSchedule):
             items = list(arrivals.arrivals)
             start_ms = arrivals.meta.start_ms if start is None else _to_ms(start, "start")
@@ -504,7 +528,7 @@ class VehicleModel:
             per[a.movement].append(a)
         self._now = start_ms
         self._lanes = {m: _Lane(m, sorted(per[m], key=lambda a: (a.time_ms, a.seq, a.id)),
-                                yext_ms, immediate_first_vehicle)
+                                self._policy)
                        for m in MOVES}
         self._by_id = {v.id: v for lane in self._lanes.values() for v in lane.pending}
         self._passage_log: List[Tuple[int, int, str, float]] = []
@@ -551,12 +575,8 @@ class VehicleModel:
 
     # ------------------------------------------------------------- options
     @property
-    def yellow_extension_s(self) -> float:
-        return self._yext_ms / MS
-
-    @property
-    def immediate_first_vehicle(self) -> bool:
-        return self._immediate_first
+    def policy(self) -> VehiclePolicy:
+        return self._policy
 
     # ---------------------------------------------------------------- time
     @property
@@ -589,11 +609,17 @@ class VehicleModel:
                 if not callable(getattr(signals, "remaining", None)):
                     raise TypeError(f"signals must provide remaining(m) for {st.name}")
                 rem = _to_ms(signals.remaining(m), "remaining")
-                if self._immediate_first and st is SignalState.RED_YELLOW and t0 + rem < t1:
-                    raise ValueError(f"immediate_first_vehicle: GREEN of {m} would begin inside the "
-                                     f"step [{t0}, {t1}) ms; use steps that end at GREEN onsets")
             lane.set_permission(st, _to_ms(signals.since(m), "since"), t0, rem)
-            lane.advance(t0, t1)
+            if (self._policy.immediate_first_vehicle and st is SignalState.RED_YELLOW
+                    and t0 < t0 + rem < t1):
+                # GREEN begins inside this step: split it there so the first car starts
+                # exactly at green onset whatever dt is (RED_YELLOW always turns GREEN)
+                t_g = t0 + rem
+                lane.advance(t0, t_g)
+                lane.set_permission(SignalState.GREEN, t_g, t_g)
+                lane.advance(t_g, t1)
+            else:
+                lane.advance(t0, t1)
         self._now = t1
         self.check_invariants()
 

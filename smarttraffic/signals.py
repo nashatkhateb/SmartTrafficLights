@@ -31,7 +31,8 @@ Safety semantics
   global all-red: compatible movements keep running and may even start.
 * RED_YELLOW is blocking (the movement is committed to going green) but NOT
   permissive: no vehicle may cross. GREEN and FLASHING_GREEN are permissive.
-  The first 2.0 s of YELLOW rule lives in vehicles.py (driver behaviour).
+  Whether a vehicle may still enter in YELLOW is driver behaviour, in vehicles.py
+  (standard policy: never; legacy-study: the first 2.0 s).
 
 Green-time convention (for the controllers)
 -------------------------------------------

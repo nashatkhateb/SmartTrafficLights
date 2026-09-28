@@ -80,7 +80,7 @@ Visible sequence for each movement:
 | RED_YELLOW | 1/1/0 | no | yes | after `RED_YELLOW_S`, then GREEN |
 | GREEN | 0/0/1 | yes | yes | on `end_green` |
 | FLASHING_GREEN | 0/0/blinking | yes | yes | after `FLASHING_GREEN_S`, then YELLOW |
-| YELLOW | 0/1/0 | only if the car reaches the line < 2.0 s after yellow onset (study §5; in `vehicles.py`) | yes | after yellow time, then ALL_RED |
+| YELLOW | 0/1/0 | **no** (standard policy, Stop on Yellow; legacy-study: first 2.0 s, see "Vehicle policy") | yes | after yellow time, then ALL_RED |
 | ALL_RED | 1/0/0 | no | yes | after all-red time, then RED |
 
 **Safety**
@@ -103,13 +103,14 @@ Visible sequence for each movement:
 |---|---|---|
 | Yellow | 3.5 s / 3.0 s | study §6, unchanged |
 | All-red | 2.0 s / 3.0 s | study §6, unchanged |
-| Crossing allowed in first part of yellow | 2.0 s, end inclusive | study §5 (`vehicles.py`); boundary see "Yellow permissive boundary" |
+| Crossing allowed in yellow | none (standard: last crossing t_y − 1 ms); legacy-study 2.0 s, end inclusive | `vehicles.py`; see "Vehicle policy" |
 | `RED_YELLOW_S` | 1.0 s | **project assumption.** Additional lost time before every green; no vehicle moves during it |
 | `FLASHING_GREEN_S` | 3.0 s | **project assumption.** Permissive, so it counts as green time |
 | `FLASH_PERIOD_S` / `FLASH_ON_S` | 1.0 s / 0.5 s | **project assumption.** Green lamp ON for the first 0.5 s of each period, from flash onset |
 
-All timing lives in `signals.py`. The vehicle model knows only the study's 2.0 s yellow rule
-and reads everything else from the signal (`since`, `remaining`).
+All timing lives in `signals.py`. The vehicle model knows only its policy's yellow rule (no
+entry from yellow onset; legacy-study: + 2.0 s) and reads everything else from the signal
+(`since`, `remaining`).
 
 **Green-time convention for Fixed and Smart**
 
@@ -134,15 +135,18 @@ onset, so a display or an ESP32 head fed the same state and elapsed time shows t
 **How the vehicle model reads the states** (`VehicleModel.advance`, state at the start of the step)
 
 - GREEN: crossing allowed; t_g = `since`.
-- FLASHING_GREEN: crossing allowed if the planned crossing is before (step start + `remaining`)
-  + 2.0 s, i.e. yellow onset + 2.0 s.
-- YELLOW: crossing allowed if the planned crossing is before `since` + 2.0 s.
+- FLASHING_GREEN: yellow onset t_y = step start + `remaining`; crossing allowed if the planned
+  crossing D <= t_y − 1 ms (standard) or D <= t_y + 2.0 s (legacy-study).
+- YELLOW: the same window end measured from `since` (standard: nothing new crosses).
 - RED_YELLOW: no crossing. The model records t_g = step start + `remaining`, the true GREEN
-  onset, so the discharge rule is always measured from the instant GREEN begins.
+  onset, so the discharge rule is always measured from the instant GREEN begins. Standard
+  policy: if GREEN begins inside the step, the step is split there (first car starts exactly
+  at t_g for any dt).
 - ALL_RED and RED: no crossing.
 
 A signal view must therefore also provide `remaining(m)` when it reports RED_YELLOW or
-FLASHING_GREEN; `SignalBank` does. Results are exact for any step of up to 3.9 s.
+FLASHING_GREEN; `SignalBank` does. Standard results are exact for any step; legacy-study
+results for any step of up to 3.9 s.
 
 ## Sensors (Stage 8, approved design 2026-09-27)
 
@@ -307,7 +311,9 @@ controller per run.
 detector model, SignalBank and its intervals, step order and metrics. Only the controller
 object differs.
 
-**Simulator validation (study §16 step 5), FT-A on S1, 20 seeds.** Mean control delay of the
+**Simulator validation (study §16 step 5), FT-A on S1, 20 seeds** — historical, made with the
+study vehicle rules (now the `legacy-study` policy; `tests/test_runner.py` keeps it as a
+legacy regression). Mean control delay of the
 arrivals in [0, 3600) s (warm-up from −300 s; every car had crossed by 4500 s), 95% CI:
 
 | | Straight | Left |
@@ -323,7 +329,11 @@ the left delay was ≈245 s.
 **Still open.** Reproducing the §8 greens with a Webster script (study §16): the study does not
 state its rounding rule.
 
-## Yellow permissive boundary (approved 2026-09-27, Stage 10 review)
+## Yellow permissive boundary (approved 2026-09-27, Stage 10 review) — legacy-study only
+
+*Historical.* Since 2026-09-28 the standard policy lets no vehicle enter after yellow onset
+(see "Vehicle policy"). This section describes the `legacy-study` compatibility policy, which
+produced the Stage 10–14 results.
 
 The study (§5) says a vehicle "may still cross during the first 2.0 s of yellow". The vehicle
 model now treats the end of that window as **inclusive**: a car whose crossing time D is
@@ -450,7 +460,7 @@ intersection-wide; V = vehicles scheduled in [0, 3600 s), C = those that crossed
 | Queue | stopped on the road + held outside the entry (both parts also stored), sampled exactly at t = 0, 1, …, 3599 s; per movement mean and max, headline = mean of the 8 movement means (G3), intersection-total mean and max; raw samples kept |
 | Throughput | crossings of any vehicle (warm-up arrivals included) with cross in [0, 3600 s), veh/h; a measured vehicle crossing in the flush adds delay but no throughput |
 | Served / % served | vehicles of V crossing before 3600 s |
-| Green utilization | n × h / G: n = crossings in the hour (crossings in the first 2 s of YELLOW included), h = 1.9 / 2.0 s, G = displayed GREEN + FLASHING_GREEN seconds inside the hour |
+| Green utilization | n × h / G: n = crossings in the hour, h = 1.9 / 2.0 s, G = displayed GREEN + FLASHING_GREEN seconds inside the hour. Under the standard policy a fully used green serves about G/h + 1 cars (first car at green onset), so the value can slightly exceed 1; under legacy-study (crossings in the first 2 s of YELLOW included, first car at t_g + 3.9 s) about G/h |
 | Signal changes | GREEN onsets of the 8 signals in the hour, per hour |
 | Jain's index | over movements with ≥ 1 crossed measured vehicle; 1.0 if all their means are 0; None for an empty run |
 | Safety violations | steps with conflicting active movements (must be 0) |
@@ -605,17 +615,18 @@ results/tuning/S1_T1 --new <dir> --lock-sha <sha>` requires identical candidates
 metric columns. Full-record hashes may differ between operating systems only in the last bit of
 derived floating-point statistics (e.g. Jain's index via `pow`); the simulation itself is exact.
 
-## Custom / Demo mode, yellow policy, immediate first vehicle (Stage 14b)
+## Custom / Demo mode (Stage 14b)
 
-**Separation.** `runner.RunConfig` has `mode` ("official" default, "custom"), `demand`
-(`custom.CustomDemand`, custom only) and `vehicle` (`VehicleOptions`). Official mode refuses
-custom demand and any non-default `VehicleOptions`; official metadata is byte-for-byte what it
-was (custom keys are added only in custom mode). The official experiment path cannot express a
-custom run (`experiments.RunSpec` has no mode/demand/vehicle fields, run keys unchanged) and
-`run_campaign` refuses `results/custom/`. Custom output (`custom.save_custom`) refuses
-`results/official`, `results/tuning`, `data/arrivals` and `config`, and requires the result's
-`CUSTOM / DEMO` tag. Custom arrivals are generated in memory with the same per-movement streams
-(seed, movement), so S1 demands + seed reproduce S1's arrivals exactly.
+**Separation.** `runner.RunConfig` has `mode` ("official" default, "custom") and `demand`
+(`custom.CustomDemand`, custom only). Official mode refuses custom demand; custom keys are added
+to the metadata only in custom mode. The official experiment path cannot express a custom run
+(`experiments.RunSpec` has no mode/demand fields) and `run_campaign` refuses `results/custom/`.
+Custom output (`custom.save_custom`) refuses `results/official`, `results/tuning`,
+`data/arrivals` and `config`, and requires the result's `CUSTOM / DEMO` tag. Custom arrivals are
+generated in memory with the same per-movement streams (seed, movement), so S1 demands + seed
+reproduce S1's arrivals exactly. Custom runs use the standard vehicle policy (no per-run
+option; the Stage 14b yellow-policy and start-up switches were replaced by the project-wide
+policy below).
 
 **Custom inputs.** 8 constant demands (number, finite, >= 0, < 2400 veh/h; UI cap 1800), seed
 (int >= 0), FT-A or Smart (no FT-B custom planning), measurement 60–7200 s (UI: 5/10/30/60 min),
@@ -626,34 +637,12 @@ Y = max(y_NL + y_SS, y_SL + y_NS) + max(y_EL + y_WS, y_WL + y_ES), y = q / (1895
 straight, 1800 left); X = Y / (1 - 23/120); X >= 0.85 near capacity, X >= 1 or any y >= 1
 oversaturated (S1 0.69; S2, S7a, S10 0.88–0.94; S7b 1.22).
 
-**Yellow policy.** `VehicleModel(yellow_extension_s=...)`, e in D <= t_y + e (inclusive):
-2.0 = study default (permissive first 2.0 s of yellow; the only value official runs accept),
-0.0 = Stop on Yellow (a car due exactly at yellow onset still crosses; nothing later). The
-window end is known from flashing-green onset, so cars beyond it stop in time. Before the
-change the official baseline was recorded (`tests/golden/official_T1_baseline.csv`: the
-simulation fingerprint of each of the 490 approved runs, taken from the PC records); the
-default mode reproduces it exactly (tests re-run S4 seed 1; the whole campaign was re-run once
-for the Stage 14b review).
-
-**Start-up (inspection).** Discharge rule D = max(own arrival at the line, previous
-departure + h, t_g + l1 + h). Start-up lost time = `START_UP_LOST_TIME` l1 = 2.0 s; first-car
-reaction is not modelled separately (it is inside l1, and car 1 also takes one h, crossing at
-t_g + 3.9 s straight / 4.0 s left); following headway h = 1.9 / 2.0 s between every pair of
-cars. Cars move at 0 or 50 km/h (no acceleration) and a stopped car starts at the last moment
-that still reaches the line at D: car 1 waits about 3.86 s after green, then cars start about
-1.36 s apart. `immediate_first_vehicle=True` (Custom only) replaces the floor t_g + l1 + h by
-t_g: car 1 starts at green onset (crosses 36 ms later from slot 1); every following car still
-needs previous + h, so the saturation headway is unchanged and cars still start one after
-another. Effect: l1 + h (3.9 / 4.0 s) of lost time per green disappears (about 2 more
-departures per green; capacity rises; `green_utilization` can exceed 1 because it assumes the
-study start-up). Exact only when GREEN begins on a step boundary (true at dt = 100 ms); a step
-containing a GREEN onset is refused.
-
 **Visualization.** "Custom…" after S10 in the scenario selector; the modal panel edits a
 `viz_custom.CustomDraft` (no pygame) and Apply loads the validated spec paused. While the panel
 is open only its own controls are clickable. Advanced settings are collapsed by default. Badge:
 CUSTOM / DEMO (top bar pill, selector, ready/complete banners); official scenarios show
-"OFFICIAL · LOCKED" and keep the locked settings.
+"OFFICIAL · LOCKED" and keep the locked settings. Ready banners and the Advanced section state
+the traffic rules ("Stop on Yellow · first queued car starts at green").
 
 **Smart in the UI = Smart-T1 (approved 2026-09-28).** Every official configuration the
 visualization runs uses the locked Smart-T1 parameters (`viz.ui_config`: tau 15 s, W_MAX 90 s,
@@ -662,6 +651,65 @@ Smart-T1". The Custom panel offers Smart-T1 (default) or custom tau / W_MAX / ma
 Smart-study is not a user-facing option; it remains internal (official campaign comparison,
 historical tests, `custom.smart_params_for("study")`). No official result changed.
 
+## Vehicle policy (project decision 2026-09-28)
+
+**Standard behaviour everywhere.** `vehicles.VehiclePolicy` has exactly two named values:
+
+| | `standard` (default) | `legacy-study` (compatibility only) |
+|---|---|---|
+| Yellow | Stop on Yellow: last permitted crossing t_y − 1 ms; a car due at t_y stops | permissive first 2.0 s, inclusive (D <= t_y + 2000 ms) |
+| Discharge floor | D >= t_g (first queued car starts at green onset; from slot 1 it crosses 36 ms later) | D >= t_g + l1 + h (3.9 s straight / 4.0 s left) |
+| Following cars | previous + h (1.9 / 2.0 s), one at a time | same |
+| 10-car straight queue clears | 17.136 s after green | 21.0 s |
+| Step with a GREEN onset inside | split at t_g (exact for any dt) | unchanged Stage 14 stepping (exact for dt <= 3.9 s) |
+
+`VehicleModel(..., policy=...)`, `RunConfig.vehicle_policy`, `RunSpec.vehicle_policy`,
+`tuning.tuning_specs / official_specs / extra_specs`, `campaign.campaign_specs / run_official`
+and `run_experiments --policy` all default to `standard`. The visualization always runs
+`standard` (`viz.ui_config` enforces it for official runs, Custom / Demo, screenshots, reset
+and every scenario / controller / seed switch) and never offers `legacy-study`. The old
+`VehicleOptions`, `yellow_extension_s`, `immediate_first_vehicle`, `--yellow` and
+`--immediate-first` switches were removed.
+
+Why this is consistent. Stop on Yellow loses the study's 2.0 s yellow extension; the immediate
+start gains l1 + h = 3.9 / 4.0 s. Net, a green served to saturation discharges about one car
+more than under the study rules (e.g. FT-A's 8 s left green: still 4 cars, at t_g + 0.036,
+2.036, 4.036, 6.036 s; the 5th, due at t_y + 36 ms, stops). No car ever enters in YELLOW, so
+the clearance (yellow + all-red) is pure clearance.
+
+**Legacy compatibility.** `legacy-study` is exactly the Stage 14 model: run identities have no
+policy field (same run keys), metadata has no policy keys, and the golden fingerprints of the
+490 official runs (`tests/golden/official_T1_baseline.csv`) are reproduced (tests re-run S4
+seed 1). Standard runs add `vehicle_policy` to the run identity (different keys, no resume from
+historical records) and `vehicle_policy`, `stop_on_yellow`, `immediate_first_vehicle` to the
+metadata. A campaign folder holds one policy (`vehicle_policy.json` marker; a folder with Stage
+14 records and no marker is legacy-study) and refuses the other. Default output folders:
+standard `results/tuning/S1_T1_standard`, `results/official/campaign_T1_standard`;
+legacy-study `results/tuning/S1_T1`, `results/official/campaign_T1`.
+
+**Historical results and the assumptions that are now historical.** The following were
+produced with `legacy-study` and are kept unchanged, as the record of that study policy:
+
+- `results/tuning/S1_T1` (and the PC reproduction `S1_T1_pc`): candidate ranking, reject
+  reasons, guardrails and the selection of τ 15 s / W_MAX 90 s.
+- `config/smart_params_locked.json`: Smart-T1 was *selected* under legacy-study
+  (`tuning.lock_policy`); its parameters are kept for the standard policy without retuning,
+  so the tuning evidence does not transfer automatically. `tune --verify-lock` under the
+  standard policy is refused.
+- `results/official/campaign_T1` (490 runs): every delay, queue, throughput, % served, green
+  utilization, P95/max, delay > 90 s, detector-call-wait, fairness and paired-comparison
+  figure, including the W_MAX findings (call waits up to about 156 s; removing W_MAX worsens
+  S10) and the no-aging ablation.
+- The Stage 10 FT-A validation (±20 % vs Webster / study figures) and the "inclusive yellow
+  boundary" capacity argument (effective green = displayed green, l1 = e = 2.0 s).
+- The FT-A / FT-B / FT-TOD plans (`config/fixed_plans.json`) are unchanged study / Webster
+  plans (L = 23 s); their capacity arithmetic assumed the study start-up and yellow rules.
+  Under the standard policy each saturated green serves about one car more.
+- `custom.saturation_report` still uses L = 23 s, so its X is slightly conservative now.
+
+Nothing above was rerun or overwritten. New standard-policy campaigns, if wanted later, go to
+their own folders.
+
 ## Module status
 
 | Module | Status |
@@ -669,7 +717,7 @@ historical tests, `custom.smart_params_for("study")`). No official result change
 | `conflicts.py` | Implemented and tested (study §3, §16 step 1) |
 | `signals.py` | Implemented and tested (study §6, §7, §16 step 2; visible-sequence revision) |
 | `traffic_gen.py` | Implemented and tested (study §5, §10, §16 step 3) |
-| `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8; yellow window end made inclusive in the Stage 10 review |
+| `vehicles.py` | Implemented and tested (study §4, §5, §16 step 4, R3); passive `watch_positions()` hook added in Stage 8; yellow window end made inclusive in the Stage 10 review; named vehicle policies (standard default, legacy-study compatibility) 2026-09-28 |
 | `sensors.py` | Stage 8: virtual detectors + demand logic; Stage 9 added `detector_fault()` / `faulted_detectors()` |
 | `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`, `hw_smoke.py`, firmware | Stage 9: implemented, tested with fake serial, physically verified (commit 3cf4d68) |
 | `controller_fixed.py` + `config/fixed_plans.json` | Stage 10: implemented, tested, verified (commit 7e4ae52) |
@@ -677,5 +725,5 @@ historical tests, `custom.smart_params_for("study")`). No official result change
 | `stats.py`, `runner.py` | Stage 12: implemented, tested, verified (commit fde1505) |
 | `viz.py`, `viz_render.py`, `viz_session.py`, `viz_geometry.py` | Stage 13: implemented, tested, verified (commit 6d2ca41) |
 | `experiments.py`, `tuning.py`, `campaign.py`, `run_experiments.py`, `config/tuning_plan.json`, `config/smart_params_locked.json` | Stage 14: Smart-T1 approved and locked; official campaign run and accepted (490 runs) |
-| `custom.py`, `viz_custom.py`, `tests/golden/official_T1_baseline.csv` | Stage 14b: Custom / Demo mode, yellow policy, immediate first vehicle (awaiting review) |
+| `custom.py`, `viz_custom.py`, `tests/golden/official_T1_baseline.csv` | Stage 14b: Custom / Demo mode (committed a7da151); standard vehicle policy project-wide (awaiting review) |
 | everything else | Placeholder |

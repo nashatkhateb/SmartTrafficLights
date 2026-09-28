@@ -27,6 +27,12 @@ Selection rule (approved):
   ties        candidates within 1 % of the best feasible mean delay are equal; among them
               prefer fewer changed parameters, then the smallest relative distance to the study
               defaults, then the fixed grid order (tau ascending, W_MAX ascending).
+
+Vehicle policy. Every spec builder takes `vehicle_policy` (default "standard"). The approved
+Smart-T1 lock (config/smart_params_locked.json) was SELECTED under the legacy-study policy
+(lock_policy(): a lock without "vehicle_policy" in its selection is legacy-study); its
+parameters are kept unchanged under the standard policy (no retuning). Reproducing the Stage 14
+tuning therefore requires the explicit legacy-study policy.
 """
 from dataclasses import asdict, replace
 import hashlib
@@ -37,12 +43,14 @@ from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from smarttraffic.controller_smart import SmartParams
 from smarttraffic.experiments import RunSpec, _canonical, write_csv
+from smarttraffic.runner import DEFAULT_VEHICLE_POLICY
+from smarttraffic.vehicles import LEGACY_STUDY
 from smarttraffic.traffic_gen import FINAL_SEEDS, TUNING_SEEDS, load_scenarios
 
 __all__ = ["TuningPlanError", "LockError", "PLAN_FILE", "LOCK_FILE", "TUNED_PARAMS", "load_plan",
            "plan_sha256", "candidates", "candidate_label", "tuning_specs", "evaluate",
            "CANDIDATE_FIELDS", "write_lock", "load_lock", "official_specs", "OFFICIAL_SCENARIOS",
-           "STUDY_LABEL", "TUNED_LABEL", "EXTRAS", "extra_specs", "check_official"]
+           "STUDY_LABEL", "TUNED_LABEL", "EXTRAS", "extra_specs", "check_official", "lock_policy"]
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN_FILE = ROOT / "config" / "tuning_plan.json"
@@ -138,9 +146,10 @@ def candidates(plan) -> List[Tuple[str, SmartParams]]:
     return out
 
 
-def tuning_specs(plan) -> List[RunSpec]:
+def tuning_specs(plan, vehicle_policy: str = DEFAULT_VEHICLE_POLICY) -> List[RunSpec]:
     w = plan["windows"]
-    kw = dict(warmup_s=w["warmup_s"], measure_s=w["measure_s"], flush_s=w["flush_s"], dt_ms=w["dt_ms"])
+    kw = dict(warmup_s=w["warmup_s"], measure_s=w["measure_s"], flush_s=w["flush_s"], dt_ms=w["dt_ms"],
+              vehicle_policy=vehicle_policy)
     specs = []
     for seed in plan["seeds"]:
         for ref in plan["references"]:
@@ -357,9 +366,15 @@ def load_lock(path: Union[str, Path] = LOCK_FILE, *, expected_sha: Optional[str]
     return {**raw, "lock_sha256": sha, "smart_params": params}
 
 
+def lock_policy(lock: Mapping) -> str:
+    """The vehicle policy the lock's parameters were selected under (Stage 14: legacy-study)."""
+    return (lock.get("selection") or {}).get("vehicle_policy", LEGACY_STUDY.name)
+
+
 # ================================================================ official matrix (guarded)
 def official_specs(lock: Mapping, seeds: Sequence[int] = FINAL_SEEDS,
-                   scenarios: Sequence[str] = OFFICIAL_SCENARIOS) -> List[RunSpec]:
+                   scenarios: Sequence[str] = OFFICIAL_SCENARIOS,
+                   vehicle_policy: str = DEFAULT_VEHICLE_POLICY) -> List[RunSpec]:
     """The approved official matrix: every scenario x {FT-A, FT-B, Smart-T1, Smart-study},
     plus FT-TOD for S6, on the evaluation seeds, study windows only. Smart-T1 always uses the
     locked parameters; there are no per-scenario or custom parameters."""
@@ -374,12 +389,13 @@ def official_specs(lock: Mapping, seeds: Sequence[int] = FINAL_SEEDS,
     specs = []
     for sc in scenarios:
         for seed in seeds:
-            specs.append(RunSpec(sc, seed, "FT-A", "FT-A"))
-            specs.append(RunSpec(sc, seed, "FT-B", "FT-B"))
-            specs.append(RunSpec(sc, seed, "Smart", TUNED_LABEL, lock["smart_params"]))
-            specs.append(RunSpec(sc, seed, "Smart", STUDY_LABEL, SmartParams()))
+            vp = dict(vehicle_policy=vehicle_policy)
+            specs.append(RunSpec(sc, seed, "FT-A", "FT-A", **vp))
+            specs.append(RunSpec(sc, seed, "FT-B", "FT-B", **vp))
+            specs.append(RunSpec(sc, seed, "Smart", TUNED_LABEL, lock["smart_params"], **vp))
+            specs.append(RunSpec(sc, seed, "Smart", STUDY_LABEL, SmartParams(), **vp))
             if sc == "S6":
-                specs.append(RunSpec(sc, seed, "FT-TOD", "FT-TOD"))
+                specs.append(RunSpec(sc, seed, "FT-TOD", "FT-TOD", **vp))
     return specs
 
 
@@ -388,7 +404,8 @@ EXTRAS = (("Smart-T1-noWMAX", ("S10",), "use_w_max"),            # study G7
           ("Smart-T1-noAging", ("S1", "S6", "S9"), "use_aging"))    # study G12 ablation
 
 
-def extra_specs(lock: Mapping, seeds: Sequence[int] = FINAL_SEEDS) -> List[RunSpec]:
+def extra_specs(lock: Mapping, seeds: Sequence[int] = FINAL_SEEDS,
+                vehicle_policy: str = DEFAULT_VEHICLE_POLICY) -> List[RunSpec]:
     """The approved study extras: Smart-T1 with exactly one §9 mechanism switched off."""
     if not isinstance(lock.get("smart_params"), SmartParams) or "lock_sha256" not in lock:
         raise LockError("official runs need a lock loaded with load_lock()")
@@ -399,7 +416,7 @@ def extra_specs(lock: Mapping, seeds: Sequence[int] = FINAL_SEEDS) -> List[RunSp
         params = replace(lock["smart_params"], **{switch: False})
         for sc in scenarios:
             for seed in seeds:
-                out.append(RunSpec(sc, seed, "Smart", label, params))
+                out.append(RunSpec(sc, seed, "Smart", label, params, vehicle_policy=vehicle_policy))
     return out
 
 

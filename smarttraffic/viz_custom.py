@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple
 
 from smarttraffic.conflicts import MOVES
 from smarttraffic.custom import (CUSTOM_CONTROLLERS, CUSTOM_SMART_FIELDS, CustomDemand, CustomInputError,
-                                 CustomSpec, SMART_PARAM_SETS, UI_LIMIT_VEH_H, YELLOW_POLICY_SECONDS,
+                                 CustomSpec, SMART_PARAM_SETS, UI_LIMIT_VEH_H,
                                  saturation_report, smart_params_for)
 
 __all__ = ["CustomDraft", "TAB_ORDER", "MEASURE_CHOICES", "DEMAND_STEP", "SMART_STEP", "PRESETS", "MOVEMENT_NAMES",
@@ -45,8 +45,6 @@ class CustomDraft:
     measure_s: int = 600
     param_set: str = "T1"
     overrides: Dict[str, float] = field(default_factory=dict)
-    yellow_policy: str = "study"
-    immediate_first_vehicle: bool = False
     advanced_open: bool = False
     focus: Optional[str] = None           # "NS".."WL" or a Smart field name while typing
     text: str = ""                        # typed text of the focused field
@@ -57,8 +55,7 @@ class CustomDraft:
     @classmethod
     def from_spec(cls, spec: CustomSpec) -> "CustomDraft":
         return cls(demand=spec.demand.as_dict(), seed=spec.seed, controller=spec.controller,
-                   measure_s=spec.measure_s, param_set=spec.param_set, overrides=dict(spec.smart_overrides),
-                   yellow_policy=spec.yellow_policy, immediate_first_vehicle=spec.immediate_first_vehicle)
+                   measure_s=spec.measure_s, param_set=spec.param_set, overrides=dict(spec.smart_overrides))
 
     # ------------------------------------------------------------ values
     def smart_value(self, name: str) -> float:
@@ -108,10 +105,6 @@ class CustomDraft:
 
     def set_seed(self, s: int) -> None:
         self.seed = max(0, int(s))
-
-    def set_yellow(self, name: str) -> None:
-        if name in YELLOW_POLICY_SECONDS:
-            self.yellow_policy = name
 
     def toggle_advanced(self) -> None:
         self.advanced_open = not self.advanced_open
@@ -171,7 +164,7 @@ class CustomDraft:
             else:                                   # FT-A: Smart parameters do not apply
                 ps, ov = "T1", ()
             spec = CustomSpec(CustomDemand.from_mapping(self.demand), self.seed, self.controller, self.measure_s,
-                              ps, ov, self.yellow_policy, self.immediate_first_vehicle)
+                              ps, ov)
         except CustomInputError as e:
             self.error = str(e)
             return None, self.error

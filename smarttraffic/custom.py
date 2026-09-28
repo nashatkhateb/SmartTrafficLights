@@ -3,8 +3,7 @@ official experiments.
 
     python -m smarttraffic.custom --demand NS=400,SS=400,ES=400,WS=400,NL=120,SL=120,EL=120,WL=120 \
         --controller Smart --seed 1 --measure 600 [--params T1|custom] \
-        [--tau 15 --wmax 90 --max-straight 45 --max-left 30] [--yellow study|stop] \
-        [--immediate-first] [--out results/custom]
+        [--tau 15 --wmax 90 --max-straight 45 --max-left 30] [--out results/custom]
 
 What a Custom/Demo run is
 -------------------------
@@ -18,9 +17,9 @@ What a Custom/Demo run is
   "custom" (T1 with tau, W_MAX and the two max greens changed; everything else locked).
   The study-default set ("study", Smart-study) stays available internally only
   (smart_params_for) for historical comparison; it is not offered to users.
-* Vehicle options (advanced): yellow policy "study" (permissive first 2.0 s of yellow, the
-  official behaviour) or "stop" (Stop on Yellow, yellow_extension_s = 0.0), and the
-  immediate-first-vehicle start (vehicles.py). Official runs refuse both non-defaults.
+* Vehicle behaviour: always the project's standard policy (vehicles.STANDARD: Stop on
+  Yellow, first queued car starts at green onset). There is no per-run option; the
+  legacy-study policy exists only for reproducing the historical Stage 14 results.
 * Every result is tagged "CUSTOM / DEMO" (metadata "mode": "custom") and is written only
   under results/custom (or another folder that is not an official one). The official
   experiment code never reads it: official runs are built from experiments.RunSpec, which
@@ -41,11 +40,12 @@ import sys
 from typing import Dict, Mapping, Optional, Sequence, Tuple, Union
 
 from smarttraffic.conflicts import MOVES
+from smarttraffic.vehicles import STANDARD
 
 __all__ = ["CUSTOM_TAG", "CUSTOM_SCENARIO", "CUSTOM_CONTROLLERS", "HARD_LIMIT_VEH_H", "UI_LIMIT_VEH_H",
-           "YELLOW_POLICY_SECONDS", "YELLOW_POLICY_LABELS", "SMART_PARAM_SETS", "UI_PARAM_SETS", "CUSTOM_SMART_FIELDS",
+           "VEHICLE_POLICY_LABEL", "SMART_PARAM_SETS", "UI_PARAM_SETS", "CUSTOM_SMART_FIELDS",
            "MEASURE_MIN_S", "MEASURE_MAX_S", "CustomInputError", "CustomDemand", "CustomSpec",
-           "SaturationReport", "validate_demand", "ui_clamp", "yellow_policy_name", "saturation_report",
+           "SaturationReport", "validate_demand", "ui_clamp", "saturation_report",
            "smart_params_for", "run_custom", "save_custom", "check_output_dir", "CUSTOM_RESULTS_DIR"]
 
 CUSTOM_TAG = "CUSTOM / DEMO"
@@ -54,9 +54,7 @@ CUSTOM_CONTROLLERS = ("FT-A", "Smart")
 HARD_LIMIT_VEH_H = 2400          # rejected at and above (arrival model limit)
 UI_LIMIT_VEH_H = 1800            # the user interface never offers more
 MEASURE_MIN_S, MEASURE_MAX_S = 60, 7200
-YELLOW_POLICY_SECONDS = {"study": 2.0, "stop": 0.0}
-YELLOW_POLICY_LABELS = {"study": "Study default (permissive first 2.0 s of yellow)",
-                        "stop": "Stop on Yellow (no entry after yellow onset)"}
+VEHICLE_POLICY_LABEL = "Stop on Yellow · first queued car starts at green"
 SMART_PARAM_SETS = ("T1", "study", "custom")      # "study" is internal (historical comparison) only
 UI_PARAM_SETS = ("T1", "custom")                  # what the user interface and the command line offer
 # the only Smart parameters Custom mode may change, with the UI's ranges (seconds)
@@ -107,14 +105,6 @@ def validate_demand(value, movement: str = "demand") -> float:
 def ui_clamp(value: float) -> float:
     """The value the user interface shows/accepts: [0, UI_LIMIT_VEH_H]."""
     return float(min(UI_LIMIT_VEH_H, max(0.0, value)))
-
-
-def yellow_policy_name(seconds: float) -> str:
-    for name, s in YELLOW_POLICY_SECONDS.items():
-        if seconds == s:
-            return name
-    raise CustomInputError(f"yellow_extension_s must be one of {sorted(YELLOW_POLICY_SECONDS.values())} "
-                           f"(study default 2.0, stop on yellow 0.0), got {seconds!r}")
 
 
 @dataclass(frozen=True)
@@ -178,6 +168,10 @@ def saturation_report(demand: CustomDemand) -> SaturationReport:
     With the study's lost time L = 23 s per cycle and a 120 s reference cycle, at most
     Y = 0.808 can be served: X = Y / 0.808. X >= 0.85 near capacity, X >= 1 oversaturated.
     (Official scenarios: S1 X = 0.69, S2/S7a/S10 0.88-0.94, S7b 1.22.)
+    L = 23 s is the study's intergreen lost time. Under the standard vehicle policy each
+    green serves about one car more than under the study's rule (first car at green onset,
+    no entry after yellow: effective green ~ G + h instead of G), so X is slightly
+    conservative (a little high); it is a warning heuristic, not a capacity guarantee.
     """
     y = {m: demand.rate(m) / _SAT["straight" if m[1] == "S" else "left"] for m in MOVES}
     ns = max(y["NL"] + y["SS"], y["SL"] + y["NS"])
@@ -242,8 +236,6 @@ class CustomSpec:
     measure_s: int = 3600
     param_set: str = "T1"
     smart_overrides: Tuple[Tuple[str, float], ...] = ()
-    yellow_policy: str = "study"
-    immediate_first_vehicle: bool = False
 
     def __post_init__(self):
         if not isinstance(self.demand, CustomDemand):
@@ -257,25 +249,15 @@ class CustomSpec:
                 not MEASURE_MIN_S <= self.measure_s <= MEASURE_MAX_S:
             raise CustomInputError(f"measurement duration must be a whole number of seconds in "
                                    f"[{MEASURE_MIN_S}, {MEASURE_MAX_S}], got {self.measure_s!r}")
-        if self.yellow_policy not in YELLOW_POLICY_SECONDS:
-            raise CustomInputError(f"yellow policy must be one of {sorted(YELLOW_POLICY_SECONDS)}, "
-                                   f"got {self.yellow_policy!r}")
-        if not isinstance(self.immediate_first_vehicle, bool):
-            raise CustomInputError("immediate_first_vehicle must be a bool")
         self.smart_params()                     # validates the set and overrides
 
     def smart_params(self):
         return smart_params_for(self.param_set, dict(self.smart_overrides))
 
-    @property
-    def yellow_extension_s(self) -> float:
-        return YELLOW_POLICY_SECONDS[self.yellow_policy]
-
     def config(self):
-        from smarttraffic.runner import RunConfig, VehicleOptions
+        from smarttraffic.runner import RunConfig
         return RunConfig(CUSTOM_SCENARIO, self.seed, self.controller, measure_s=float(self.measure_s),
-                         smart_params=self.smart_params(), mode="custom", demand=self.demand,
-                         vehicle=VehicleOptions(self.yellow_extension_s, self.immediate_first_vehicle))
+                         smart_params=self.smart_params(), mode="custom", demand=self.demand)
 
     def saturation(self) -> SaturationReport:
         return saturation_report(self.demand)
@@ -283,8 +265,7 @@ class CustomSpec:
     def to_dict(self) -> Dict[str, object]:
         d = {"tag": CUSTOM_TAG, "mode": "custom", "demand_veh_h": self.demand.as_dict(), "seed": self.seed,
              "controller": self.controller, "measure_s": self.measure_s,
-             "yellow_policy": self.yellow_policy, "yellow_extension_s": self.yellow_extension_s,
-             "immediate_first_vehicle": self.immediate_first_vehicle}
+             **STANDARD.describe()}
         if self.controller == "Smart":
             d["smart_param_set"] = self.param_set
             d["smart_overrides"] = dict(self.smart_overrides)
@@ -362,15 +343,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--wmax", type=float)
     ap.add_argument("--max-straight", type=float)
     ap.add_argument("--max-left", type=float)
-    ap.add_argument("--yellow", default="study", choices=sorted(YELLOW_POLICY_SECONDS))
-    ap.add_argument("--immediate-first", action="store_true", help="first queued car starts at green onset")
     ap.add_argument("--out", default=str(CUSTOM_RESULTS_DIR))
     a = ap.parse_args(argv)
     try:
         ov = {k: v for k, v in (("tau_s", a.tau), ("w_max_s", a.wmax), ("max_green_straight_s", a.max_straight),
                                 ("max_green_left_s", a.max_left)) if v is not None}
         spec = CustomSpec(_parse_demand(a.demand), a.seed, a.controller, a.measure, a.params,
-                          tuple(sorted(ov.items())), a.yellow, a.immediate_first)
+                          tuple(sorted(ov.items())))
     except CustomInputError as e:
         print(f"invalid input: {e}")
         return 2

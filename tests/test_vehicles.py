@@ -1,4 +1,8 @@
-"""Tests for smarttraffic.vehicles (study §4, §5; ARCHITECTURE R3)."""
+"""Tests for smarttraffic.vehicles (study §4, §5; ARCHITECTURE R3).
+
+The default vehicle policy is STANDARD (Stop on Yellow, first queued car starts at green onset).
+Tests of the study's original rules (start-up lost time l1 = 2.0 s, permissive first 2.0 s of
+yellow) use the explicit LEGACY_STUDY compatibility policy (policy=LEGACY)."""
 import ast
 import random
 import time
@@ -12,13 +16,16 @@ from smarttraffic.conflicts import MOVES, InvalidMovementError
 from smarttraffic import signals as sg
 from smarttraffic.signals import SignalBank, SignalState
 from smarttraffic.traffic_gen import Arrival, generate_arrivals
-from smarttraffic.vehicles import (ModelInvariantError, VehicleModel, VehicleState,
+from smarttraffic.vehicles import (LEGACY_STUDY, STANDARD, ModelInvariantError, VehicleModel, VehicleState,
                                    slot_position)
+
+LEGACY = LEGACY_STUDY
 
 DT = 0.1
 STRAIGHTS = ["NS", "SS", "ES", "WS"]
 LEFTS = ["NL", "SL", "EL", "WL"]
 H = {"straight": 1.9, "left": 2.0}
+F = 0.036          # STANDARD: the first car (slot 1, 0.5 m) crosses 36 ms after green onset
 
 
 def arrs(spec, id0=0):
@@ -45,8 +52,8 @@ class Sim:
     service window is the same as before). "start"/"end" issue raw commands at t.
     Default start is -5 s so that a green at t = 0 can be prepared.
     """
-    def __init__(self, arrivals, start=-5.0, dt=DT):
-        self.vm = VehicleModel(arrivals, start=start)
+    def __init__(self, arrivals, start=-5.0, dt=DT, policy=None):
+        self.vm = VehicleModel(arrivals, start=start, policy=policy)
         self.bank = SignalBank(start_time=start)
         self.dt = dt
         self.cmds = {}
@@ -89,7 +96,23 @@ def test_study_constants():
     assert vh.VEHICLE_LENGTH == 4.5 and vh.STANDSTILL_GAP == 3.0 and vh.QUEUE_SPACING == 7.5
     assert vh.ENTRY_POSITION == 150.0
     assert vh.START_UP_LOST_TIME == 2.0 and vh.SATURATION_HEADWAY == {"straight": 1.9, "left": 2.0}
-    assert vh.YELLOW_EXTENSION == 2.0
+    assert vh.LEGACY_YELLOW_EXTENSION == 2.0
+    assert not hasattr(vh, "YELLOW_EXTENSION") and not hasattr(vh, "YELLOW_POLICIES")
+
+
+def test_policies_and_default():
+    assert (STANDARD.name, STANDARD.stop_on_yellow, STANDARD.immediate_first_vehicle) == ("standard", True, True)
+    assert (LEGACY.name, LEGACY.stop_on_yellow, LEGACY.immediate_first_vehicle) == ("legacy-study", False, False)
+    assert vh.POLICIES == {"standard": STANDARD, "legacy-study": LEGACY}
+    assert VehicleModel([], start=0).policy is STANDARD            # the default everywhere
+    assert VehicleModel([], start=0, policy="legacy-study").policy is LEGACY
+    assert vh.vehicle_policy() is STANDARD and vh.vehicle_policy("standard") is STANDARD
+    for bad in ("study", "stop", "", 2.0, True, vh.VehiclePolicy("standard", True, True)):
+        with pytest.raises(ValueError):
+            VehicleModel([], start=0, policy=bad)
+    for old in ("yellow_extension_s", "immediate_first_vehicle"):
+        with pytest.raises(TypeError):
+            VehicleModel([], start=0, **{old: 0.0})
     assert vh.FREE_TRAVEL_TIME == pytest.approx(10.8)
 
 
@@ -169,8 +192,21 @@ def test_no_crossing_on_red_ever():
 # ------------------------------------------------------------- discharge
 @pytest.mark.parametrize("m", MOVES)
 def test_discharge_timing_first_fifth_tenth(m):
+    """STANDARD: the first queued car starts at green onset; the rest follow at h."""
     h = H[vh.movement_type(m)]
     s = Sim(arrs(queue_spec(m, 10))).at(100, m, "G").run(140)
+    got = rel_cross(s.vm, m, 100)
+    assert got == [round(F + n * h, 3) for n in range(10)]
+    assert got[0] == 0.036
+    assert got[4] == (7.636 if h == 1.9 else 8.036)
+    assert got[9] == (17.136 if h == 1.9 else 18.036)
+    assert all(round(b - a, 3) == h for a, b in zip(got, got[1:]))     # never simultaneous
+
+
+@pytest.mark.parametrize("m", MOVES)
+def test_legacy_discharge_timing_first_fifth_tenth(m):
+    h = H[vh.movement_type(m)]
+    s = Sim(arrs(queue_spec(m, 10)), policy=LEGACY).at(100, m, "G").run(140)
     got = rel_cross(s.vm, m, 100)
     assert got == [round(2.0 + n * h, 3) for n in range(1, 11)]
     assert got[0] == (3.9 if h == 1.9 else 4.0)
@@ -178,20 +214,46 @@ def test_discharge_timing_first_fifth_tenth(m):
     assert got[9] == (21.0 if h == 1.9 else 22.0)
 
 
-def test_regression_10_car_straight_queue_clears_in_21_s():
-    """Study §5/§16 validation target: a 10-car queue clears in 21.0 s."""
+def test_10_car_straight_queue_clears_in_17_136_s():
     s = Sim(arrs(queue_spec("NS", 10))).at(100, "NS", "G").run(130)
+    assert s.vm.crossed("NS")[-1].cross_ms - 100000 == 36 + 9 * 1900
+
+
+def test_legacy_regression_10_car_straight_queue_clears_in_21_s():
+    """Study §5/§16 validation target (legacy-study policy): a 10-car queue clears in 21.0 s."""
+    s = Sim(arrs(queue_spec("NS", 10)), policy=LEGACY).at(100, "NS", "G").run(130)
     assert s.vm.crossed("NS")[-1].cross_time - 100 == pytest.approx(21.0, abs=1e-9)
 
 
-def test_20_car_queue_matches_study_table():
+def test_20_car_queue_keeps_the_saturation_headway():
     s = Sim(arrs(queue_spec("SS", 20, gap=1.0))).at(100, "SS", "G").run(150)
+    got = rel_cross(s.vm, "SS", 100)
+    assert (got[0], got[2], got[4], got[9], got[19]) == (0.036, 3.836, 7.636, 17.136, 36.136)
+
+
+def test_legacy_20_car_queue_matches_study_table():
+    s = Sim(arrs(queue_spec("SS", 20, gap=1.0)), policy=LEGACY).at(100, "SS", "G").run(150)
     got = rel_cross(s.vm, "SS", 100)
     assert (got[0], got[2], got[4], got[9], got[19]) == (3.9, 7.7, 11.5, 21.0, 40.0)
 
 
-def test_queue_starts_from_the_front_one_car_at_a_time():
+def test_first_queued_car_starts_moving_at_green_onset():
     s = Sim(arrs(queue_spec("NS", 5))).at(100, "NS", "G")
+    s.run(100.0)
+    assert s.vm.stopped_positions("NS") == (0.5, 8.0, 15.5, 23.0, 30.5)    # all stopped at green onset
+    s.run(100.1)
+    car1 = s.vm.vehicle(0)
+    assert car1.cross_ms == 100036                            # moved off at 100.0, 0.5 m at v
+    assert s.vm.stopped_positions("NS") == (8.0, 15.5, 23.0, 30.5)       # nobody else moved
+    start2 = 101.936 - 8.0 / vh.FREE_SPEED                     # car 2 at its latest start
+    s.run(round(start2 - 0.05, 1))
+    assert s.vm.vehicle(1).state is VehicleState.STOPPED
+    s.run(102.0)
+    assert s.vm.vehicle(1).cross_ms == 101936
+
+
+def test_legacy_queue_starts_from_the_front_one_car_at_a_time():
+    s = Sim(arrs(queue_spec("NS", 5)), policy=LEGACY).at(100, "NS", "G")
     s.run(103.8)
     assert s.vm.stopped_positions("NS") == (0.5, 8.0, 15.5, 23.0, 30.5)
     s.run(104.0)                            # car 1 crossed at 103.9; others still in their slots
@@ -204,16 +266,17 @@ def test_queue_starts_from_the_front_one_car_at_a_time():
     assert s.vm.vehicle(1).cross_ms == 105800
 
 
-def test_queue_length_never_flickers_during_discharge():
+@pytest.mark.parametrize("policy, d1", [(None, 0.036), (LEGACY, 3.9)])
+def test_queue_length_never_flickers_during_discharge(policy, d1):
     # stopped count must fall monotonically: cars leave their slots one at a time
-    s = Sim(arrs(queue_spec("NS", 10))).at(100, "NS", "G")
+    s = Sim(arrs(queue_spec("NS", 10)), policy=policy).at(100, "NS", "G")
     q = []
     s.run(125, lambda s: q.append(s.vm.queue_length("NS")) if s.vm.now >= 100 else None)
-    assert q[0] == 10 and q[-1] == 0
+    assert q[-1] == 0
     assert all(b <= a for a, b in zip(q, q[1:]))
     # car k (slot k) is still stopped until its own latest start D_k - x_k / v
-    for k in range(1, 11):
-        start = 100 + 2.0 + 1.9 * k - slot_position(k) / vh.FREE_SPEED
+    for k in range(2, 11):
+        start = 100 + d1 + 1.9 * (k - 1) - slot_position(k) / vh.FREE_SPEED
         assert q[int((start - 100) * 10) - 1] >= 11 - k
 
 
@@ -223,18 +286,26 @@ def test_green_with_no_queue_no_delay():
         assert v.cross_ms == v.scheduled_ms + 10800 and v.queue_join_ms is None
 
 
-def test_green_start_before_car_reaches_line_applies_start_up_rule():
-    # study rule: D >= t_g + l1 + h, even for a car that was still moving
+def test_green_start_before_car_reaches_line_costs_nothing():
+    # STANDARD: a car still approaching at green onset keeps its free-flow crossing time
     s = Sim(arrs([("NS", 0.0)])).at(8.0, "NS", "G").run(30)
+    v = s.vm.vehicle(0)
+    assert v.cross_ms == 10800 and v.queue_join_ms is None
+
+
+def test_legacy_green_start_before_car_reaches_line_applies_start_up_rule():
+    # study rule: D >= t_g + l1 + h, even for a car that was still moving
+    s = Sim(arrs([("NS", 0.0)]), policy=LEGACY).at(8.0, "NS", "G").run(30)
     assert s.vm.vehicle(0).cross_ms == 8000 + 3900       # not 10800
 
 
-def test_car_joining_moving_queue_uses_prev_plus_h():
+@pytest.mark.parametrize("policy, first3", [(None, [0.036, 1.936, 3.836]), (LEGACY, [3.9, 5.8, 7.7])])
+def test_car_joining_moving_queue_uses_prev_plus_h(policy, first3):
     spec = queue_spec("NS", 3) + [("NS", 95.0)]
-    s = Sim(arrs(spec)).at(100, "NS", "G").run(130)
+    s = Sim(arrs(spec), policy=policy).at(100, "NS", "G").run(130)
     got = rel_cross(s.vm, "NS", 100)
-    assert got[:3] == [3.9, 5.8, 7.7]
-    assert got[3] == pytest.approx(max(95 + 10.8 - 100, 7.7 + 1.9))
+    assert got[:3] == first3
+    assert got[3] == pytest.approx(max(95 + 10.8 - 100, first3[-1] + 1.9))
 
 
 def test_arrivals_during_long_green_keep_headway():
@@ -246,12 +317,37 @@ def test_arrivals_during_long_green_keep_headway():
 
 
 # ------------------------------------------------------------- yellow rule
-def _yellow_case(t_y, n=10, m="NS"):
-    return Sim(arrs(queue_spec(m, n))).at(100, m, "G").at(t_y, m, "Y")
+def _yellow_case(t_y, n=10, m="NS", policy=None):
+    return Sim(arrs(queue_spec(m, n)), policy=policy).at(100, m, "G").at(t_y, m, "Y")
 
 
-def test_yellow_first_2s_crossing():
+def test_stop_on_yellow_no_entry_after_yellow_onset():
     s = _yellow_case(110.0).run(140)
+    got = rel_cross(s.vm, "NS", 100)
+    assert got == [0.036, 1.936, 3.836, 5.736, 7.636, 9.536]   # 109.536 < 110.0; 111.436 is not
+    assert s.vm.lead_vehicle("NS").position == 0.5
+    assert s.vm.queue_length("NS") == 4
+
+
+@pytest.mark.parametrize("t_y, crosses", [
+    (109.537, True),       # D = t_y - 1 ms: crosses before yellow
+    (109.536, False),      # D = t_y exactly: yellow has begun -> stops (strict)
+    (109.535, False),      # D = t_y + 1 ms: stops
+])
+def test_stop_on_yellow_boundary_exact(t_y, crosses):
+    # car 6 is due at D = 109.536 s; yellow begins at t_y
+    s = Sim(arrs(queue_spec("NS", 10)), dt=0.001).at(100, "NS", "G").at(t_y, "NS", "Y")
+    s.run(115)
+    assert len(s.vm.crossed("NS")) == (6 if crosses else 5)
+    car6 = s.vm.vehicle(5)
+    assert car6.cross_ms == (109536 if crosses else None)
+    assert all(v.cross_ms < round(t_y * 1000) for v in s.vm.crossed("NS"))
+    if not crosses:
+        assert s.vm.lead_vehicle("NS") is car6 and car6.position == 0.5
+
+
+def test_legacy_yellow_first_2s_crossing():
+    s = _yellow_case(110.0, policy=LEGACY).run(140)
     got = rel_cross(s.vm, "NS", 100)
     assert got == [3.9, 5.8, 7.7, 9.6, 11.5]                  # 111.5 < 112.0
     assert s.vm.lead_vehicle("NS").position == 0.5
@@ -263,10 +359,10 @@ def test_yellow_first_2s_crossing():
     (109.500, 2000, True),     # D = t_y + 2000 ms exactly: allowed (window end is inclusive)
     (109.499, 2001, False),    # D = t_y + 2001 ms: blocked
 ])
-def test_yellow_boundary_exact(t_y, after_yellow_ms, crosses):
+def test_legacy_yellow_boundary_exact(t_y, after_yellow_ms, crosses):
     # car 5 is due at D = 111.5 s; yellow begins at t_y
     assert round((111.5 - t_y) * 1000) == after_yellow_ms
-    s = Sim(arrs(queue_spec("NS", 10)), dt=0.001).at(100, "NS", "G").at(t_y, "NS", "Y")
+    s = Sim(arrs(queue_spec("NS", 10)), dt=0.001, policy=LEGACY).at(100, "NS", "G").at(t_y, "NS", "Y")
     s.run(115)
     assert len(s.vm.crossed("NS")) == (5 if crosses else 4)
     car5 = s.vm.vehicle(4)
@@ -285,28 +381,49 @@ def test_no_crossing_during_all_red_or_red():
                 assert s.bank.state("NS") in (SignalState.GREEN, SignalState.FLASHING_GREEN,
                                               SignalState.YELLOW)
     s.run(200, chk)
-    assert max(crossings) < 112000
+    assert max(crossings) < 110000                            # Stop on Yellow
 
 
-def test_car_arriving_in_yellow_crosses_only_within_window():
-    early = Sim(arrs([("SS", 0.0)])).at(0, "SS", "G").at(9.0, "SS", "Y").run(30)
+def test_car_arriving_at_yellow_onset_stops():
+    early = Sim(arrs([("SS", 0.0)]), dt=0.001).at(0, "SS", "G").at(10.801, "SS", "Y").run(30)
+    assert early.vm.vehicle(0).cross_ms == 10800             # 10.8 < 10.801
+    edge = Sim(arrs([("SS", 0.0)]), dt=0.001).at(0, "SS", "G").at(10.8, "SS", "Y").run(30)
+    assert edge.vm.vehicle(0).cross_ms is None               # arrives exactly at yellow onset: stops
+    assert edge.vm.vehicle(0).position == 0.5
+    # crossing time first granted during FLASHING_GREEN (GREEN at 100 ended at once: FLASHING_GREEN
+    # 100-103, YELLOW 103): the car must reach the line before 103.0
+    for sched, crosses in [(92.198, True), (92.199, True), (92.200, False)]:
+        g0 = Sim(arrs([("SS", sched)])).at(100, "SS", "G").at(100, "SS", "end").run(130)
+        v = g0.vm.vehicle(0)
+        assert v.cross_ms == (round(sched * 1000) + 10800 if crosses else None), sched
+
+
+def test_legacy_car_arriving_in_yellow_crosses_only_within_window():
+    L = dict(policy=LEGACY)
+    early = Sim(arrs([("SS", 0.0)]), **L).at(0, "SS", "G").at(9.0, "SS", "Y").run(30)
     assert early.vm.vehicle(0).cross_ms == 10800             # 10.8 < 9.0 + 2.0
-    edge = Sim(arrs([("SS", 0.0)])).at(0, "SS", "G").at(8.8, "SS", "Y").run(30)
+    edge = Sim(arrs([("SS", 0.0)]), **L).at(0, "SS", "G").at(8.8, "SS", "Y").run(30)
     assert edge.vm.vehicle(0).cross_ms == 10800              # 10.8 <= 8.8 + 2.0 (inclusive)
-    late = Sim(arrs([("SS", 0.0)]), dt=0.001).at(0, "SS", "G").at(8.799, "SS", "Y").run(30)
+    late = Sim(arrs([("SS", 0.0)]), dt=0.001, **L).at(0, "SS", "G").at(8.799, "SS", "Y").run(30)
     assert late.vm.vehicle(0).cross_ms is None               # 10.8 > 8.799 + 2.0
     assert late.vm.vehicle(0).position == 0.5
     # crossing time first granted when the window end is already known: GREEN at 100 is
     # ended at once (FLASHING_GREEN 100-103, YELLOW 103, window end 105.0); the car arrives
     # at the line at scheduled + 10.8 s
     for sched, crosses in [(94.199, True), (94.200, True), (94.201, False)]:
-        g0 = Sim(arrs([("SS", sched)])).at(100, "SS", "G").at(100, "SS", "end").run(130)
+        g0 = Sim(arrs([("SS", sched)]), **L).at(100, "SS", "G").at(100, "SS", "end").run(130)
         v = g0.vm.vehicle(0)
         assert v.cross_ms == (round(sched * 1000) + 10800 if crosses else None), sched
 
 
 def test_stopped_by_yellow_then_served_next_green():
     s = _yellow_case(110.0).at(150, "NS", "G").run(200)
+    got = rel_cross(s.vm, "NS", 150)
+    assert got[6:] == [0.036, 1.936, 3.836, 5.736]           # new queue of 4 restarts at green onset
+
+
+def test_legacy_stopped_by_yellow_then_served_next_green():
+    s = _yellow_case(110.0, policy=LEGACY).at(150, "NS", "G").run(200)
     got = rel_cross(s.vm, "NS", 150)
     assert got[5:] == [3.9, 5.8, 7.7, 9.6, 11.5]             # new queue of 5 restarts the formula
 
@@ -331,20 +448,34 @@ def test_red_yellow_is_not_permissive_and_t_g_is_green_onset():
     assert s.bank.state("NS") is SignalState.GREEN and s.bank.since("NS") == 101.0
     assert s.vm.crossed("NS") == () and s.vm.stopped_positions("NS") == (0.5, 8.0, 15.5)
     s.run(130, chk)
-    assert rel_cross(s.vm, "NS", 101.0) == [3.9, 5.8, 7.7]            # measured from GREEN onset
+    assert rel_cross(s.vm, "NS", 101.0) == [0.036, 1.936, 3.836]      # measured from GREEN onset
 
 
-def test_car_arriving_during_red_yellow_waits_for_green_rule():
+def test_car_arriving_during_red_yellow_starts_at_green_onset():
     # free arrival at the line is 10.8 s; RED_YELLOW 10.0-11.0, GREEN at 11.0
     s = Sim(arrs([("SL", 0.0)])).at(10.0, "SL", "start").run(30)
+    v = s.vm.vehicle(0)
+    assert v.cross_ms == 11000 + 36                                  # stopped at slot 1, leaves at t_g
+    assert v.queue_join_ms is not None
+
+
+def test_legacy_car_arriving_during_red_yellow_waits_for_green_rule():
+    s = Sim(arrs([("SL", 0.0)]), policy=LEGACY).at(10.0, "SL", "start").run(30)
     v = s.vm.vehicle(0)
     assert v.cross_ms == 11000 + 2000 + 2000                         # t_g + l1 + h (left)
     assert v.queue_join_ms is not None
 
 
 def test_flashing_green_is_permissive():
-    # GREEN at 100; end_green at 105 -> FLASHING_GREEN 105-108, YELLOW from 108 (window to 110)
+    # GREEN at 100; end_green at 105 -> FLASHING_GREEN 105-108, YELLOW from 108 (last entry < 108)
     s = Sim(arrs(queue_spec("NS", 10))).at(100, "NS", "G").at(105, "NS", "end")
+    s.run(140)
+    assert rel_cross(s.vm, "NS", 100) == [0.036, 1.936, 3.836, 5.736, 7.636]   # 105.736, 107.636 in FG
+    assert s.vm.lead_vehicle("NS").position == 0.5
+
+
+def test_legacy_flashing_green_is_permissive():
+    s = Sim(arrs(queue_spec("NS", 10)), policy=LEGACY).at(100, "NS", "G").at(105, "NS", "end")
     s.run(140)
     assert rel_cross(s.vm, "NS", 100) == [3.9, 5.8, 7.7, 9.6]          # 105.8, 107.7 during FG
     assert s.vm.lead_vehicle("NS").position == 0.5
@@ -358,13 +489,14 @@ def test_crossings_happen_in_flashing_green_state():
             seen.setdefault(v.cross_ms, s.bank.state("NS"))
     s.run(112, chk)
     # the step that ends at a crossing time is driven by the state at its start
-    assert seen[105800] is SignalState.FLASHING_GREEN
-    assert seen[107700] is SignalState.FLASHING_GREEN
+    assert seen[105736] is SignalState.FLASHING_GREEN
+    assert seen[107636] is SignalState.FLASHING_GREEN
+    assert max(seen) < 108000
 
 
-def test_yellow_2s_rule_unchanged_after_flashing_green():
+def test_legacy_yellow_2s_rule_unchanged_after_flashing_green():
     # same as the old yellow test: YELLOW at 110 -> cars with D < 112 cross, 111.5 does, 113.4 not
-    s = Sim(arrs(queue_spec("NS", 10))).at(100, "NS", "G").at(110, "NS", "Y").run(140)
+    s = Sim(arrs(queue_spec("NS", 10)), policy=LEGACY).at(100, "NS", "G").at(110, "NS", "Y").run(140)
     assert rel_cross(s.vm, "NS", 100) == [3.9, 5.8, 7.7, 9.6, 11.5]
 
 
@@ -378,22 +510,25 @@ def test_red_yellow_requires_remaining_from_signal_view():
         VehicleModel(arrs([("NS", 0.0)]), start=0).advance(0.1, NoRemaining())
 
 
-def test_flashing_window_taken_from_signal_timer():
-    # a view reporting FLASHING_GREEN with 0.5 s left: window ends at now + 0.5 + 2.0
+@pytest.mark.parametrize("policy, end", [(None, 500 - 1), (LEGACY, 500 + 2000)])
+def test_flashing_window_taken_from_signal_timer(policy, end):
+    # a view reporting FLASHING_GREEN with 0.5 s left: yellow at now + 0.5; the last permitted
+    # crossing is 1 ms before it (STANDARD) or 2.0 s after it, inclusive (LEGACY_STUDY)
     class View:
         def __init__(self): self.t = 0.0
         def state(self, m):
             return SignalState.FLASHING_GREEN if m == "ES" else SignalState.RED
         def since(self, m): return 0.0
         def remaining(self, m): return 0.5
-    vm = VehicleModel(arrs([("ES", 0.0)]), start=0)
+    vm = VehicleModel(arrs([("ES", 0.0)]), start=0, policy=policy)
     vm._lanes["ES"].green_start_ms = -100_000
     vm.advance(0.0, View())
     lane = vm._lanes["ES"]
-    assert lane.perm == (-100_000, 0 + 500 + 2000)
+    assert lane.perm == (-100_000, end)
 
 
-def test_t_g_known_even_if_green_shorter_than_a_step():
+@pytest.mark.parametrize("policy, want", [(None, 11000 + 36), (LEGACY, 11000 + 3900)])
+def test_t_g_known_even_if_green_shorter_than_a_step(policy, want):
     # a view that jumps RED_YELLOW -> FLASHING_GREEN between two 1 s steps (GREEN never seen):
     # t_g must still be the GREEN onset announced during RED_YELLOW (t = 11.0)
     class View:
@@ -402,7 +537,7 @@ def test_t_g_known_even_if_green_shorter_than_a_step():
             return getattr(SignalState, self.phase) if m == "NS" else SignalState.RED
         def since(self, m): return {"RED": 0.0, "RED_YELLOW": 10.0, "FLASHING_GREEN": 11.0}[self.phase]
         def remaining(self, m): return {"RED_YELLOW": 1.0, "FLASHING_GREEN": 3.0}[self.phase]
-    vm = VehicleModel(arrs([("NS", 0.0)]), start=0)
+    vm = VehicleModel(arrs([("NS", 0.0)]), start=0, policy=policy)
     v = View()
     for _ in range(10):
         vm.advance(1.0, v)                       # car stops at slot 1 on red
@@ -411,7 +546,42 @@ def test_t_g_known_even_if_green_shorter_than_a_step():
     v.phase = "FLASHING_GREEN"
     for _ in range(10):
         vm.advance(1.0, v)
-    assert vm.vehicle(0).cross_ms == 11000 + 3900   # t_g + l1 + h from the true GREEN onset
+    assert vm.vehicle(0).cross_ms == want           # measured from the true GREEN onset
+
+
+@pytest.mark.parametrize("dt", [0.001, 0.1, 0.3, 0.7, 1.0, 2.5])
+def test_immediate_start_is_exact_when_green_begins_inside_a_step(dt):
+    # start_green at the first step boundary t_c >= 100 s: GREEN begins at t_c + 1.0 s, which
+    # lies inside a step unless dt divides 1.0 s; the model splits the step at the green onset
+    arrivals = arrs(queue_spec("SS", 4) + queue_spec("SL", 3))
+    step = round(dt * 1000)
+    vm = VehicleModel(arrivals, start=0)
+    bank = SignalBank(start_time=0)
+    t = 0
+    t_c = -(-100_000 // step) * step
+    while t < t_c + 30_000:
+        if t == t_c:
+            bank.start_green("SS")
+            bank.start_green("SL")
+        vm.advance(step / 1000, bank)
+        bank.advance(step / 1000)
+        t += step
+    t_g = t_c + 1000
+    assert [v.cross_ms - t_g for v in vm.crossed("SS")] == [36, 1936, 3836, 5736]
+    assert [v.cross_ms - t_g for v in vm.crossed("SL")] == [36, 2036, 4036]
+
+
+def test_legacy_policy_is_unchanged_by_the_step_split():
+    # the split is STANDARD only: legacy-study runs step exactly as in Stage 14
+    sched = generate_arrivals("S4", 1, -300, 300)
+    s1 = Sim(sched.arrivals, start=-300, policy=LEGACY)
+    s2 = Sim(sched.arrivals, start=-300, dt=1.0, policy=LEGACY)
+    for s in (s1, s2):
+        for k in range(-299, 280, 60):
+            s.at(k, "NS", "G").at(k, "SS", "G").at(k + 25, "NS", "Y").at(k + 25, "SS", "Y")
+        s.run(320)
+    key = lambda vm: [(v.id, v.cross_ms, v.queue_join_ms) for v in vm.all_vehicles()]
+    assert key(s1.vm) == key(s2.vm)
 
 
 # ------------------------------------------------------------- R3 entry blocking
@@ -479,8 +649,8 @@ def test_movements_independent():
 def test_compatible_pair_discharges_in_parallel():
     spec = queue_spec("SS", 5) + queue_spec("SL", 5, start=0.5)
     s = Sim(arrs(spec)).at(100, "SS", "G").at(100, "SL", "G").run(130)
-    assert rel_cross(s.vm, "SS", 100) == [3.9, 5.8, 7.7, 9.6, 11.5]
-    assert rel_cross(s.vm, "SL", 100) == [4.0, 6.0, 8.0, 10.0, 12.0]
+    assert rel_cross(s.vm, "SS", 100) == [0.036, 1.936, 3.836, 5.736, 7.636]
+    assert rel_cross(s.vm, "SL", 100) == [0.036, 2.036, 4.036, 6.036, 8.036]
 
 
 # ------------------------------------------------------------- determinism / dt

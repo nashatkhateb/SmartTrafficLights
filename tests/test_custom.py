@@ -1,17 +1,18 @@
-"""Stage 14b: Custom / Demo mode, yellow policy, immediate first vehicle.
+"""Stage 14b: Custom / Demo mode, and the project-wide vehicle policy.
 
 What is checked:
 * custom demand: validation (numeric, finite, >= 0, < 2400; UI cap 1800), S1 demands
   reproduce S1's arrivals, zero and heavy demand run, results are tagged CUSTOM / DEMO;
-* separation: official mode refuses custom demand, Stop on Yellow and the immediate first
-  vehicle; campaigns refuse custom output folders; custom output refuses official folders
-  and never writes arrival files;
-* yellow policy: the default 2.0 s reproduces the approved official baseline (golden
-  fingerprints from the official campaign), 0.0 allows no new entry after yellow onset,
-  exact (inclusive) boundaries for both;
+* separation: official mode refuses custom demand; campaigns refuse custom output folders;
+  custom output refuses official folders and never writes arrival files;
+* vehicle policy: STANDARD (Stop on Yellow + immediate first vehicle) is the default for
+  official, custom and UI runs; the explicit legacy-study compatibility policy reproduces the
+  historical Stage 14 official baseline (golden fingerprints) exactly; exact, strict yellow
+  boundary (no entry at or after yellow onset) vs the legacy inclusive + 2.0 s window;
 * immediate first vehicle: first car starts at green onset, following headway unchanged,
-  cars start one after another, a step containing a GREEN onset is refused;
-* visualization: on/off equivalence for custom runs; panel, scenario cycling, badge.
+  cars start one after another, exact even when GREEN begins inside a step;
+* visualization: on/off equivalence for custom runs; panel, scenario cycling, badge; the UI
+  never offers or runs the legacy policy.
 """
 import csv
 from dataclasses import replace
@@ -31,10 +32,10 @@ from smarttraffic import tuning as tu
 from smarttraffic.conflicts import MOVES
 from smarttraffic.controller_smart import SmartParams
 from smarttraffic.custom import CustomDemand, CustomInputError, CustomSpec
-from smarttraffic.runner import RunConfig, VehicleOptions, _load_arrivals, arrivals_sha256, run
+from smarttraffic.runner import RunConfig, _load_arrivals, arrivals_sha256, run
 from smarttraffic.signals import FLASHING_GREEN_MS, RED_YELLOW_MS, SignalBank, SignalState
 from smarttraffic.traffic_gen import ARRIVALS_DIR, Arrival, generate_arrivals
-from smarttraffic.vehicles import VehicleModel, YELLOW_EXTENSION
+from smarttraffic.vehicles import LEGACY_STUDY, STANDARD, VehicleModel
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLDEN = ROOT / "tests" / "golden" / "official_T1_baseline.csv"
@@ -87,8 +88,7 @@ def test_demand_needs_all_eight_movements_and_the_ui_caps_at_1800():
 @pytest.mark.parametrize("kw,match", [
     (dict(controller="FT-B"), "FT-A"), (dict(controller="FT-TOD"), "FT-A"), (dict(seed=-1), "seed"),
     (dict(seed=1.5), "seed"), (dict(measure_s=59), "measurement"), (dict(measure_s=7201), "measurement"),
-    (dict(measure_s=600.5), "measurement"), (dict(yellow_policy="amber"), "yellow"),
-    (dict(immediate_first_vehicle=1), "bool"), (dict(param_set="S2"), "parameter set"),
+    (dict(measure_s=600.5), "measurement"), (dict(param_set="S2"), "parameter set"),
     (dict(param_set="T1", smart_overrides=(("tau_s", 12.0),)), "custom"),
     (dict(param_set="custom", smart_overrides=(("tau_s", 0.5),)), "tau_s"),
     (dict(param_set="custom", smart_overrides=(("min_green_straight_s", 5.0),)), "may be changed"),
@@ -97,6 +97,14 @@ def test_demand_needs_all_eight_movements_and_the_ui_caps_at_1800():
 def test_invalid_custom_specs_are_rejected(kw, match):
     with pytest.raises(CustomInputError, match=match):
         spec(**kw)
+
+
+def test_custom_spec_has_no_per_run_vehicle_options():
+    for old in ("yellow_policy", "immediate_first_vehicle"):
+        with pytest.raises(TypeError):
+            spec(**{old: "stop"})
+    assert not hasattr(cu, "YELLOW_POLICY_SECONDS") and not hasattr(cu, "yellow_policy_name")
+    assert spec().config().vehicle_policy == "standard"
 
 
 def test_parameter_sets():
@@ -162,41 +170,49 @@ def test_heavy_custom_run():
         assert res.metadata["mode"] == "custom"
 
 
-def test_custom_metadata_records_yellow_policy_and_start_up(tmp_path):
-    s = spec(controller="FT-A", yellow_policy="stop", immediate_first_vehicle=True, seed=3)
+def test_custom_metadata_records_the_standard_vehicle_policy(tmp_path):
+    s = spec(controller="FT-A", seed=3)
     res, path = cu.run_custom(s, out_dir=tmp_path)
     m = res.metadata
     assert m["mode"] == "custom" and m["tag"] == "CUSTOM / DEMO"
-    assert m["yellow_policy"] == "stop" and m["yellow_extension_s"] == 0.0 and m["immediate_first_vehicle"] is True
+    assert (m["vehicle_policy"], m["stop_on_yellow"], m["immediate_first_vehicle"]) == ("standard", True, True)
+    assert not {"yellow_policy", "yellow_extension_s"} & set(m)
     assert m["demand_veh_h"] == {k: float(v) for k, v in S1.items()} and m["scenario"] == "CUSTOM"
     doc = json.loads(path.read_text(encoding="utf-8"))
     assert doc["tag"] == "CUSTOM / DEMO" and doc["official"] is False and doc["mode"] == "custom"
-    assert doc["spec"]["yellow_policy"] == "stop" and doc["spec"]["immediate_first_vehicle"] is True
-    assert doc["result"]["metadata"]["yellow_policy"] == "stop"
+    assert doc["spec"]["vehicle_policy"] == "standard" and doc["spec"]["stop_on_yellow"] is True
+    assert doc["result"]["metadata"]["vehicle_policy"] == "standard"
     assert path.parent == tmp_path and path.name.startswith("custom_")
     s2 = spec(controller="Smart", param_set="custom", smart_overrides=(("tau_s", 12.0),))
     res2, path2 = cu.run_custom(s2, out_dir=tmp_path)
     d2 = json.loads(path2.read_text(encoding="utf-8"))
-    assert d2["spec"]["yellow_policy"] == "study" and d2["spec"]["smart_param_set"] == "custom"
+    assert d2["spec"]["vehicle_policy"] == "standard" and d2["spec"]["smart_param_set"] == "custom"
     assert d2["spec"]["smart_params"]["tau_s"] == 12.0 and res2.metadata["controller_params"]["tau_s"] == 12.0
-    # official metadata is unchanged: none of the custom keys
-    off = run(RunConfig("S4", 1, "FT-A", warmup_s=0, measure_s=60, flush_s=60),
-              arrivals=generate_arrivals("S4", 1, 0, 60)).metadata
-    assert not {"mode", "tag", "yellow_policy", "yellow_extension_s", "immediate_first_vehicle",
-                "demand_veh_h"} & set(off)
+    # official metadata: the vehicle policy, none of the custom keys
+    cfg = RunConfig("S4", 1, "FT-A", warmup_s=0, measure_s=60, flush_s=60)
+    off = run(cfg, arrivals=generate_arrivals("S4", 1, 0, 60)).metadata
+    assert off["vehicle_policy"] == "standard" and not {"mode", "tag", "demand_veh_h"} & set(off)
+    # legacy-study metadata is exactly Stage 14's: no policy or custom keys at all
+    leg = run(replace(cfg, vehicle_policy="legacy-study"), arrivals=generate_arrivals("S4", 1, 0, 60)).metadata
+    assert not {"mode", "tag", "vehicle_policy", "stop_on_yellow", "immediate_first_vehicle", "yellow_policy",
+                "yellow_extension_s", "demand_veh_h"} & set(leg)
 
 
 def test_command_line(tmp_path):
     import subprocess, sys
     base = [sys.executable, "-m", "smarttraffic.custom", "--demand",
             "NS=300,SS=300,ES=300,WS=300,NL=90,SL=90,EL=90,WL=90", "--measure", "60"]
-    r = subprocess.run(base + ["--controller", "FT-A", "--yellow", "stop", "--out", str(tmp_path)],
+    r = subprocess.run(base + ["--controller", "FT-A", "--out", str(tmp_path)],
                        cwd=ROOT, capture_output=True, text=True, timeout=300)
     assert r.returncode == 0, r.stderr
     assert "CUSTOM / DEMO" in r.stdout and "wrote" in r.stdout
     (f,) = list(tmp_path.glob("custom_*.json"))
     doc = json.loads(f.read_text(encoding="utf-8"))
-    assert doc["tag"] == "CUSTOM / DEMO" and doc["spec"]["yellow_policy"] == "stop"
+    assert doc["tag"] == "CUSTOM / DEMO" and doc["spec"]["vehicle_policy"] == "standard"
+    for gone in (["--yellow", "study"], ["--immediate-first"]):          # no per-run vehicle options
+        r = subprocess.run(base + gone + ["--out", str(tmp_path)], cwd=ROOT, capture_output=True, text=True,
+                           timeout=300)
+        assert r.returncode == 2 and "unrecognized" in r.stderr
     r = subprocess.run(base + ["--out", str(ROOT / "results" / "official" / "x")], cwd=ROOT,
                        capture_output=True, text=True, timeout=300)
     assert r.returncode == 2 and "refused" in r.stdout and "Traceback" not in r.stderr
@@ -212,8 +228,8 @@ def test_official_mode_rejects_custom_inputs():
     d = CustomDemand.from_mapping(S1)
     with pytest.raises(ValueError, match="custom demand"):
         RunConfig("S1", 1, "Smart", demand=d)
-    with pytest.raises(ValueError, match="immediate"):
-        RunConfig("S1", 1, "Smart", vehicle=VehicleOptions(immediate_first_vehicle=True))
+    with pytest.raises(ValueError, match="standard"):
+        RunConfig("CUSTOM", 1, "Smart", mode="custom", demand=d, vehicle_policy="legacy-study")
     with pytest.raises(ValueError, match="mode"):
         RunConfig("S1", 1, "Smart", mode="demo")
     with pytest.raises(ValueError, match="needs demand"):
@@ -231,13 +247,15 @@ def test_official_mode_rejects_custom_inputs():
         tu.check_official([ex.RunSpec("S2", 1, "Smart", "Smart-T1", replace(SmartParams(), tau_s=12.0))], lock)
 
 
-def test_official_mode_rejects_stop_on_yellow():
-    with pytest.raises(ValueError, match="Stop on Yellow"):
-        RunConfig("S1", 1, "FT-A", vehicle=VehicleOptions(yellow_extension_s=0.0))
+def test_official_mode_defaults_to_standard_and_legacy_is_explicit_only():
+    assert RunConfig("S1", 1, "FT-A").vehicle_policy == "standard"
+    assert ex.RunSpec("S1", 1, "FT-A", "FT-A").vehicle_policy == "standard"
+    assert ex.RunSpec("S1", 1, "FT-A", "FT-A").config().policy is STANDARD
+    assert RunConfig("S1", 1, "FT-A", vehicle_policy="legacy-study").policy is LEGACY_STUDY
+    with pytest.raises(TypeError):
+        RunConfig("S1", 1, "FT-A", vehicle=None)                  # the old per-run options are gone
     with pytest.raises(ValueError):
-        VehicleOptions(yellow_extension_s=1.0)                    # only the named policies exist
-    assert RunConfig("S1", 1, "FT-A", vehicle=VehicleOptions(yellow_extension_s=2.0)).vehicle.is_default
-    assert VehicleOptions() == VehicleOptions(YELLOW_EXTENSION, False)
+        ex.RunSpec("S1", 1, "FT-A", "FT-A", vehicle_policy="study")
 
 
 def test_custom_mode_never_contaminates_official_output_folders(tmp_path):
@@ -276,23 +294,41 @@ def test_golden_baseline_covers_the_whole_official_campaign():
     assert {(s.scenario, s.label, s.seed) for s in cp.campaign_specs(lock)} == set(g)
 
 
-def test_yellow_2_0_reproduces_the_approved_official_outputs(tmp_path):
-    """Default vehicle behaviour (yellow 2.0 s, study start-up) gives the official campaign's
-    simulated trajectories exactly (golden fingerprints recorded from the approved PC run)."""
+def test_legacy_study_policy_reproduces_the_historical_stage14_official_outputs(tmp_path):
+    """The explicit legacy-study policy (permissive first 2.0 s of yellow, study start-up lost
+    time) gives the historical Stage 14 official campaign's simulated trajectories exactly
+    (golden fingerprints recorded from the approved PC run), with the same run keys."""
     g = _golden()
     lock = tu.load_lock(tu.LOCK_FILE)
     from smarttraffic import campaign as cp
-    specs = [s for s in cp.campaign_specs(lock) if s.scenario == "S4" and s.seed == 1]
+    specs = [s for s in cp.campaign_specs(lock, "legacy-study") if s.scenario == "S4" and s.seed == 1]
     assert {s.label for s in specs} == {"FT-A", "FT-B", "Smart-T1", "Smart-study"}
     arr = ex.prepare_arrivals(specs, tmp_path)
     for s in specs:
-        assert s.config().vehicle == VehicleOptions() and s.config().vehicle.yellow_extension_s == 2.0
+        assert s.config().policy is LEGACY_STUDY and "vehicle_policy" not in s.identity()
         path, sha, _ = arr[(s.scenario, s.seed, -s.warmup_s, s.measure_s)]
         rec = ex.execute_spec(s, path, sha)
         ref = g[(s.scenario, s.label, s.seed)]
         assert rec["error"] is None and rec["key"] == ref["run_key"]
         assert rec["metadata"]["arrivals_sha256"] == ref["arrivals_sha256"]
         assert ex.sim_fingerprint(rec) == ref["sim_sha256"], s.label
+
+
+def test_standard_policy_runs_never_collide_with_the_historical_records(tmp_path):
+    g = _golden()
+    lock = tu.load_lock(tu.LOCK_FILE)
+    from smarttraffic import campaign as cp
+    std = cp.campaign_specs(lock)                                    # the default: standard
+    assert all(s.vehicle_policy == "standard" and s.identity()["vehicle_policy"] == "standard" for s in std)
+    arr = ex.prepare_arrivals([s for s in std if s.scenario == "S4" and s.seed == 1], tmp_path)
+    keys = {r["run_key"] for r in g.values()}
+    for s in std:
+        if (s.scenario, s.seed) == ("S4", 1):
+            path, sha, _ = arr[(s.scenario, s.seed, -s.warmup_s, s.measure_s)]
+            assert ex.run_key(s, sha) not in keys
+            rec = ex.execute_spec(s, path, sha)
+            assert rec["error"] is None and rec["summary"]["safety_violations"] == 0
+            assert ex.sim_fingerprint(rec) != g[(s.scenario, s.label, s.seed)]["sim_sha256"]
 
 
 def test_custom_mode_with_default_options_simulates_exactly_like_official():
@@ -303,13 +339,12 @@ def test_custom_mode_with_default_options_simulates_exactly_like_official():
     assert a.intersection == b.intersection
 
 
-def _single_car_run(e_s: float, offset_ms: int, immediate=False):
+def _single_car_run(policy, offset_ms: int):
     """One NS car whose own stop-line arrival is exactly (yellow onset + offset_ms)."""
     t_end = 20_000                                     # end_green -> flashing green -> yellow
     t_y = t_end + FLASHING_GREEN_MS
     arrive = t_y + offset_ms - 10_800
-    vm = VehicleModel([Arrival(0, arrive, "NS", 0, "random")], start=0, yellow_extension_s=e_s,
-                      immediate_first_vehicle=immediate)
+    vm = VehicleModel([Arrival(0, arrive, "NS", 0, "random")], start=0, policy=policy)
     bank = SignalBank(start_time=0)
     bank.start_green("NS")
     t = 0
@@ -319,34 +354,30 @@ def _single_car_run(e_s: float, offset_ms: int, immediate=False):
         vm.advance(0.1, bank)
         bank.advance(0.1)
         t += 100
-    if t_end + FLASHING_GREEN_MS != t_y:
-        raise AssertionError
     v = vm.vehicle(0)
     return v.cross_ms, t_y
 
 
-@pytest.mark.parametrize("e_s,offset,crosses", [
-    (2.0, 2000, True), (2.0, 2001, False),             # study: inclusive at yellow onset + 2.0 s
-    (0.0, 0, True), (0.0, 1, False), (0.0, 500, False), (0.0, 2000, False),   # stop on yellow
-    (0.0, -1, True)])
-def test_exact_yellow_boundary(e_s, offset, crosses):
-    cross, t_y = _single_car_run(e_s, offset)
+@pytest.mark.parametrize("policy,offset,crosses", [
+    (LEGACY_STUDY, 2000, True), (LEGACY_STUDY, 2001, False),       # legacy: inclusive at yellow onset + 2.0 s
+    (STANDARD, -1, True), (STANDARD, 0, False), (STANDARD, 1, False), (STANDARD, 500, False),
+    (STANDARD, 2000, False)])                                       # standard: strictly before yellow onset
+def test_exact_yellow_boundary(policy, offset, crosses):
+    cross, t_y = _single_car_run(policy, offset)
     if crosses:
         assert cross == t_y + offset
     else:
-        assert cross is None                           # stopped at the line; no new entry after the window
+        assert cross is None                           # stopped at the line; no new entry
 
 
-@pytest.mark.parametrize("e_s,d_offset,crosses", [(0.0, 0, True), (0.0, 1, False), (2.0, 2000, True),
-                                                   (2.0, 2001, False)])
-def test_exact_yellow_boundary_when_the_crossing_time_is_granted_after_the_window_is_known(e_s, d_offset, crosses):
+@pytest.mark.parametrize("policy,d_offset,crosses", [(STANDARD, -1, True), (STANDARD, 0, False),
+                                                     (LEGACY_STUDY, 2000, True), (LEGACY_STUDY, 2001, False)])
+def test_exact_yellow_boundary_when_the_crossing_time_is_granted_after_the_window_is_known(policy, d_offset, crosses):
     """GREEN at 100 s is ended at once (flashing green 100-103 s, yellow at 103 s), so the car's
-    crossing time is first granted when the window end is already known. The immediate first
-    vehicle start makes a crossing before yellow possible at all in such a short green."""
+    crossing time is first granted when the window end is already known."""
     t_y = 103_000
     sched = t_y + d_offset - 10_800
-    vm = VehicleModel([Arrival(0, sched, "SS", 0, "random")], start=0, yellow_extension_s=e_s,
-                      immediate_first_vehicle=True)
+    vm = VehicleModel([Arrival(0, sched, "SS", 0, "random")], start=0, policy=policy)
     bank = SignalBank(start_time=0)
     t = 0
     while t < 130_000:
@@ -361,12 +392,13 @@ def test_exact_yellow_boundary_when_the_crossing_time_is_granted_after_the_windo
 
 
 def test_stop_on_yellow_prevents_new_entry_after_yellow_begins():
-    """Queued straight traffic, green then yellow: with 0.0 nobody crosses after yellow
-    onset; with 2.0 cars still cross during the first 2.0 s (inclusive) and never later."""
+    """Queued straight traffic, green then yellow: under the standard policy nobody crosses at
+    or after yellow onset; the legacy policy still lets cars cross during the first 2.0 s
+    (inclusive) and never later."""
     arrivals = [Arrival(i, i * 1_500, "NS", i, "random") for i in range(30)]
     out = {}
-    for e in (0.0, 2.0):
-        vm = VehicleModel(arrivals, start=0, yellow_extension_s=e)
+    for pol in (STANDARD, LEGACY_STUDY):
+        vm = VehicleModel(arrivals, start=0, policy=pol)
         bank = SignalBank(start_time=0)
         t, yellow = 0, None
         while t < 80_000:
@@ -379,28 +411,17 @@ def test_stop_on_yellow_prevents_new_entry_after_yellow_begins():
             vm.advance(0.1, bank)
             bank.advance(0.1)
             t += 100
-        crossed = [v.cross_ms for v in vm.crossed("NS")]
-        out[e] = (crossed, yellow)
         assert yellow == 40_000 + FLASHING_GREEN_MS
-        assert all(c <= yellow + round(e * 1000) for c in crossed)
-    stop, study = out[0.0][0], out[2.0][0]
-    y = out[0.0][1]
-    assert all(c <= y for c in stop) and any(y < c <= y + 2000 for c in study)
-    assert len(study) > len(stop) and study[:len(stop)] == stop
-
-
-def test_vehicle_model_rejects_unknown_yellow_extension():
-    for bad in (-0.1, 2.5, float("nan"), "2", 0.0005):
-        with pytest.raises((ValueError, TypeError)):
-            VehicleModel([], start=0, yellow_extension_s=bad)
-    assert VehicleModel([], start=0).yellow_extension_s == 2.0
-    assert VehicleModel([], start=0, yellow_extension_s=0.0).yellow_extension_s == 0.0
+        out[pol.name] = ([v.cross_ms for v in vm.crossed("NS")], yellow)
+    (std, y), (leg, _) = out["standard"], out["legacy-study"]
+    assert std and all(c < y for c in std)
+    assert all(c <= y + 2000 for c in leg) and any(y < c <= y + 2000 for c in leg)
 
 
 # ================================================================ immediate first vehicle
-def _queue_discharge(immediate: bool, move="NS", n=10):
+def _queue_discharge(policy, move="NS", n=10):
     arrivals = [Arrival(i, i * 2_000, move, i, "random") for i in range(n)]
-    vm = VehicleModel(arrivals, start=0, immediate_first_vehicle=immediate)
+    vm = VehicleModel(arrivals, start=0, policy=policy)
     bank = SignalBank(start_time=0)
     t, t_g, starts, last = 0, None, {}, {}
     while t < 100_000:
@@ -421,9 +442,9 @@ def _queue_discharge(immediate: bool, move="NS", n=10):
 
 @pytest.mark.parametrize("move,h", [("NS", 1900), ("WL", 2000)])
 def test_immediate_first_vehicle_starts_at_green_and_keeps_the_headway(move, h):
-    study, _ = _queue_discharge(False, move)
-    imm, starts = _queue_discharge(True, move)
-    assert study[0] == 2000 + h                               # study: t_g + l1 + h
+    study, _ = _queue_discharge(LEGACY_STUDY, move)
+    imm, starts = _queue_discharge(STANDARD, move)
+    assert study[0] == 2000 + h                               # legacy: t_g + l1 + h
     assert imm[0] == 36                                       # 0.5 m at 50 km/h: moves at green onset
     for seq in (study, imm):
         assert [b - a for a, b in zip(seq, seq[1:])] == [h] * (len(seq) - 1)
@@ -433,26 +454,25 @@ def test_immediate_first_vehicle_starts_at_green_and_keeps_the_headway(move, h):
     assert ordered[0] <= 100 and ordered[1] >= 1000
 
 
-def test_immediate_first_vehicle_refuses_a_green_onset_inside_a_step():
-    vm = VehicleModel([Arrival(0, 0, "NS", 0, "random")], start=0, immediate_first_vehicle=True)
+def test_immediate_first_vehicle_is_exact_when_green_begins_inside_a_step():
+    # a car queued at slot 1; one 1.5 s step contains the GREEN onset at 13.0 s
+    vm = VehicleModel([Arrival(0, 0, "NS", 0, "random")], start=0)
     bank = SignalBank(start_time=0)
-    bank.start_green("NS")                                   # GREEN at 1.0 s
-    with pytest.raises(ValueError, match="inside the step"):
-        vm.advance(1.5, bank)
-    ok = VehicleModel([Arrival(0, 0, "NS", 0, "random")], start=0, immediate_first_vehicle=True)
-    bank = SignalBank(start_time=0)
-    bank.start_green("NS")
-    ok.advance(1.0, bank)                                    # ends exactly at GREEN onset: fine
-    bank.advance(1.0)
+    for _ in range(12):
+        vm.advance(1.0, bank)
+        bank.advance(1.0)
+    assert vm.vehicle(0).position == 0.5
+    bank.start_green("NS")                                   # RED_YELLOW 12-13, GREEN at 13.0 s
+    vm.advance(1.5, bank)
+    assert vm.vehicle(0).cross_ms == 13_036
 
 
-def test_immediate_first_vehicle_is_safe_in_a_full_custom_run():
-    s = spec(controller="Smart", measure_s=600, immediate_first_vehicle=True, yellow_policy="stop")
+def test_standard_policy_is_safe_in_a_full_custom_run():
+    s = spec(controller="Smart", measure_s=600)
     res, _ = cu.run_custom(s, save=False)
     assert res.intersection.safety_violations == 0
     assert ex.check_signal_log(res.signal_log, s.smart_params()) == []
-    base, _ = cu.run_custom(replace(s, immediate_first_vehicle=False), save=False)
-    assert res.metadata["arrivals_sha256"] == base.metadata["arrivals_sha256"]
+    assert res.metadata["vehicle_policy"] == "standard"
 
 
 # ================================================================ visualization
@@ -464,7 +484,7 @@ def _cfg_small(**kw):
 @pytest.mark.parametrize("ctrl", ["FT-A", "Smart"])
 def test_custom_visualization_on_off_equivalence(ctrl):
     from smarttraffic.viz_session import VizSession
-    c = _cfg_small(controller=ctrl, yellow_policy="stop", immediate_first_vehicle=(ctrl == "Smart"))
+    c = _cfg_small(controller=ctrl)
     s = VizSession(c, speed=None, running=True).start()
     assert s.wait_finished(120) and s.error is None
     assert s.result.to_json() == run(c).to_json()
@@ -493,13 +513,11 @@ def test_ui_custom_panel_apply_cancel_and_scenario_cycling():
         d.set_demand("NS", 2500)                              # capped by the interface
         d.set_controller("FT-A")
         d.set_measure(300)
-        d.set_yellow("stop")
-        d.immediate_first_vehicle = True
         assert st.apply_custom()
         c = st.config
         assert c.mode == "custom" and c.scenario == "CUSTOM" and c.controller == "FT-A"
         assert c.demand.rate("NS") == 1800 and c.measure_s == 300.0
-        assert c.vehicle == VehicleOptions(0.0, True) and not st.custom_open
+        assert c.vehicle_policy == "standard" and not st.custom_open
         assert st.session.config == c
         st.set_controller("Smart")
         assert st.config.controller == "Smart" and st.config.mode == "custom"
@@ -509,9 +527,9 @@ def test_ui_custom_panel_apply_cancel_and_scenario_cycling():
         assert st.config.seed == 2 and st.custom_spec.seed == 2
         st.next_scenario()                                    # Custom -> S1: a clean official config
         assert st.config.scenario == "S1" and st.config.mode == "official"
-        assert st.config.vehicle == VehicleOptions() and st.config.demand is None
+        assert st.config.vehicle_policy == "standard" and st.config.demand is None
         st.prev_scenario()                                    # back to Custom: last spec, no panel
-        assert st.is_custom and not st.custom_open and st.config.vehicle.yellow_extension_s == 0.0
+        assert st.is_custom and not st.custom_open and st.config.vehicle_policy == "standard"
     finally:
         st.close()
 
@@ -547,7 +565,8 @@ def test_render_custom_badge_and_panel(screen):
     d.toggle_advanced()
     r.draw(surf, _StillState(c, custom_draft=d), a, b, a.t_ms)
     names = {n for _, _, n in r.buttons}
-    assert {"yellow:study", "yellow:stop", "startup:True", "params:custom"} <= names
+    assert "params:custom" in names
+    assert not any(n.startswith(("yellow:", "startup:")) for n in names)    # no per-run vehicle options
     d.set_param_set("custom")
     for size in ((1100, 680), (1366, 768), (1920, 1080)):
         s2 = pygame.Surface(size)
@@ -660,3 +679,35 @@ def test_smart_study_is_not_a_user_facing_option(screen):
                          "NS=1,SS=1,ES=1,WS=1,NL=1,SL=1,EL=1,WL=1", "--params", "study"],
                         cwd=ROOT, capture_output=True, text=True, timeout=120)
     assert rr.returncode == 2 and "invalid choice" in rr.stderr
+
+
+# ================================================================ the UI always runs the standard policy
+def test_ui_always_runs_the_standard_vehicle_policy(monkeypatch, tmp_path):
+    from smarttraffic import viz
+    from smarttraffic.viz import official_config, ui_config
+    assert official_config("S7a", 3, "FT-B").vehicle_policy == "standard"
+    legacy = RunConfig("S1", 1, "FT-A", vehicle_policy="legacy-study")
+    assert ui_config(legacy).vehicle_policy == "standard"               # never shown / run in the UI
+    st = _state(replace(legacy, warmup_s=20, measure_s=60, flush_s=60))
+    try:
+        seen = [st.config.vehicle_policy, st.session.config.vehicle_policy]
+        for act in (lambda: st.set_controller("FT-B"), lambda: st.set_controller("Smart"), st.next_scenario,
+                    st.next_seed, st.prev_seed, st.reset, st.prev_scenario):
+            act()
+            seen += [st.config.vehicle_policy, st.session.config.vehicle_policy]
+        assert set(seen) == {"standard"}
+    finally:
+        st.close()
+    got = {}
+    monkeypatch.setattr(viz, "render_to_file", lambda path, config, *a, **k: got.setdefault("c", config))
+    assert viz.main(["--screenshot", str(tmp_path / "x.png"), "--scenario", "S2", "--controller", "FT-A"]) == 0
+    assert got["c"].vehicle_policy == "standard"
+
+
+def test_ready_banner_states_the_traffic_rules(screen):
+    from smarttraffic.viz import Fonts, Renderer, _StillState, capture
+    assert cu.VEHICLE_POLICY_LABEL == "Stop on Yellow · first queued car starts at green"
+    c = RunConfig("S1", 1, "FT-A", warmup_s=20, measure_s=60, flush_s=60)
+    a, b = capture(c, [0])[0]
+    r = Renderer(Fonts())
+    r.draw(pygame.Surface((1600, 900)), _StillState(c), a, b, a.t_ms)    # draws without error

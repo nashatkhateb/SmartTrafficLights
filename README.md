@@ -30,8 +30,11 @@ All parameters, algorithms and scenarios come from that document; do not change 
   A reproduction never rewrites the lock: `tune --out <dir> --verify-lock <sha>` only verifies it.
   W_MAX = 90 s is a starvation-hold threshold, not a hard 90 s guarantee: in the official results
   detector-call waits exceeded 90 s (up to about 156 s), yet removing W_MAX made S10 much worse.
-- Stage 14b (awaiting review): `custom.py`, `viz_custom.py` — Custom / Demo mode, yellow policy
-  (study default / Stop on Yellow), immediate first vehicle. See "Custom / Demo mode" below.
+  **The Stage 14 tuning and official results are historical: they were produced with the
+  previous study vehicle policy (`legacy-study`, see "Vehicle policy" below).**
+- Stage 14b: `custom.py`, `viz_custom.py` — Custom / Demo mode. See "Custom / Demo mode" below.
+- Vehicle policy change (2026-09-28): Stop on Yellow + immediate first vehicle on green is the
+  standard behaviour everywhere. See "Vehicle policy" below.
 - Not yet implemented: graphs (Stage 15), demand sweep, remaining ablations and sensor-fault runs.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
@@ -46,9 +49,10 @@ RED --start_green()--> RED_YELLOW (1.0 s) --> GREEN
 
 - Controllers issue only `start_green(m)` and `end_green(m)`; every other step runs on timers.
   `start_green` starts the sequence that *results* in green; it is not an instant green.
-- Cars may cross in GREEN and FLASHING_GREEN, and in the first 2.0 s of YELLOW (study rule;
-  a car due exactly at yellow onset + 2.0 s still crosses).
-  They may not cross in RED_YELLOW, ALL_RED or RED.
+- Cars may cross in GREEN and FLASHING_GREEN only: once YELLOW begins no new car enters
+  (Stop on Yellow; a car due exactly at yellow onset stops). They may not cross in YELLOW,
+  RED_YELLOW, ALL_RED or RED. (The historical `legacy-study` policy also allowed the first
+  2.0 s of YELLOW; see "Vehicle policy".)
 - Every state except RED blocks conflicting movements. ALL_RED looks like RED, but it is the
   clearance interval and still blocks.
 - `SignalBank.lamp_state(m)` returns `Lamps(red, yellow, green)` for display or hardware. The
@@ -151,13 +155,13 @@ python -m smarttraffic.viz --screenshot shot.png --at 120    # still frame, no w
 
 ```
 python -m smarttraffic.custom --demand NS=400,SS=400,ES=400,WS=400,NL=120,SL=120,EL=120,WL=120 \
-    --controller Smart --seed 1 --measure 600 [--params T1|custom] [--yellow study|stop] [--immediate-first]
+    --controller Smart --seed 1 --measure 600 [--params T1|custom]
 ```
 
 - In the visualization: "Custom…" after S10 in the scenario selector opens the Custom / Demo
   panel (8 demands, seed, FT-A or Smart, measurement 5–60 min, presets, load warning; Advanced
-  settings collapsed: yellow policy, green start-up, Smart parameter set Smart-T1 or custom
-  τ, W_MAX and max greens). In the UI Smart is always Smart-T1 for the official scenarios
+  settings collapsed: Smart parameter set Smart-T1 or custom τ, W_MAX and max greens). Custom
+  runs use the standard vehicle policy like every other run; there is no per-run option. In the UI Smart is always Smart-T1 for the official scenarios
   (locked τ 15 s, W_MAX 90 s); Smart-study is used only internally for comparisons. A purple CUSTOM / DEMO badge is shown while it is active;
   official scenarios show "OFFICIAL · LOCKED".
 - Demands: numbers, finite, ≥ 0, rejected at ≥ 2400 veh/h (arrival-model limit); the
@@ -165,14 +169,46 @@ python -m smarttraffic.custom --demand NS=400,SS=400,ES=400,WS=400,NL=120,SL=120
   (X ≥ 0.85) and when oversaturated (X ≥ 1).
 - Custom results are tagged `CUSTOM / DEMO` (metadata `mode: custom`), are saved only under
   `results/custom/` (not committed) and never enter official results: official mode refuses
-  custom demand, Stop on Yellow and the immediate first vehicle, and campaigns refuse the
-  custom folder. Custom arrivals are generated in memory (S1 demands + seed reproduce S1's
+  custom demand, and campaigns refuse the custom folder. Custom arrivals are generated in memory (S1 demands + seed reproduce S1's
   arrivals exactly).
-- Yellow policy: study default = permissive first 2.0 s of yellow (inclusive; the only value
-  official runs accept); Stop on Yellow = 0.0 s (no crossing after yellow onset).
-- Immediate first vehicle (Custom only): the first queued car starts at green onset instead
-  of crossing at t_g + 3.9 s; following cars keep the saturation headway 1.9 / 2.0 s, so
-  about 2 more cars leave per green.
+
+## Vehicle policy (standard since 2026-09-28)
+
+Every run — official scenarios S1–S10, FT-A, FT-B, FT-TOD, Smart / Smart-T1, Custom / Demo, the
+visualization (runs, screenshots, reset, scenario / controller / seed switching) and the
+experiment command line — uses the **standard** policy (`vehicles.STANDARD`):
+
+- **Stop on Yellow**: once YELLOW begins no new vehicle enters the intersection. The rule is
+  strict and deterministic in integer milliseconds: a car must cross before yellow onset
+  (last permitted crossing t_y − 1 ms); a car due exactly at t_y stops at the line. Cars whose
+  crossing time would fall at or after t_y are stopped as soon as the yellow onset is known
+  (at flashing-green onset, 3 s before yellow).
+- **Immediate first vehicle on green**: the first queued car starts moving at green onset
+  t_g (from slot 1, 0.5 m before the line, it crosses 36 ms later). Following cars keep the
+  saturation headway (1.9 s straight / 2.0 s left) and start one after another, never all at
+  once. A 10-car straight queue clears 17.136 s after green (legacy: 21.0 s). This is exact
+  for any time step: a step containing a GREEN onset is split there.
+
+The previous study rules are kept only as the explicitly named compatibility policy
+**`legacy-study`** (first car at t_g + l1 + h = t_g + 3.9 s; permissive first 2.0 s of yellow,
+inclusive). It is never a default and is not offered in the visualization. Use it only to
+reproduce the historical Stage 14 results:
+
+    python -m smarttraffic.run_experiments tune --policy legacy-study --out <dir> --verify-lock <sha>
+    python -m smarttraffic.run_experiments official --policy legacy-study --lock-sha <sha> --out <dir>
+
+Without `--policy`, `tune` / `official` use the standard policy and write to
+`results/tuning/S1_T1_standard` and `results/official/campaign_T1_standard`; a campaign folder
+holds one policy only and the Stage 14 folders refuse standard runs, so historical results are
+never mixed or overwritten. Standard runs record `vehicle_policy`, `stop_on_yellow` and
+`immediate_first_vehicle` in their metadata; legacy-study run keys and metadata are exactly the
+Stage 14 ones (the golden fingerprints in `tests/golden/` still reproduce).
+
+**Historical results.** `results/tuning/S1_T1` (and the PC reproduction `S1_T1_pc`),
+`results/official/campaign_T1` and the Smart-T1 selection in
+`config/smart_params_locked.json` were produced with `legacy-study`. The locked Smart-T1
+parameters (τ 15 s, W_MAX 90 s) are kept unchanged; they were not retuned for the standard
+policy. See `docs/ARCHITECTURE.md` ("Vehicle policy") for the exact list of assumptions.
 
 ## Setup (Windows)
 
