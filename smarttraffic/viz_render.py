@@ -153,6 +153,8 @@ def lamp_colour(state: SignalState, lit_green: bool = True):
     return T.amber
 
 
+ROW_MIN = 18        # controller-table row height (x k) kept by leaving out optional lines
+ROW_FLOOR = 16      # absolute smallest row height (x k): all 8 rows must fit at 1100 x 680
 STATE_SHORT = {SignalState.RED: "RED", SignalState.RED_YELLOW: "RED+YEL", SignalState.GREEN: "GREEN",
                SignalState.FLASHING_GREEN: "FLASH", SignalState.YELLOW: "YELLOW",
                SignalState.ALL_RED: "ALL-RED"}
@@ -1293,40 +1295,46 @@ class Renderer:
         x0, w = r.x + z(16), r.w - z(32)
         if a is None:
             return
+        # all 8 movement rows always fit: optional explanation lines are left out when the
+        # window is small (1100 x 680 minimum), and the row height adapts to the space left
+        limit = r.bottom - z(14) - z(28) - 8 * z(ROW_MIN) - z(10)
         if smart and a.smart is not None:
-            y = self._smart_block(surf, x0, y, w, a)
+            y = self._smart_block(surf, x0, y, w, a, limit)
         elif a.fixed is not None:
-            y = self._fixed_block(surf, x0, y, w, a, t)
+            y = self._fixed_block(surf, x0, y, w, a, t, limit)
         y += z(10)
-        # all 8 movement rows always fit: the row height adapts to the space left
         avail = r.bottom - z(14) - y - z(28)
-        rh = int(max(z(20), min(z(28), avail / 8)))
+        rh = int(max(z(ROW_FLOOR), min(z(28), avail / 8)))
         y = self._table(surf, x0, y, w, a, t, smart, r.bottom - z(8), rh)
         if smart and a.smart is not None and r.bottom - y > z(70):
             self._decisions(surf, x0, y + z(12), w, a, r.bottom - z(14))
 
-    def _wrap(self, surf, s, x, y, w, size, colour, bold=False, lead=None):
+    def _wrap(self, surf, s, x, y, w, size, colour, bold=False, lead=None, draw=True):
+        """Draw s word-wrapped to width w; returns the y below it. draw=False only measures."""
         f = self.fonts
         words, line, first = s.split(" "), "", True
         lh = round(size * 1.38)
         indent = z_ = 0
         if lead is not None:
-            aa_circle(surf, (x + self._z(3), y + lh / 2), self._z(2.5), lead)
+            if draw:
+                aa_circle(surf, (x + self._z(3), y + lh / 2), self._z(2.5), lead)
             indent = self._z(14)
         for word in words:
             trial = (line + " " + word).strip()
             if f.render(trial, size, colour, bold).get_width() > w - indent and line:
-                text(surf, f, line, (x + indent, y), size, colour, bold)
+                if draw:
+                    text(surf, f, line, (x + indent, y), size, colour, bold)
                 y += lh
                 line = word
             else:
                 line = trial
         if line:
-            text(surf, f, line, (x + indent, y), size, colour, bold)
+            if draw:
+                text(surf, f, line, (x + indent, y), size, colour, bold)
             y += lh
         return y
 
-    def _smart_block(self, surf, x0, y, w, a: Snapshot):
+    def _smart_block(self, surf, x0, y, w, a: Snapshot, limit: float = math.inf):
         z, f = self._z, self.fonts
         sm = a.smart
         text(surf, f, "TARGET", (x0, y + z(13)), z(10), T.muted, True, "midleft", spacing=1)
@@ -1348,11 +1356,13 @@ class Renderer:
             surf.blit(ts, ts.get_rect(center=box.center))
         y += z(36)
         for i, line in enumerate(sm.why[:3]):
-            y = self._wrap(surf, line, x0, y, w, z(13), T.text if i == 0 else T.text2,
-                           lead=T.accent if i == 0 else T.faint) + z(1)
+            col, lead = (T.text, T.accent) if i == 0 else (T.text2, T.faint)
+            if i > 0 and self._wrap(surf, line, x0, y, w, z(13), col, lead=lead, draw=False) > limit:
+                break                           # secondary reasons only when the table still fits
+            y = self._wrap(surf, line, x0, y, w, z(13), col, lead=lead) + z(1)
         return y
 
-    def _fixed_block(self, surf, x0, y, w, a: Snapshot, t: float):
+    def _fixed_block(self, surf, x0, y, w, a: Snapshot, t: float, limit: float = math.inf):
         z, f = self._z, self.fonts
         fx = a.fixed
         cur = fx.current
@@ -1400,8 +1410,10 @@ class Renderer:
                 line = (f"Clearance (yellow / all-red) · next {nxt[0]} ({' + '.join(nxt[1])}) "
                         f"in {(cur.next_start_ms - t) / 1000:.1f} s")
         y = self._wrap(surf, line, x0, y, w, z(13), T.text, lead=T.accent)
-        return self._wrap(surf, "Fixed timing: the calls and queues below are shown for comparison only.",
-                          x0, y + z(2), w, z(11), T.muted)
+        note = "Fixed timing: the calls and queues below are shown for comparison only."
+        if self._wrap(surf, note, x0, y + z(2), w, z(11), T.muted, draw=False) > limit:
+            return y                            # the note only when all 8 rows still fit
+        return self._wrap(surf, note, x0, y + z(2), w, z(11), T.muted)
 
     def _table(self, surf, x0, y, w, a: Snapshot, t: float, smart: bool, bottom: int, rh: int = 0):
         z, f = self._z, self.fonts

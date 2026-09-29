@@ -15,7 +15,7 @@ All parameters, algorithms and scenarios come from that document; do not change 
 - Stage 9 (physically verified): ESP32 hardware — real IR detector(s) and physical
   signal head(s) via `esp_protocol.py`, `hardware.py`, `hybrid_sensors.py`,
   `config/hardware.json`, firmware in `hardware/`. See `hardware/README.md`.
-- Hardware update (2026-09-28, awaiting review): the verified demo hardware is **2 real
+- Hardware update (2026-09-28, manually verified on the board): the verified demo hardware is **2 real
   detectors + 14 virtual** — NS:D1 (digital active-low IR on GPIO27) and NS:D2 (GPIO26) — and a
   physical NS head with **discrete R/Y/G outputs** (GPIO32 / GPIO33 / GPIO25) that mirrors the
   logical NS signal lamp for lamp (protocol v2; the ESP32 runs no signal timing).
@@ -41,10 +41,14 @@ All parameters, algorithms and scenarios come from that document; do not change 
 - Stage 14b: `custom.py`, `viz_custom.py` — Custom / Demo mode. See "Custom / Demo mode" below.
 - Vehicle policy change (2026-09-28): Stop on Yellow + immediate first vehicle on green is the
   standard behaviour everywhere. See "Vehicle policy" below.
-- Stage 15 (awaiting review): `make_graphs.py` — result figures F01–F13 (PNG 300 dpi, PDF, SVG),
+- Stage 15 (verified): `make_graphs.py` — result figures F01–F13 (PNG 300 dpi, PDF, SVG),
   `figures_values.csv`, manifest and index in `results/figures/campaign_T1__legacy-study/`, built from
   the committed Stage 14 summaries: `python -m smarttraffic.make_graphs`. These figures show the
   **legacy-study** (historical) results; no standard-policy campaign has been run.
+- Stage 16 (awaiting review): final integration and stress verification. Automated safety
+  audit (`tests/stage16_checks.py`) and tests `tests/test_stage16_*.py`; full-length matrix and
+  stress runs `python -m tests.stage16_stress` (report in `results/stage16/stress_report.json`).
+  Results, the manual hardware checks and the freeze recommendation: `docs/STAGE16_VERIFICATION.md`.
 - Not yet implemented: demand sweep (G6), remaining ablations and sensor-fault runs.
 
 Extra binding requirements added after the study (for example the hybrid real/virtual
