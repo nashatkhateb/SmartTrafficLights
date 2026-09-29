@@ -153,6 +153,7 @@ class UIState:
             self.session.set_running(not self.session.running)
 
     def reset(self) -> None:
+        self.manual_message = None                   # a new session: no pending manual vehicles
         self._start(running=False)
 
     def set_speed(self, sp: Optional[float]) -> None:
@@ -250,6 +251,27 @@ class UIState:
         self.custom_spec = spec
         self.config = spec.config()
         self._start(running=running)
+
+    # ---------------------------------------------------- manual vehicles (Custom / Demo)
+    manual_count = 10                                    # the exact-count field (1 .. MAX_BATCH)
+    manual_message: Optional[str] = None                 # last manual-injection result (card text)
+
+    def set_manual_count(self, n: int) -> None:
+        from smarttraffic.manual import MAX_BATCH
+        self.manual_count = int(min(MAX_BATCH, max(1, n)))
+
+    def inject(self, m: str, n: int) -> bool:
+        """Add exactly n manual vehicles to m (Custom / Demo only). Sets a short message."""
+        why = "Custom / Demo mode only" if not self.is_custom else self.session.inject(m, n)
+        self.manual_message = (f"+{n} {m} added" if why is None else f"{m}: {why}")
+        return why is None
+
+    def manual_state(self):
+        """(injected per movement, blocked movements, pending count, exact count) or None."""
+        inj = getattr(self.session, "injector", None) if self.session is not None else None
+        if inj is None:
+            return None
+        return inj.counts(), inj.blocked, inj.pending(), self.manual_count, self.manual_message
 
     def toggle_hardware(self) -> None:
         self.hardware = not self.hardware
@@ -454,6 +476,13 @@ class _StillState:
         self.custom_draft = custom_draft
         self.custom_open = custom_draft is not None
         self.is_custom = config.mode == "custom"
+
+    def manual_state(self):                      # still frames: an empty manual-injection card
+        if self.config.mode != "custom":
+            return None
+        from smarttraffic.conflicts import MOVES
+        blocked = ("NS",) if self.hardware else ()
+        return {m: 0 for m in MOVES}, frozenset(blocked), 0, 10, None
 
     def __getattr__(self, name):                 # button actions do nothing in a still
         return lambda *a, **k: None

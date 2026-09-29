@@ -188,6 +188,19 @@ python -m smarttraffic.custom --demand NS=400,SS=400,ES=400,WS=400,NL=120,SL=120
   `results/custom/` (not committed) and never enter official results: official mode refuses
   custom demand, and campaigns refuse the custom folder. Custom arrivals are generated in memory (S1 demands + seed reproduce S1's
   arrivals exactly).
+- **Manual vehicles (Custom / Demo only, `smarttraffic/manual.py`).** A "Manual vehicles" card
+  (top left of the map, only in Custom / Demo) adds an exact number of cars to any movement while
+  the run goes: +1, +5, or +N with the exact-count field (1–50). A request is applied at the next
+  100 ms step; its cars appear at the 150 m entry point 1.5 s apart (after the previous manual car
+  of that movement), in addition to the veh/h demand (which may be 0). They then follow exactly
+  the same model as generated cars (entry spacing, signals, Stop on Yellow, first car at green,
+  1.9 / 2.0 s headway) and reach Smart-T1 only through the detectors. In hardware mode NS is
+  real-demand-only, so NS shows "real sensors only" and requests for it are refused; the other 7
+  movements stay available. Manual cars have `source: manual`; the metadata records every request
+  (`manual_injections`: time, movement, count, first / last arrival) and refusals, so
+  `manual.replay_schedule(metadata)` replays the run exactly. Reset, a new seed or controller
+  starts a new session and clears queued requests. Official scenarios cannot use it
+  (`runner.simulate` refuses an injector outside Custom / Demo).
 
 ## Vehicle policy (standard since 2026-09-28)
 

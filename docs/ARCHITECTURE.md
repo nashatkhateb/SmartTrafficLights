@@ -654,6 +654,17 @@ reproduce S1's arrivals exactly. Custom runs use the standard vehicle policy (no
 option; the Stage 14b yellow-policy and start-up switches were replaced by the project-wide
 policy below).
 
+**Manual vehicle injection (Custom / Demo only).** `manual.ManualInjector` is an optional runner
+hook (`simulate(..., injector=...)`, refused unless `config.mode == "custom"`). Requests
+(movement, count 1-50) from the UI thread are queued and applied at the next step boundary T:
+arrivals t_1 = max(T, previous manual arrival of m + 1.5 s), t_k = t_1 + (k-1) · 1.5 s, source
+"manual", new ids, injected with `VehicleModel.inject` into the lane's scheduled-arrival queue
+((time, seq, id) order). From there nothing differs from generated arrivals, and measured manual
+cars are added to the run's end condition. A batch whose last arrival would be at or after the
+measurement end, or for a real-demand-only movement (hardware mode: NS), is rejected whole. The
+metadata records applied requests and refusals; `ManualInjector(schedule=replay_schedule(meta))`
+reproduces the run. Official runs pass no injector and are unchanged.
+
 **Custom inputs.** 8 constant demands (number, finite, >= 0, < 2400 veh/h; UI cap 1800), seed
 (int >= 0), FT-A or Smart (no FT-B custom planning), measurement 60–7200 s (UI: 5/10/30/60 min),
 study warm-up 300 s, flush <= 900 s, dt 100 ms. Smart parameter set: Smart-T1 (the lock,

@@ -153,6 +153,7 @@ def lamp_colour(state: SignalState, lit_green: bool = True):
     return T.amber
 
 
+MANUAL_CARD_H = 318 # manual-vehicle card height (x k), Custom / Demo only
 ROW_MIN = 18        # controller-table row height (x k) kept by leaving out optional lines
 ROW_FLOOR = 16      # absolute smallest row height (x k): all 8 rows must fit at 1100 x 680
 STATE_SHORT = {SignalState.RED: "RED", SignalState.RED_YELLOW: "RED+YEL", SignalState.GREEN: "GREEN",
@@ -1537,6 +1538,9 @@ class Renderer:
         self._legend(surf, pygame.Rect(canvas.right - m - lw, canvas.bottom - m - lh, lw, lh))
         hw = a.hardware if a is not None else None
         self._hardware(surf, pygame.Rect(canvas.x + m, canvas.bottom - m - z(190), z(300), z(190)), st, hw)
+        ms = st.manual_state() if callable(getattr(st, "manual_state", None)) else None
+        if ms is not None:                       # Custom / Demo only: manual vehicle injection
+            self._manual(surf, pygame.Rect(canvas.x + m, canvas.y + m, z(300), z(MANUAL_CARD_H)), st, ms)
         self._scale(surf, canvas)
         bx, by = canvas.x + m, canvas.y + m
         if st.error:
@@ -1786,6 +1790,44 @@ class Renderer:
                          "custom:cancel")
         text(surf, f, "Tab next field · type digits · Enter apply · Esc cancel", (x0, fy + bh / 2), z(11),
              T.muted, anchor="midleft")
+
+    def _manual(self, surf, r, st, ms):
+        """Custom / Demo card: add an exact number of vehicles to one movement (+1, +5, +N).
+        They enter at the 150 m entry point 1.5 s apart (smarttraffic.manual)."""
+        from smarttraffic.manual import MAX_BATCH
+        counts, blocked, pending, n_exact, msg = ms
+        z, f = self._z, self.fonts
+        glass(surf, r, z(12))
+        x, y = r.x + z(16), r.y + z(14)
+        right = r.right - z(16)
+        text(surf, f, "MANUAL VEHICLES", (x, y), z(10), T.muted, True, spacing=1)
+        text(surf, f, "CUSTOM / DEMO", (right, y), z(10), T.custom, True, "topright", spacing=1)
+        y += z(22)
+        live = not st.finished and not st.error
+        text(surf, f, "Exact count", (x, y + z(13)), z(12), T.text2, anchor="midleft")
+        self._stepper(surf, pygame.Rect(right - z(120), y, z(120), z(26)), str(n_exact), False,
+                      lambda: st.set_manual_count(n_exact - 1), lambda: st.set_manual_count(n_exact + 1),
+                      lambda: None, "manual:count", enabled=live)
+        y += z(32)
+        bw, gap = z(40), z(5)
+        for m in MOVES:
+            cy = y + z(12)
+            text(surf, f, m, (x, cy), z(13), T.text, True, "midleft")
+            if m in blocked:
+                text(surf, f, "real sensors only", (x + z(40), cy), z(11), T.real, anchor="midleft")
+            else:
+                c = counts.get(m, 0)
+                text(surf, f, f"+{c}" if c else "·", (x + z(40), cy), z(12), T.text2 if c else T.faint,
+                     anchor="midleft", tabular=True)
+                bx = right - 3 * bw - 2 * gap
+                for i, (label, n) in enumerate((("+1", 1), ("+5", 5), (f"+{n_exact}", n_exact))):
+                    self.text_button(surf, pygame.Rect(bx + i * (bw + gap), y, bw, z(24)), label,
+                                     (lambda m=m, n=n: st.inject(m, n)), f"manual:{m}:{('1', '5', 'n')[i]}",
+                                     enabled=live, size=z(11))
+            y += z(27)
+        y += z(4)
+        note = msg or (f"{pending} queued · " if pending else "") + "enter at 150 m, 1.5 s apart"
+        text(surf, f, note, (x, y), z(11), T.text2 if msg else T.muted)
 
     def _hardware(self, surf, r, st, hw):
         z, f = self._z, self.fonts

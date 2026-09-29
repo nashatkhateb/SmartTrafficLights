@@ -190,12 +190,16 @@ def _load_arrivals(config: RunConfig, arrivals, arrivals_dir):
 
 def simulate(config: RunConfig, *, arrivals=None, arrivals_dir: Optional[Union[str, Path]] = None,
              source_factory: Optional[Callable] = None, observers: Sequence[Callable[[StepView], None]] = (),
-             collect_stats: bool = True, exclude_movements: Sequence[str] = ()) -> Simulation:
+             collect_stats: bool = True, exclude_movements: Sequence[str] = (),
+             injector=None) -> Simulation:
     """Run the simulation; statistics are collected only if collect_stats (the run itself is
     identical either way). exclude_movements (hardware demo only; default none) drops every
     virtual arrival of those movements before the VehicleModel is built: their demand then comes
-    only from real detectors (hardware.real_only_movements)."""
+    only from real detectors (hardware.real_only_movements). injector (Custom / Demo only,
+    smarttraffic.manual.ManualInjector) adds manually requested vehicles at step boundaries."""
     w = config.window()
+    if injector is not None and config.mode != "custom":
+        raise ValueError("manual vehicle injection is available in Custom / Demo mode only")
     items = _load_arrivals(config, arrivals, arrivals_dir)
     if exclude_movements:
         excl = {validate_movement(m) for m in exclude_movements}
@@ -210,6 +214,8 @@ def simulate(config: RunConfig, *, arrivals=None, arrivals_dir: Optional[Union[s
     sim = Simulation(config, vm, sb, bank, ctrl, collector, arrivals_sha256(items), len(items))
     pending = [a.id for a in items if 0 <= a.time_ms < w.measure_ms]
     next_cmd = getattr(ctrl, "next_command_ms", None)
+    if injector is not None:
+        injector.block(exclude_movements)           # real-demand-only movements get no manual cars
 
     def after_step():
         if collector is not None:
@@ -230,6 +236,8 @@ def simulate(config: RunConfig, *, arrivals=None, arrivals_dir: Optional[Union[s
                 break
             if now >= w.hard_end_ms:
                 break
+        if injector is not None:                     # Custom / Demo: manual vehicles, at a step boundary
+            pending.extend(a.id for a in injector.apply(now, vm, w.measure_ms) if 0 <= a.time_ms < w.measure_ms)
         target = now + config.dt_ms
         nb = (now // SAMPLE_MS + 1) * SAMPLE_MS              # next 1 s instant
         if nb <= w.measure_ms:
@@ -266,6 +274,8 @@ def run(config: RunConfig, **kw) -> RunResult:
     }
     if kw.get("exclude_movements"):        # hardware demo only; absent in every other run
         meta["virtual_arrivals_excluded"] = sorted(kw["exclude_movements"])
+    if kw.get("injector") is not None:     # Custom / Demo manual injection only
+        meta.update(kw["injector"].metadata())
     if not config.is_legacy:               # legacy-study metadata is exactly Stage 14's
         meta.update(config.policy.describe())
     if config.mode == "custom":

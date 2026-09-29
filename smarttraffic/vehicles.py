@@ -669,6 +669,40 @@ class VehicleModel:
     def all_vehicles(self) -> Tuple[Vehicle, ...]:
         return tuple(self._by_id[k] for k in sorted(self._by_id))
 
+    # ------------------------------------------------ Custom / Demo manual injection
+    def next_vehicle_id(self) -> int:
+        """The id the next injected vehicle would get (one past the largest id)."""
+        return max(self._by_id, default=-1) + 1
+
+    def next_seq(self, m: str) -> int:
+        """One past the largest per-movement sequence number of m."""
+        m = validate_movement(m)
+        return max((v.seq for v in self._by_id.values() if v.movement == m), default=-1) + 1
+
+    def inject(self, arrivals: Iterable[Arrival]) -> None:
+        """Custom / Demo only (smarttraffic.manual): add arrivals while the model runs.
+
+        Each arrival needs a new id and a time at or after now. It joins its lane's queue of
+        scheduled arrivals in (time, seq, id) order and from then on is handled exactly like a
+        generated arrival (entry spacing, signals, discharge). Never called by official runs."""
+        items = list(arrivals)
+        for a in items:
+            if not isinstance(a, Arrival):
+                raise TypeError(f"arrivals must be traffic_gen.Arrival records, got {a!r}")
+            validate_movement(a.movement)
+            if a.id in self._by_id:
+                raise ValueError(f"duplicate arrival id {a.id}")
+            if a.time_ms < self._now:
+                raise ValueError(f"arrival {a.id} at {a.time_ms} ms is before now ({self._now} ms)")
+        if len({a.id for a in items}) != len(items):
+            raise ValueError("duplicate ids in injected arrivals")
+        for m in {a.movement for a in items}:
+            lane = self._lanes[m]
+            new = [Vehicle(a) for a in items if a.movement == m]
+            for v in new:
+                self._by_id[v.id] = v
+            lane.pending = deque(sorted(list(lane.pending) + new, key=lambda v: (v.scheduled_ms, v.seq, v.id)))
+
     # ---------------------------------------------------------- invariants
     def check_invariants(self) -> None:
         """No overlap, FIFO order, nobody past the stop line on the approach."""

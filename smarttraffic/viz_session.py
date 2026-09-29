@@ -427,6 +427,12 @@ class VizSession:
         self.finished = False
         self._thread: Optional[threading.Thread] = None
         self.dt_ms = config.dt_ms
+        # Custom / Demo only: manual vehicle injection (smarttraffic.manual); None otherwise
+        self.injector = None
+        if config.mode == "custom":
+            from smarttraffic.manual import ManualInjector
+            self.injector = ManualInjector(
+                blocked=hw_config.real_only_movements if hw_config is not None else ())
 
     # ------------------------------------------------------------ control
     def start(self) -> "VizSession":
@@ -466,6 +472,16 @@ class VizSession:
                 self._anchor = (now, self._display_ms_locked(now))
             self._speed = speed
             self._cond.notify_all()
+
+    # ------------------------------------------------------------ Custom / Demo
+    def inject(self, m: str, n: int) -> Optional[str]:
+        """Queue n manual vehicles for m (applied at the next step boundary). Returns None when
+        queued, else why it was refused (not Custom / Demo, run over, real-only movement)."""
+        if self.injector is None:
+            return "manual vehicles are available in Custom / Demo mode only"
+        if self.finished or self.error is not None:
+            return "the run has ended"
+        return self.injector.request(m, n)
 
     def stop(self, timeout: float = 5.0) -> None:
         with self._cond:
@@ -591,6 +607,8 @@ class VizSession:
                 # detectors are all real get NO virtual vehicles; their demand comes only from the
                 # physical sensors. Other movements keep the full scenario arrivals.
                 kw["exclude_movements"] = self.hw_config.real_only_movements
+            if self.injector is not None:
+                kw["injector"] = self.injector
             self.result = run(self.config, **kw)
             if self._last_view is not None:              # the run is over: nothing moves any more
                 snap = self._builder.build(self._last_view, self._steps)
